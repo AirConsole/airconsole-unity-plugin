@@ -57,7 +57,7 @@ public class Logic : MonoBehaviour {
         }
 
         if (GUILayout.Button("get amount of connected devices")) {
-            Debug.Log(controller.GetConnectedDeices());
+            Debug.Log(controller.GetConnectedDevices());
         }
 
 

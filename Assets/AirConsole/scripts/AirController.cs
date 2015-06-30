@@ -209,7 +209,7 @@ namespace AirConsole {
             return this.screen.GetServerTimeOffset();
         }
 
-        public int GetConnectedDeices() {
+        public int GetConnectedDevices() {
 
             int counter = 0;
 
