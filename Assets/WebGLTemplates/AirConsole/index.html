@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <title>Unity WebGL Player | %UNITY_WEB_NAME%</title>
+    <link rel="stylesheet" href="TemplateData/style.css">
+    <link rel="shortcut icon" href="TemplateData/favicon.ico" />
+    <script src="TemplateData/UnityProgress.js"></script>
+    <script type="text/javascript" src="http://www.airconsole.com/api/airconsole-1.0.js"></script>
+    <script type="text/javascript">
+
+      var airconsole;
+      /**
+       * Sets up the communication to the screen.
+       */
+      function App() {
+
+          var me = this;
+
+          me.airconsole = new AirConsole({"synchronize_time": true});
+          me.airconsole.onMessage = function(from, data) {
+            me.postToUnity({"action": "onMessage",
+                            "from": from,
+                            "data": data});
+          };
+          me.airconsole.onReady = function(code, device_id, device_data) {
+            console.log('airConsoleIsReady');
+            me.postToUnity({"action": "onReady",
+                            "code": code,
+                            "device_id": device_id,
+                            "device_data": device_data});
+          };
+
+          me.airconsole.onDeviceStateChange = function(device_id, device_data) {
+              me.postToUnity({"action": "onDeviceStateChange",
+                              "device_id": device_id,
+                              "device_data": device_data});
+          };
+          
+      };
+
+
+      App.prototype.postToUnity = function(data) {
+          // send data with SendMessage from Unity js library
+          SendMessage("AirController", "ProcessJS", JSON.stringify(data));
+      };
+
+
+      function processUnityData(device_id, data) {
+            var data = JSON.parse(event.data);
+            if (data.action == "message") {
+                window.app.airconsole.message(data.from, data.data);
+            } else if (data.action == "broadcast") {
+                window.app.airconsole.broadcast(data.data);
+            } else if (data.action == "debug"){
+                console.log("debug message:", data.data);
+            }
+      };
+      
+      function gameReady(){
+          window.app = new App();
+          console.log('unity game started');
+      }
+
+    </script>
+  </head>
+  <body class="template">
+    <p class="header"><span>Unity WebGL Player | </span>%UNITY_WEB_NAME%</p>
+    <div class="template-wrap clear">
+    <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" height="%UNITY_HEIGHT%px" width="%UNITY_WIDTH%px"></canvas>
+      <div class="logo"></div>
+      <div class="fullscreen"><img src="TemplateData/fullscreen.png" width="38" height="38" alt="Fullscreen" title="Fullscreen" onclick="SetFullscreen(1);" /></div>
+      <div class="title">%UNITY_WEB_NAME%</div>
+    </div>
+    <p class="footer">&laquo; created with <a href="http://unity3d.com/" title="Go to unity3d.com">Unity</a> &raquo;</p>
+    %UNITY_WEBGL_LOADER_GLUE%
+  </body>
+</html>

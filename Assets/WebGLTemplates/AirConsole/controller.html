@@ -1,0 +1,43 @@
+
+<html>
+<head>
+  <meta name="viewport"
+        content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <script type="text/javascript"
+          src="http://www.airconsole.com/api/airconsole-1.0.js"></script>
+          
+  <script type="text/javascript" src="https://code.jquery.com/jquery-2.1.4.min.js"></script>    
+
+  <script type="text/javascript">
+    
+    var airconsole;
+    /**
+     * Sets up the communication to the screen.
+     */
+    function App() {
+      var me = this;
+      me.airconsole = new AirConsole({"orientation": "portrait"});
+      me.airconsole.onMessage = function(from, data) {
+        console.log("onMessage", from, data);
+        
+        $('#content').html(from + ' '+data);
+      };
+      
+      me.airconsole.onReady = function(code, device_id, device_data) {
+        console.log("onReady", code, device_id, device_data);
+      };
+      
+      me.airconsole.onDeviceStateChange = function(device_id, device_data) {
+        console.log("onDeviceStateChange", device_id, device_data);
+      };
+    }
+
+  </script>
+ 
+</head>
+<body onload="window.app = new App()">
+    <input type="button" onclick="window.app.airconsole.message(AirConsole.SCREEN, 'hi')" value="hi">
+    
+    <div id="content" style="color:white">CONTENT</div>
+</body>
+</html>

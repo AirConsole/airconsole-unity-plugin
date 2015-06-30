@@ -1,0 +1,68 @@
+
+<html>
+<head>
+  <meta name="viewport"
+        content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <script type="text/javascript"
+          src="http://www.airconsole.com/api/airconsole-1.0.js"></script>
+  <script type="text/javascript">
+    
+    var airconsole;
+    /**
+     * Sets up the communication to the screen.
+     */
+    function App() {
+        
+      var me = this;
+      me.unity_socket = new WebSocket("ws://localhost:7843/api");
+      
+      me.unity_socket.onopen = function() {
+        me.airconsole = new AirConsole({"synchronize_time": true});
+        me.airconsole.onMessage = function(from, data) {
+          me.postToUnity({"action": "onMessage",
+                          "from": from,
+                          "data": data});
+        };
+        me.airconsole.onReady = function(code, device_id, device_data) {
+          me.postToUnity({"action": "onReady",
+                          "code": code,
+                          "device_id": device_id,
+                          "device_data": device_data,
+                          "server_time_offset": me.airconsole.server_time_offset});          
+        };
+
+        me.airconsole.onDeviceStateChange = function(device_id, device_data) {
+            me.postToUnity({"action": "onDeviceStateChange",
+                            "device_id": device_id,
+                            "device_data": device_data});
+        };
+      };
+      
+      me.unity_socket.onmessage = function(event) {
+          var data = JSON.parse(event.data);
+          if (data.action == "message") {
+              me.airconsole.message(data.from, data.data);
+          } else if (data.action == "broadcast") {
+              me.airconsole.broadcast(data.data);
+          } else if (data.action == "debug"){
+              console.log("debug message:", data.data);
+          }
+      };
+    }
+
+    /**
+     * Tells the screen to move the paddle of this player.
+     * @param amount
+     */
+    App.prototype.postToUnity = function(data) {
+        this.unity_socket.send(JSON.stringify(data));
+        //console.log("postToUnity", data);
+    };
+
+  </script>
+ 
+</head>
+<body onload="window.app = new App()">
+    
+</body>
+</html>
