@@ -25,6 +25,8 @@ namespace AirConsole {
 
         private JToken[] devices;
 
+        private readonly Queue<Action> executeOnMainThread = new Queue<Action>();
+
         void Start() {
 
             this.devices = new JToken[maxConnections];
@@ -58,17 +60,25 @@ namespace AirConsole {
             
         }
 
+        void Update() {
+
+            // dispatch stuff on main thread
+            while (executeOnMainThread.Count > 0) {
+                executeOnMainThread.Dequeue().Invoke();
+            }
+        }
+
         void OnReady() {
 
             if (this.onReady != null) {
-                this.onReady();
+                executeOnMainThread.Enqueue(() => this.onReady());
             }
         }
 
         void OnMessage(JObject msg) {
 
             if (this.onMessage != null) {
-                this.onMessage(msg);
+                executeOnMainThread.Enqueue(() => this.onMessage(msg));
             }
         }
 
@@ -101,6 +111,13 @@ namespace AirConsole {
                 wssv.Stop();
             }
         }
+
+        /*
+        void OnLevelWasLoaded() {
+            this.onReady = null;
+            this.onMessage = null;
+        }
+        */
 
         public bool IsReady() {
             return screen.IsReady();

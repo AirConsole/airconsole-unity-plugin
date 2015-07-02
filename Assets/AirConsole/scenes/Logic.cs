@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 public class Logic : MonoBehaviour {
 
     public AirController controller;
+    public GameObject cube;
 
 	// Use this for initialization
 	void Start () {
@@ -24,6 +25,18 @@ public class Logic : MonoBehaviour {
     void OnAirConsoleMessage(JObject msg) {
 
         Debug.Log("Incoming message from device " + msg["from"] + ": " + msg["data"]);
+
+
+        // move the cube to left side wenn first controller says hi
+        if ((float)msg["from"] == 1 && (string)msg["data"] == "hi") {
+            this.cube.transform.Translate(Vector3.left);
+        }
+
+        // move the cube to right side wenn first controller says hi
+        if ((float)msg["from"] == 2 && (string)msg["data"] == "hi") {
+            this.cube.transform.Translate(Vector3.right);
+        }
+
     }
 
     void OnGUI() {
@@ -67,6 +80,10 @@ public class Logic : MonoBehaviour {
 
         if (GUILayout.Button("get server time offset")) {
             Debug.Log(controller.GetServerTimeOffset());
+        }
+
+        if (GUILayout.Button("change scene")) {
+            Application.LoadLevel(1);
         }
     }
 }
