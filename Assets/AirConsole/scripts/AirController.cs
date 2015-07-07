@@ -15,6 +15,7 @@ namespace AirConsole {
         public int maxConnections = 20;
         public int port = 7843;
         public string path = "/api";
+        public bool runInBackground = true;
         public bool debug = true;
 
         public event OnReady onReady;
@@ -28,6 +29,10 @@ namespace AirConsole {
         private readonly Queue<Action> executeOnMainThread = new Queue<Action>();
 
         void Start() {
+
+            if (this.runInBackground) {
+                Application.runInBackground = true;
+            }
 
             this.devices = new JToken[maxConnections];
 
@@ -55,7 +60,7 @@ namespace AirConsole {
                 }
 
             } else {
-                Application.ExternalCall("gameReady");
+                Application.ExternalCall("onGameReady");
             }
             
         }
@@ -237,14 +242,15 @@ namespace AirConsole {
                 }
             }
 
-            return counter;
+            if (counter > 0) {
+                return counter - 1;
+            } else {
+                return counter;
+            }
         }
 
         public void ProcessJS(string data) {
-
-            Debug.Log("enter ProcessJS");
             screen.ProcessMessage(data);
-
         }
     }
 }

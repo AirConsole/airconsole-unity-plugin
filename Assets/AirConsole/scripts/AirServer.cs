@@ -127,10 +127,22 @@ namespace AirConsole {
         public void Message(Dictionary<string, object> data) {
 
             if (Application.platform == RuntimePlatform.WebGLPlayer) {
-                Debug.Log("send a message..");
-                Application.ExternalCall("processUnityData", JsonConvert.SerializeObject(data));
+
+                if ((string)data["action"] == "message") {
+                    Application.ExternalCall("window.app.airconsole.message", data["from"], data["data"]);
+                }
+
+                if ((string)data["action"] == "broadcast") {
+                    Application.ExternalCall("window.app.airconsole.broadcast", data["data"]);
+                }
+                
+                //Application.ExternalCall("processUnityData", JsonConvert.SerializeObject(data));
+
             } else {
-                Send(JsonConvert.SerializeObject(data));
+
+                Send(JsonConvert.SerializeObject(data, new JsonSerializerSettings() {
+                    NullValueHandling = NullValueHandling.Ignore
+                }));
             }
         }
 

@@ -29,6 +29,12 @@
                           "device_id": device_id,
                           "device_data": device_data,
                           "server_time_offset": me.airconsole.server_time_offset});          
+
+          // send inital device infos
+          for (i = 0; i < me.airconsole.devices.length; i++) {
+              me.airconsole.onDeviceStateChange(i, me.airconsole.devices[i]);
+          }
+
         };
 
         me.airconsole.onDeviceStateChange = function(device_id, device_data) {

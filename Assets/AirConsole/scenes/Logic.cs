@@ -81,9 +81,5 @@ public class Logic : MonoBehaviour {
         if (GUILayout.Button("get server time offset")) {
             Debug.Log(controller.GetServerTimeOffset());
         }
-
-        if (GUILayout.Button("change scene")) {
-            Application.LoadLevel(1);
-        }
     }
 }

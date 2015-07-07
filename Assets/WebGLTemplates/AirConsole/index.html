@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en-us">
   <head>
     <meta charset="utf-8">
@@ -30,7 +30,14 @@
             me.postToUnity({"action": "onReady",
                             "code": code,
                             "device_id": device_id,
-                            "device_data": device_data});
+                            "device_data": device_data,
+                            "server_time_offset": me.airconsole.server_time_offset});
+
+            // send inital device infos
+            for (i = 0; i < me.airconsole.devices.length; i++) {
+                me.airconsole.onDeviceStateChange(i, me.airconsole.devices[i]);
+            }
+
           };
 
           me.airconsole.onDeviceStateChange = function(device_id, device_data) {
@@ -49,7 +56,7 @@
 
 
       function processUnityData(device_id, data) {
-            var data = JSON.parse(event.data);
+            var data = JSON.parse(data);
             if (data.action == "message") {
                 window.app.airconsole.message(data.from, data.data);
             } else if (data.action == "broadcast") {
@@ -59,8 +66,11 @@
             }
       };
       
-      function gameReady(){
+      function onGameReady() {
           window.app = new App();
+
+          // inform controllers that unity webgl is ready
+          window.app.airconsole.broadcast('onGameReady');
           console.log('unity game started');
       }
 

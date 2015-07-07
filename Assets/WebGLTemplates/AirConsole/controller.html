@@ -31,13 +31,21 @@
         console.log("onDeviceStateChange", device_id, device_data);
       };
     }
+    
+    var settings = {
+      
+      'style': 'green',
+      'health': 98
+        
+    };
+   
 
   </script>
  
 </head>
 <body onload="window.app = new App()">
     <input type="button" onclick="window.app.airconsole.message(AirConsole.SCREEN, 'hi')" value="hi">
-    
+    <input type="button" onclick="window.app.airconsole.setCustomDeviceState(settings)" value="set custom data">
     <div id="content" style="color:white">CONTENT</div>
 </body>
 </html>
