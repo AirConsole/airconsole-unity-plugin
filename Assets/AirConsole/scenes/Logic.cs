@@ -69,6 +69,28 @@ public class Logic : MonoBehaviour {
             Debug.Log("value int 'health':" + (int)data["health"]);
         }
 
+        if (GUILayout.Button("set some custom screen data")) {
+
+            var customData = new { 
+                level = 1,
+                started  = true
+            };
+
+            controller.SetCustomDeviceState(customData);
+        }
+
+        if (GUILayout.Button("get custom data from screen")) {
+
+            if (controller.GetCustomDeviceState(0) == null) {
+                Debug.Log("no custom data on screen");
+                return;
+            }
+
+            foreach (JToken key in controller.GetCustomDeviceState(0).Children()) {
+                Debug.Log(key);
+            }
+        }
+
         if (GUILayout.Button("get amount of connected devices")) {
             Debug.Log(controller.GetConnectedDevices());
         }
@@ -81,5 +103,6 @@ public class Logic : MonoBehaviour {
         if (GUILayout.Button("get server time offset")) {
             Debug.Log(controller.GetServerTimeOffset());
         }
+       
     }
 }

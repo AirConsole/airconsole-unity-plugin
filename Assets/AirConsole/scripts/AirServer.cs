@@ -41,16 +41,19 @@ namespace AirConsole {
 
             Send(@"{ ""action"": ""debug"", ""data"": ""welcome screen.html!"" }");
 
-            if (!debug) {
-                return;
+            if (debug) {
+                Debug.Log("AirConsole: screen.html connected!");
             }
 
-            Debug.Log("AirConsole: screen.html connected!");
+            
         }
 
         protected override void OnClose(CloseEventArgs e) {
 
-            Debug.Log("AirConsole: screen.html disconnected");
+            if (debug) {
+                Debug.Log("AirConsole: screen.html disconnected");
+            }
+           
             base.OnClose(e);
         }
 
@@ -59,12 +62,10 @@ namespace AirConsole {
             base.OnError(e);
 
 
-            if (!debug) {
-                return;
+            if (debug) {
+                Debug.Log(e.Message);
+                Debug.Log(e.Exception);
             }
-
-            Debug.Log(e.Message);
-            Debug.Log(e.Exception);
         }
 
         public void ProcessMessage(string data) {
@@ -116,33 +117,19 @@ namespace AirConsole {
                     Debug.LogWarning(e.StackTrace);
                 }
             }
-
-
         }
 
         public bool IsReady() {
             return isReady;
         }
 
-        public void Message(Dictionary<string, object> data) {
+        public void Message(JObject data) {
 
             if (Application.platform == RuntimePlatform.WebGLPlayer) {
-
-                if ((string)data["action"] == "message") {
-                    Application.ExternalCall("window.app.airconsole.message", data["from"], data["data"]);
-                }
-
-                if ((string)data["action"] == "broadcast") {
-                    Application.ExternalCall("window.app.airconsole.broadcast", data["data"]);
-                }
-                
-                //Application.ExternalCall("processUnityData", JsonConvert.SerializeObject(data));
+                Application.ExternalCall("window.app.processUnityData", data.ToString());
 
             } else {
-
-                Send(JsonConvert.SerializeObject(data, new JsonSerializerSettings() {
-                    NullValueHandling = NullValueHandling.Ignore
-                }));
+                Send(data.ToString());
             }
         }
 

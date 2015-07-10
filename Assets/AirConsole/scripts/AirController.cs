@@ -24,7 +24,7 @@ namespace AirConsole {
         private WebSocketServer wssv;
         private AirServer screen;
 
-        private JToken[] devices;
+        JToken[] devices;
 
         private readonly Queue<Action> executeOnMainThread = new Queue<Action>();
 
@@ -139,11 +139,10 @@ namespace AirConsole {
                 return;
             }
 
-            Dictionary<string, object> msg = new Dictionary<string, object>();
-
-            msg["action"] = "message";
-            msg["from"] = to;
-            msg["data"] = data;
+            JObject msg = new JObject();
+            msg.Add("action", "message");
+            msg.Add("from", to);
+            msg.Add("data", JToken.FromObject(data));
 
             screen.Message(msg);
         }
@@ -159,13 +158,38 @@ namespace AirConsole {
                 return;
             }
 
-            Dictionary<string, object> msg = new Dictionary<string, object>();
-
-            msg["action"] = "broadcast";
-            msg["data"] = data;
+       
+            JObject msg = new JObject();
+            msg.Add("action", "broadcast");
+            msg.Add("data", JToken.FromObject(data));
 
             screen.Message(msg);
         }
+
+        public void SetCustomDeviceState(object data) {
+
+            if (!screen.IsReady()) {
+
+                if (debug) {
+                    Debug.LogWarning("AirConsole is not yet ready!");
+                }
+
+                return;
+            }
+
+            JObject msg = new JObject();
+            msg.Add("action", "setCustomDeviceState");
+            msg.Add("data", JToken.FromObject(data));
+            
+            if (this.GetDevice(0) == null) {
+                this.devices[0] = new JObject();
+            }
+
+            this.devices[0]["custom"] = msg["data"];
+
+            screen.Message(msg);
+        }
+
 
         public JToken GetCustomDeviceState(int deviceId) {
 

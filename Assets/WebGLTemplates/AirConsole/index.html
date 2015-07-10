@@ -26,7 +26,6 @@
                             "data": data});
           };
           me.airconsole.onReady = function(code, device_id, device_data) {
-            console.log('airConsoleIsReady');
             me.postToUnity({"action": "onReady",
                             "code": code,
                             "device_id": device_id,
@@ -54,24 +53,23 @@
           SendMessage("AirController", "ProcessJS", JSON.stringify(data));
       };
 
+      App.prototype.processUnityData = function (data) {
+          var data = JSON.parse(data);
 
-      function processUnityData(device_id, data) {
-            var data = JSON.parse(data);
-            if (data.action == "message") {
-                window.app.airconsole.message(data.from, data.data);
-            } else if (data.action == "broadcast") {
-                window.app.airconsole.broadcast(data.data);
-            } else if (data.action == "debug"){
-                console.log("debug message:", data.data);
-            }
-      };
+          if (data.action == "message") {
+              this.airconsole.message(data.from, data.data);
+          } else if (data.action == "broadcast") {
+              this.airconsole.broadcast(data.data);
+          } else if (data.action == "setCustomDeviceState") {
+              this.airconsole.setCustomDeviceState(data.data);
+              //this.airconsole.onDeviceStateChange(0, data.data);
+          } else if (data.action == "debug") {
+              console.log("debug message:", data.data);
+          }
+      }
       
       function onGameReady() {
           window.app = new App();
-
-          // inform controllers that unity webgl is ready
-          window.app.airconsole.broadcast('onGameReady');
-          console.log('unity game started');
       }
 
     </script>

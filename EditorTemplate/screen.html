@@ -45,14 +45,7 @@
       };
       
       me.unity_socket.onmessage = function(event) {
-          var data = JSON.parse(event.data);
-          if (data.action == "message") {
-              me.airconsole.message(data.from, data.data);
-          } else if (data.action == "broadcast") {
-              me.airconsole.broadcast(data.data);
-          } else if (data.action == "debug"){
-              console.log("debug message:", data.data);
-          }
+          me.processUnityData(event.data);
       };
     }
 
@@ -62,8 +55,22 @@
      */
     App.prototype.postToUnity = function(data) {
         this.unity_socket.send(JSON.stringify(data));
-        //console.log("postToUnity", data);
     };
+
+    App.prototype.processUnityData = function(data) {
+        var data = JSON.parse(data);
+
+        if (data.action == "message") {
+            this.airconsole.message(data.from, data.data);
+        } else if (data.action == "broadcast") {
+            this.airconsole.broadcast(data.data);
+        } else if (data.action == "setCustomDeviceState") {
+            this.airconsole.setCustomDeviceState(data.data);
+            //this.airconsole.onDeviceStateChange(0, data.data);
+        } else if (data.action == "debug") {
+            console.log("debug message:", data.data);
+        }
+    }
 
   </script>
  
