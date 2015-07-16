@@ -9,14 +9,43 @@ using Newtonsoft.Json.Linq;
 
 namespace AirConsole {
 
+    [Serializable]
+    public class DebugLevel {
+        public bool info = true;
+        public bool warning = true;
+        public bool error = true;
+    }
+
+    [Serializable]
+    public class AdvancedSettings {
+
+        public int webServerPort = 50003;
+        [HideInInspector]
+        public int webSocketPort = 7843;
+        [HideInInspector]
+        public string webSocketPath = "/api";
+        public int maxConnections = 20;
+    }
+
+    public enum StartMode {
+        Debug,
+        VirtualControllers,
+        Normal,
+        NoBrowserStart
+    }
    
     public class AirController : MonoBehaviour {
 
-        public int maxConnections = 20;
-        public int port = 7843;
-        public string path = "/api";
-        public bool runInBackground = true;
-        public bool debug = true;
+        public const string VERSION = "0.1";
+        public const string AIRCONSOLE_URL = "http://airconsole.com/#";
+        public const string AIRCONSOLE_NORMAL_URL = "http://airconsole.com/developers/#";
+        public const string AIRCONSOLE_DEBUG_URL = "http://www.airconsole.com/developers/#debug:";
+        public const string WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole";
+        
+
+        public StartMode browserStartMode;
+        public AdvancedSettings settings;
+        public DebugLevel debug;
 
         public event OnReady onReady;
         public event OnMessage onMessage;
@@ -30,36 +59,44 @@ namespace AirConsole {
 
         void Start() {
 
-            if (this.runInBackground) {
-                Application.runInBackground = true;
-            }
+            Application.runInBackground = true;
 
-            this.devices = new JToken[maxConnections];
+            devices = new JToken[this.settings.maxConnections];
 
-            screen = new AirServer(debug);
+            screen = new AirServer(this.debug);
             screen.onReady += this.OnReady;
+            screen.onClose += this.OnClose;
             screen.onMessage += this.OnMessage;
-            screen.onDeviceStateChange += this.OnDeviceStateChange;
+            screen.onDeviceStateChange += OnDeviceStateChange;
 
             if (Application.platform != RuntimePlatform.WebGLPlayer) {
 
-                Application.runInBackground = true;
+                // start local webserver
+                AirWebserver ws = new AirWebserver(
+                    this.settings.webServerPort, 
+                    this.debug, this.browserStartMode, 
+                    Application.dataPath+AirController.WEBTEMPLATE_PATH
+                );
+                
+                ws.Start();
 
-                wssv = new WebSocketServer(port);
+                // start websocket connection
+                wssv = new WebSocketServer(this.settings.webSocketPort);
 
-                if (path == "") {
-                    path = "/";
+                if (this.settings.webSocketPath == "") {
+                    this.settings.webSocketPath = "/";
                 }
 
-                wssv.AddWebSocketService<AirServer>(path, () => screen);
+                wssv.AddWebSocketService<AirServer>(this.settings.webSocketPath, () => screen);
 
                 wssv.Start();
 
-                if (debug) {
+                if (this.debug.info) {
                     Debug.Log("AirConsole: Dev-Server started!");
                 }
 
             } else {
+
                 Application.ExternalCall("onGameReady");
             }
             
@@ -78,6 +115,21 @@ namespace AirConsole {
             if (this.onReady != null) {
                 executeOnMainThread.Enqueue(() => this.onReady());
             }
+
+            if (Application.platform != RuntimePlatform.WebGLPlayer) {
+
+                if (devices[0] != null) {
+                    this.SetCustomDeviceState(devices[0]);
+                }
+            }
+        }
+
+        void OnClose() {
+
+            // delete all controller device states
+            for (int i = 1; i < devices.Length; i++) {
+                devices[i] = null;
+            }
         }
 
         void OnMessage(JObject msg) {
@@ -92,13 +144,17 @@ namespace AirConsole {
             try {
 
                 int deviceId = (int)msg["device_id"];
-                Debug.Log("saved devicestate of " + deviceId);
-                this.devices[deviceId] = msg["device_data"];
- 
+                devices[deviceId] = msg["device_data"];
 
+                if (this.debug.info) {
+                    Debug.Log("AirConsole: saved devicestate of " + deviceId);
+                }
 
             } catch (Exception e){
-                Debug.LogError(e.Message);
+
+                if (this.debug.error) {
+                    Debug.LogError(e.Message);
+                }
             }
 
         }
@@ -132,7 +188,7 @@ namespace AirConsole {
 
             if (!screen.IsReady()) {
 
-                if (debug) {
+                if (this.debug.warning) {
                     Debug.LogWarning("AirConsole: Can't send message. AirConsole is not ready yet!");
                 }
   
@@ -151,8 +207,8 @@ namespace AirConsole {
 
             if (!screen.IsReady()) {
 
-                if (debug) {
-                    Debug.LogWarning("AirConsole is not yet ready!");
+                if (this.debug.warning) {
+                    Debug.LogWarning("AirConsole: Can't broadcast message. AirConsole is not yet ready!");
                 }
 
                 return;
@@ -170,8 +226,8 @@ namespace AirConsole {
 
             if (!screen.IsReady()) {
 
-                if (debug) {
-                    Debug.LogWarning("AirConsole is not yet ready!");
+                if (this.debug.warning) {
+                    Debug.LogWarning("AirConsole: Can't set custom device state. AirConsole is not yet ready!");
                 }
 
                 return;
@@ -181,27 +237,26 @@ namespace AirConsole {
             msg.Add("action", "setCustomDeviceState");
             msg.Add("data", JToken.FromObject(data));
             
-            if (this.GetDevice(0) == null) {
-                this.devices[0] = new JObject();
+            if (GetDevice(0) == null) {
+                devices[0] = new JObject();
             }
 
-            this.devices[0]["custom"] = msg["data"];
+            devices[0]["custom"] = msg["data"];
 
             screen.Message(msg);
         }
 
-
         public JToken GetCustomDeviceState(int deviceId) {
 
-            if (this.GetDevice(deviceId) != null) {
+            if (GetDevice(deviceId) != null) {
 
                 try {
-                    return this.GetDevice(deviceId)["custom"];
+                    return GetDevice(deviceId)["custom"];
                 }
                 catch (Exception e) {
 
-                    if (debug) {
-                        Debug.LogWarning(e.Message);
+                    if (this.debug.error) {
+                        Debug.LogError("AirConsole: "+e.Message);
                     }
            
                     return null;
@@ -209,29 +264,32 @@ namespace AirConsole {
 
             } else {
 
-                Debug.LogWarning("GetCustomDeviceState: device_id not found");
+                if (this.debug.warning) {
+                    Debug.LogWarning("AirConsole: GetCustomDeviceState: device_id not found");
+                }
+
                 return null;
             } 
         }
 
         public JToken GetDevice(int deviceId) {
 
-            if (this.devices[deviceId] != null) {
-                return this.devices[deviceId];
+            if (devices[deviceId] != null) {
+                return devices[deviceId];
             } else {
                 return null;
             }
         }
 
         public JToken[] GetDevices() {
-            return this.devices;
+            return devices;
         }
 
         public long GetServerTime() {
 
             if (!screen.IsReady()) {
 
-                if (debug) {
+                if (this.debug.warning) {
                     Debug.LogWarning("AirConsole: Can't get server time. AirConsole is not ready yet!");
                 }
 
@@ -245,32 +303,29 @@ namespace AirConsole {
 
             if (!screen.IsReady()) {
 
-                if (debug) {
+                if (this.debug.warning) {
                     Debug.LogWarning("AirConsole: Can't get server time. AirConsole is not ready yet!");
                 }
 
                 return 0;
             }
 
-            return this.screen.GetServerTimeOffset();
+            return screen.GetServerTimeOffset();
         }
 
         public int GetConnectedDevices() {
 
             int counter = 0;
 
-            for (int i = 0; i < this.devices.Length; i++) {
+            // int i = 1 to ignore the screen
+            for (int i = 1; i < devices.Length; i++) {
 
-                if (this.devices[i] != null) {
+                if (devices[i] != null) {
                     counter++;
                 }
             }
-
-            if (counter > 0) {
-                return counter - 1;
-            } else {
-                return counter;
-            }
+            
+            return counter;
         }
 
         public void ProcessJS(string data) {

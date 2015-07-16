@@ -18,6 +18,8 @@ public class AirPostProcess {
             // rename index.html to screen.html
             System.IO.File.Move(pathToBuiltProject + "/index.html", pathToBuiltProject + "/screen.html");
 
+            EditorPrefs.SetString("airconsolePortPath", pathToBuiltProject);
+
         }
 
     }

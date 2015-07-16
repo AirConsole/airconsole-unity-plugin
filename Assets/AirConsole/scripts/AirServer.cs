@@ -11,24 +11,26 @@ using Newtonsoft.Json.Linq;
 namespace AirConsole {
 
     public delegate void OnReady();
+    public delegate void OnClose();
     public delegate void OnMessage(JObject msg);
     public delegate void onDeviceStateChange(JObject msg);
 
     public class AirServer : WebSocketBehavior {
 
         public event OnReady onReady;
+        public event OnClose onClose;
         public event OnMessage onMessage;
         public event onDeviceStateChange onDeviceStateChange;
 
-        private bool debug = true;
+        private DebugLevel debug;
         private bool isReady;
         private int serverTimeOffset;
 
-        public AirServer(bool pDebug) {
+        public AirServer(DebugLevel debug) {
 
             base.IgnoreExtensions = true;
 
-            this.debug = pDebug;
+            this.debug = debug;
         }
 
         protected override void OnMessage(MessageEventArgs e) {
@@ -41,7 +43,7 @@ namespace AirConsole {
 
             Send(@"{ ""action"": ""debug"", ""data"": ""welcome screen.html!"" }");
 
-            if (debug) {
+            if (this.debug.info) {
                 Debug.Log("AirConsole: screen.html connected!");
             }
 
@@ -50,7 +52,13 @@ namespace AirConsole {
 
         protected override void OnClose(CloseEventArgs e) {
 
-            if (debug) {
+            this.isReady = false;
+
+            if (this.onClose != null) {
+                this.onClose();
+            }
+
+            if (this.debug.info) {
                 Debug.Log("AirConsole: screen.html disconnected");
             }
            
@@ -62,9 +70,9 @@ namespace AirConsole {
             base.OnError(e);
 
 
-            if (debug) {
-                Debug.Log(e.Message);
-                Debug.Log(e.Exception);
+            if (this.debug.error) {
+                Debug.LogError("AirConsole: "+e.Message);
+                Debug.LogError("AirConsole: "+e.Exception);
             }
         }
 
@@ -84,7 +92,7 @@ namespace AirConsole {
                         this.onReady();
                     }
 
-                    if (debug) {
+                    if (this.debug.info) {
                         Debug.Log("AirConsole: Connections are ready!");
                     }
                 }
@@ -112,9 +120,9 @@ namespace AirConsole {
 
             catch (Exception e) {
 
-                if (debug) {
-                    Debug.LogWarning(e.Message);
-                    Debug.LogWarning(e.StackTrace);
+                if (this.debug.error) {
+                    Debug.LogError(e.Message);
+                    Debug.LogError(e.StackTrace);
                 }
             }
         }

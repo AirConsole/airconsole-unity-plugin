@@ -52,6 +52,11 @@ public class Logic : MonoBehaviour {
 
         if (GUILayout.Button("get all device properties from controller 1")) {
 
+            if (controller.GetDevice(1) == null) {
+                Debug.Log("controller 1 is not connected");
+                return;
+            }
+
             foreach (JToken key in controller.GetDevice(1).Children()) {
                 Debug.Log(key);
             }
