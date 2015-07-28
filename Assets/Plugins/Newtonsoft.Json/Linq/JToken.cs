@@ -352,8 +352,9 @@ namespace Newtonsoft.Json.Linq
 
     private static JValue EnsureValue(JToken value)
     {
-      if (value == null)
-        throw new ArgumentNullException("value");
+        if (value == null)
+            //throw new ArgumentNullException("value");
+            return null;
 
       if (value is JProperty)
         value = ((JProperty)value).Value;
