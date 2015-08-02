@@ -15,7 +15,7 @@ public class ExampleBasicLogic : MonoBehaviour {
         AirConsole.instance.onMessage += OnMessage;
 	}
 
-    void OnReady(string code, int device_id) {
+    void OnReady(string code) {
         Debug.Log("ExampleBasic: air console is ready!");
         isReady = true;
     }
@@ -48,6 +48,18 @@ public class ExampleBasicLogic : MonoBehaviour {
 
         if (GUILayout.Button("broadcast message to all")) {
             AirConsole.instance.Broadcast("hey guys!");
+        }
+
+        if (GUILayout.Button("get device_id")) {
+            Debug.Log(AirConsole.instance.device_id);
+        }
+
+        if (GUILayout.Button("get nickname of controller 1")) {
+            Debug.Log(AirConsole.instance.GetNickname(1));
+        }
+
+        if (GUILayout.Button("get profile picture url of controller 1")) {
+            Debug.Log(AirConsole.instance.GetProfilePicture(1));
         }
 
         if (GUILayout.Button("get all custom data from controller 1")) {
@@ -109,7 +121,7 @@ public class ExampleBasicLogic : MonoBehaviour {
         }
 
         if (GUILayout.Button("get server time offset")) {
-            Debug.Log(AirConsole.instance.serverTimeOffset);
+            Debug.Log(AirConsole.instance.server_time_offset);
         }
 
         if (GUILayout.Button("show Default UI")) {

@@ -31,7 +31,7 @@ public class ExamplePongLogic : MonoBehaviour {
         while (AirConsole.instance.devices.Count < 3) {
 
             if (AirConsole.instance.devices.Count == 1) {
-                uiText.text = "NEED 2 MORE PLAYER";
+                uiText.text = "NEED 2 MORE PLAYERS";
             } else if (AirConsole.instance.devices.Count == 2) {
                 uiText.text = "NEED 1 MORE PLAYER";
             }

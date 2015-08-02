@@ -18,7 +18,7 @@ namespace NDream.AirConsole {
         NoBrowserStart
     }
 
-    public delegate void OnReady(string code, int device_id);
+    public delegate void OnReady(string code);
     public delegate void OnMessage(int from, JToken data);
     public delegate void OnDeviceStateChange(int device_id, JToken user_data);
    
@@ -35,8 +35,12 @@ namespace NDream.AirConsole {
         public event OnDeviceStateChange onDeviceStateChange;
 
         // public vars (readonly)
-        public int serverTimeOffset {
-            get { return _serverTimeOffset; }
+        public int server_time_offset {
+            get { return _server_time_offset; }
+        }
+
+        public int device_id {
+            get { return _device_id; }
         }
 
         public ReadOnlyCollection<JToken> devices {
@@ -47,7 +51,8 @@ namespace NDream.AirConsole {
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
         private Dictionary<int, JToken> _devices;
-        private int _serverTimeOffset;
+        private int _device_id;
+        private int _server_time_offset;
         private readonly Queue<Action> eventQueue = new Queue<Action>();
 
         // unity singleton handling
@@ -210,12 +215,12 @@ namespace NDream.AirConsole {
             wsListener.Message(msg);
         }
 
-        public JToken GetCustomDeviceState(int deviceId) {
+        public JToken GetCustomDeviceState(int device_id) {
 
-            if (GetDevice(deviceId) != null) {
+            if (GetDevice(device_id) != null) {
 
                 try {
-                    return GetDevice(deviceId)["custom"];
+                    return GetDevice(device_id)["custom"];
                 }
                 catch (Exception e) {
 
@@ -228,10 +233,60 @@ namespace NDream.AirConsole {
             } else {
 
                 if (Settings.debug.warning) {
-                    Debug.LogWarning("AirConsole: GetCustomDeviceState: "+ deviceId +" not found");
+                    Debug.LogWarning("AirConsole: GetCustomDeviceState: device_id " + device_id + " not found");
                 }
                 return null;
             }
+        }
+
+        public string GetNickname(int device_id) {
+
+            if (GetDevice(device_id) != null) {
+
+                try {
+                    if (GetDevice(device_id)["nickname"] != null) {
+                        return (string)GetDevice(device_id)["nickname"];
+                    } else {
+                        return "Player " + device_id;
+                    }
+                }
+                catch (Exception) { 
+                    return "Player " + device_id; 
+                }
+
+            } else {
+
+                if (Settings.debug.warning) {
+                    Debug.LogWarning("AirConsole: GetNickname: device_id " + device_id + " not found");
+                }
+                return null;
+            }
+
+        }
+
+        public string GetProfilePicture(int device_id, int size = 64) {
+
+            if (GetDevice(device_id) != null) {
+
+                try {
+                    return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice(device_id)["uid"] + "&size=" + size;
+                }
+                catch (Exception) {
+
+                    if (Settings.debug.warning) {
+                        Debug.LogWarning("AirConsole: GetProfilePicture: can't find uid of device_id:" + device_id);
+                    }
+                    return null;
+                }
+
+            } else {
+
+                if (Settings.debug.warning) {
+                    Debug.LogWarning("AirConsole: GetProfilePicture: " + device_id + " not found");
+                }
+                return null;
+            }
+
         }
 
         public long GetServerTime() {
@@ -244,7 +299,7 @@ namespace NDream.AirConsole {
                 return 0;
             }
 
-            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds + _serverTimeOffset;
+            return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds + _server_time_offset;
         }
 
         public void LoadScript(string src) {
@@ -337,7 +392,10 @@ namespace NDream.AirConsole {
         void OnReady(JObject msg) {
 
             // parse server_time_offset
-            _serverTimeOffset = (int)msg["server_time_offset"];
+            _server_time_offset = (int)msg["server_time_offset"];
+
+            // parse device_id
+            _device_id = (int)msg["device_id"];
 
             // load devices
             int deviceId = 0;
@@ -348,7 +406,7 @@ namespace NDream.AirConsole {
             }
 
             if (this.onReady != null) {
-                eventQueue.Enqueue(() => this.onReady((string)msg["code"], (int)msg["device_id"]));
+                eventQueue.Enqueue(() => this.onReady((string)msg["code"]));
             }
         }
 

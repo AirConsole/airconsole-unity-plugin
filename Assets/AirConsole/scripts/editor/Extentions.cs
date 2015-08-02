@@ -24,7 +24,6 @@ namespace NDream.AirConsole.Editor {
 
         }
 
-        [MenuItem("AirConsole/Create AirConsole")]
         [MenuItem("Assets/Create/AirConsole")]
         [MenuItem("GameObject/Create Other/AirConsole")]
         static void CreateAirController() {

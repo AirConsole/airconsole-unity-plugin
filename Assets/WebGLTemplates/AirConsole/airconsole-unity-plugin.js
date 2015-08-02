@@ -33,11 +33,11 @@ function App() {
                 "data": data
             });
         };
-        me.airconsole.onReady = function (code, device_id) {
+        me.airconsole.onReady = function (code) {
             me.postToUnity({
                 "action": "onReady",
                 "code": code,
-                "device_id": device_id,
+                "device_id": me.airconsole.device_id,
                 "devices": me.airconsole.devices,
                 "server_time_offset": me.airconsole.server_time_offset
             });
@@ -94,7 +94,6 @@ App.prototype.postToUnity = function (data) {
         // send data with SendMessage from Unity js library
         SendMessage("AirConsole", "ProcessJS", JSON.stringify(data));
     }
-
 };
 
 App.prototype.processUnityData = function (data) {

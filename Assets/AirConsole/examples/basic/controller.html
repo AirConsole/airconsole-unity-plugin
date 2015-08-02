@@ -4,7 +4,7 @@
   <meta name="viewport"
         content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <script type="text/javascript"
-          src="http://www.airconsole.com/api/airconsole-1.1.js"></script>
+          src="http://www.airconsole.com/api/airconsole-1.2.js"></script>
 
   <script type="text/javascript">
     
@@ -20,8 +20,8 @@
         document.getElementById("content").innerHTML = from + ' ' + data;
       };
       
-      me.airconsole.onReady = function(code, device_id, device_data) {
-        console.log("onReady", code, device_id, device_data);
+      me.airconsole.onReady = function(code) {
+        console.log("onReady", code);
       };
       
       me.airconsole.onDeviceStateChange = function(device_id, device_data) {

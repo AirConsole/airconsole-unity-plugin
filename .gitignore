@@ -3,7 +3,8 @@
 # =============== #
 Temp/
 /Library/
-
+AssetStoreTools/
+AssetStoreTools.*
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
 # ===================================== #

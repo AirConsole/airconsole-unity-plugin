@@ -29,7 +29,7 @@ namespace NDream.AirConsole.Editor {
             styleBlack.padding.right = 5;
         }
 
-        [MenuItem("AirConsole/Settings")]
+        [MenuItem("Window/AirConsole/Settings")]
         static void Init() {
 
             SettingWindow window = (SettingWindow)EditorWindow.GetWindow(typeof(SettingWindow));
