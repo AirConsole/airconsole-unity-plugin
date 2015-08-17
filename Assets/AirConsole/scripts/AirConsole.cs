@@ -50,7 +50,7 @@ namespace NDream.AirConsole {
         // private vars
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
-        private Dictionary<int, JToken> _devices;
+        private Dictionary<int, JToken> _devices = new Dictionary<int, JToken>();
         private int _device_id;
         private int _server_time_offset;
         private readonly Queue<Action> eventQueue = new Queue<Action>();
@@ -94,9 +94,6 @@ namespace NDream.AirConsole {
 
             // application has to run in background
             Application.runInBackground = true;
-            
-            // set up devices dictionary
-            _devices = new Dictionary<int, JToken>();
 
             // register all incoming events
             wsListener = new WebsocketListener();
