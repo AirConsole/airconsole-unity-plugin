@@ -3,29 +3,26 @@
  */
 
 var isEditor = false;
+var isUnityReady = false;
 var wsPort;
 
 if (window.location.pathname.split('/')[1].indexOf("port") > -1) {
     wsPort = window.location.pathname.split('/')[1].replace('port', '');
     isEditor = true;
-
-    window.onload = function () {
-        window.app = new App();
-    };
 }
 
 /**
  * Sets up the communication to the screen.
  */
 
-var airconsole;
-
 function App() {
 
     var me = this;
+    me.onReadyData = null;
 
     me.initEvents = function () {
         me.airconsole = new AirConsole({ "synchronize_time": true });
+
         me.airconsole.onMessage = function (from, data) {
             me.postToUnity({
                 "action": "onMessage",
@@ -33,15 +30,18 @@ function App() {
                 "data": data
             });
         };
+
         me.airconsole.onReady = function (code) {
-            me.postToUnity({
+            me.onReadyData = {
                 "action": "onReady",
                 "code": code,
                 "device_id": me.airconsole.device_id,
                 "devices": me.airconsole.devices,
                 "server_time_offset": me.airconsole.server_time_offset
-            });
+            };
+            me.postToUnity(me.onReadyData);
         };
+
         me.airconsole.onDeviceStateChange = function (device_id, device_data) {
             me.postToUnity({
                 "action": "onDeviceStateChange",
@@ -61,7 +61,7 @@ function App() {
                 if (me.airconsole == null) {
                     me.initEvents();
                 } else {
-                    me.airconsole.onReady(); // resend onReady event
+                    me.postToUnity(me.onReadyData); // resend onReady event
                 }
             };
 
@@ -90,7 +90,8 @@ App.prototype.postToUnity = function (data) {
     if (isEditor) {
         // send data over websocket
         this.unity_socket.send(JSON.stringify(data));
-    } else {
+
+    } else if (isUnityReady) {
         // send data with SendMessage from Unity js library
         SendMessage("AirConsole", "ProcessJS", JSON.stringify(data));
     }
@@ -105,7 +106,7 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.broadcast(data.data);
     } else if (data.action == "setCustomDeviceState") {
         this.airconsole.setCustomDeviceState(data.data);
-    } else if(data.action == "showDefaultUI"){
+    } else if (data.action == "showDefaultUI") {
         this.airconsole.showDefaultUI(data.data);
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
@@ -117,7 +118,10 @@ App.prototype.processUnityData = function (data) {
 };
 
 function onGameReady(autoScale) {
-    window.app = new App();
+    isUnityReady = true;
+
+    // send cached onRadyData
+    window.app.postToUnity(window.app.onReadyData);
 
     if (autoScale) {
         resizeCanvas();
@@ -141,3 +145,8 @@ function resizeCanvas() {
     unityCanvas.style.left = '0';
     unityCanvas.style.right = '0';
 }
+
+/**
+ * Run AirConsole
+ */
+window.app = new App();

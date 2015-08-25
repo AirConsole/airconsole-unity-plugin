@@ -5,10 +5,13 @@ AirConsole provides a simple to use Javascript API for game developers to build
 their own local multiplayer realtime browser games.
 You can find the Javascript API documentation here: http://developers.airconsole.com/#/api
 
+IMPORTANT: The plugin comes with an embedded webserver / websocket-server for the communication between the AirConsole backend and the Unity-Editor. 
+You don't need to install any other webserver or services.
+
 # Documentation
 ------------------------
 All install instructions and examples are documented in the file "Documentation_1.0.pdf" inside this folder. 
-There are more examples on the website: http://developers.airconsole.com/#/guides/unity
+There are more examples on the website: http://developers.airconsole.com/#/guides
 
 # Platforms
 ------------------------
