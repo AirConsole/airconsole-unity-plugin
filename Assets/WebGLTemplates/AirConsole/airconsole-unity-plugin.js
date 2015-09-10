@@ -150,3 +150,12 @@ function resizeCanvas() {
  * Run AirConsole
  */
 window.app = new App();
+
+if (isEditor) {
+    window.onload = function () {
+        document.body.innerHTML = "<div style=\"position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); color:white;\">"
+            + "<h1>You can see your game scene in the Unity Editor.</h1>"
+            + "<h1>Keep this window open in the background.</h1>"
+            + "</div>";
+    }
+}
