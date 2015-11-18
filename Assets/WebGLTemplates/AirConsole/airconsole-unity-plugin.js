@@ -37,7 +37,8 @@ function App() {
                 "code": code,
                 "device_id": me.airconsole.device_id,
                 "devices": me.airconsole.devices,
-                "server_time_offset": me.airconsole.server_time_offset
+                "server_time_offset": me.airconsole.server_time_offset,
+                "location": document.location.href
             };
             me.postToUnity(me.onReadyData);
         };
@@ -49,15 +50,35 @@ function App() {
                 "device_data": device_data
             });
         };
+        
+        me.airconsole.onConnect = function (device_id) {
+            me.postToUnity({
+                "action": "onConnect",
+                "device_id": device_id
+            });
+        };
+        
+        me.airconsole.onDisconnect = function (device_id) {
+            me.postToUnity({
+                "action": "onDisconnect",
+                "device_id": device_id
+            });
+        };
+        
+        me.airconsole.onCustomDeviceStateChange = function (device_id) {
+            me.postToUnity({
+                "action": "onCustomDeviceStateChange",
+                "device_id": device_id
+            });
+        };
     }
 
     if (isEditor) {
-        me.setupConnection = function (reconnect) {
+        me.setupConnection = function () {
 
             me.unity_socket = new WebSocket("ws://127.0.0.1:" + wsPort + "/api");
 
-            me.unity_socket.onopen = function (reconnect) {
-
+            me.unity_socket.onopen = function () {
                 if (me.airconsole == null) {
                     me.initEvents();
                 } else {
@@ -70,11 +91,7 @@ function App() {
             };
 
             me.unity_socket.onclose = function () {
-                console.log('lost connection to unity');
-                window.setTimeout(function () {
-                    console.log('try to reconnect to unity');
-                    me.setupConnection(true);
-                }, 5000);
+                document.getElementById("editor-message").innerHTML = "<span style='font-size:32px'>Game <span style='color:red'>stopped</span> in Unity. Please close this tab.</span></span>";
             };
         };
 
@@ -106,12 +123,14 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.broadcast(data.data);
     } else if (data.action == "setCustomDeviceState") {
         this.airconsole.setCustomDeviceState(data.data);
+    } else if (data.action == "setCustomDeviceStateProperty") {
+        this.airconsole.setCustomDeviceStateProperty(data.key, data.value);
     } else if (data.action == "showDefaultUI") {
         this.airconsole.showDefaultUI(data.data);
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
-    } else if (data.action == "loadScript") {
-        this.airconsole.loadScript(data.data);
+    } else if (data.action == "navigateTo") {
+        this.airconsole.navigateTo(data.data);
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }
@@ -153,9 +172,8 @@ window.app = new App();
 
 if (isEditor) {
     window.onload = function () {
-        document.body.innerHTML = "<div style=\"position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); color:white;\">"
-            + "<h1>You can see your game scene in the Unity Editor.</h1>"
-            + "<h1>Keep this window open in the background.</h1>"
+        document.body.innerHTML = "<div style='position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); color:white;'>"
+            + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
             + "</div>";
     }
 }

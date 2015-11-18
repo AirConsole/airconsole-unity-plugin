@@ -14,6 +14,9 @@ namespace NDream.AirConsole {
     public delegate void OnReadyInternal(JObject data);
     public delegate void OnMessageInternal(JObject data);
     public delegate void OnDeviceStateChangeInternal(JObject data);
+	public delegate void OnConnectInternal(JObject data);
+	public delegate void OnDisconnectInternal(JObject data);
+	public delegate void OnCustomDeviceStateChangeInternal(JObject data);
     public delegate void OnCloseInternal();
 
     public class WebsocketListener : WebSocketBehavior {
@@ -23,6 +26,9 @@ namespace NDream.AirConsole {
         public event OnCloseInternal onClose;
         public event OnMessageInternal onMessage;
         public event OnDeviceStateChangeInternal onDeviceStateChange;
+		public event OnConnectInternal onConnect;
+		public event OnDisconnectInternal onDisconnect;
+		public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
 
         // private vars
         private bool isReady;
@@ -76,7 +82,6 @@ namespace NDream.AirConsole {
                 // parse json string
                 JObject msg = JObject.Parse(data);
 
-                // catch onReady event
                 if ((string)msg["action"] == "onReady") {
 
                     this.isReady = true;
@@ -88,23 +93,32 @@ namespace NDream.AirConsole {
                     if (Settings.debug.info) {
                         Debug.Log("AirConsole: Connections are ready!");
                     }
-                }
-
-                // catch onMessage event
-                if ((string)msg["action"] == "onMessage") {
+                } else if ((string)msg["action"] == "onMessage") {
 
                     if (this.onMessage != null) {
                         this.onMessage(msg);
                     }
-                }
-
-                // catch onDeviceStateChange event
-                if ((string)msg["action"] == "onDeviceStateChange") {
+                } else if ((string)msg["action"] == "onDeviceStateChange") {
 
                     if (this.onDeviceStateChange != null) {
                         this.onDeviceStateChange(msg);
                     }
-                }
+				} else if ((string)msg["action"] == "onConnect") {
+					
+					if (this.onConnect != null) {
+						this.onConnect(msg);
+					}
+				} else if ((string)msg["action"] == "onDisconnect") {
+					
+					if (this.onDisconnect != null) {
+						this.onDisconnect(msg);
+					}
+				} else if ((string)msg["action"] == "onCustomDeviceStateChange") {
+
+					if (this.onCustomDeviceStateChange != null) {
+						this.onCustomDeviceStateChange(msg);
+					}
+				}
 
             }
 
