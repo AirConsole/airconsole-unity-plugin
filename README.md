@@ -12,7 +12,9 @@ You don't need to install any other webserver or services.
 
 ## Documentation
 [Install instructions and examples for Unity](http://developers.airconsole.com/#/guides/unity)
+
 [General guides for AirConsole](http://developers.airconsole.com/#/guides)
+
 [Reference for API 1.3.0](http://developers.airconsole.com/api/api-1-3-0/AirConsole.html)
 
 ## More information
