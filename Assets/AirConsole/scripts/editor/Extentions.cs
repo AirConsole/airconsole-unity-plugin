@@ -115,7 +115,7 @@ namespace NDream.AirConsole.Editor {
 
                         // add port info if starting the unity editor version
                         if (startUpPath.Contains(Settings.WEBTEMPLATE_PATH)) {
-                            url += "port" + Settings.webSocketPort + "/";
+                            url += "?unity-editor-websocket-port=" + Settings.webSocketPort;
                         }
 
 

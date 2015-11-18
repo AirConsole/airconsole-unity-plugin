@@ -76,9 +76,9 @@ namespace NDream.AirConsole.Editor {
 
                 // conditions if editor version gets called
                 if (startUpPath.Contains(Settings.WEBTEMPLATE_PATH)) {
-
-                    // remove port prefix and translate screen.html to index.html
-                    rawUrl = rawUrl.Replace("/"+rawUrl.Split('/')[1], "");
+					// remove query parameters
+					rawUrl = rawUrl.Split('?')[0];
+                    // translate screen.html to index.html
                     rawUrl = rawUrl.Replace("screen.html", "index.html");
                 }
 

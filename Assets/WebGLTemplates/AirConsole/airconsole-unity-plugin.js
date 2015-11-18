@@ -4,10 +4,16 @@
 
 var isEditor = false;
 var isUnityReady = false;
-var wsPort;
 
-if (window.location.pathname.split('/')[1].indexOf("port") > -1) {
-    wsPort = window.location.pathname.split('/')[1].replace('port', '');
+function getURLParameterByName(name) {
+    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+        results = regex.exec(location.search);
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+}
+
+var wsPort = getURLParameterByName("unity-editor-websocket-port");
+if (wsPort) {
     isEditor = true;
 }
 
