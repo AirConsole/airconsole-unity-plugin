@@ -178,7 +178,7 @@ window.app = new App();
 
 if (isEditor) {
     window.onload = function () {
-        document.body.innerHTML = "<div style='position:absolute; top:50%; left:50%; transform: translate(-50%, -50%); color:white;'>"
+        document.body.innerHTML = "<div style='position:absolute; top:50%; left:0%; width:100%; margin-top:-32px; color:white;'>"
             + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
             + "</div>";
     }
