@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Collections.Generic;
 using NDream.AirConsole;
 using Newtonsoft.Json.Linq;
 
@@ -12,60 +13,93 @@ public class ExamplePongLogic : MonoBehaviour {
     public float ballSpeed = 10f;
     public Text uiText;
 
+
     private int scoreRacketLeft = 0;
     private int scoreRacketRight = 0;
 
+	/// <summary>
+	/// Defines the device_ids of the active players.
+	/// If activePlayers is null, the game is not running.
+	/// </summary>
+	private List<int> activePlayers = null;
 
     void Start() {
-
-        // register airconsole events
         AirConsole.instance.onMessage += OnMessage;
-
-        // check if 2 players are connected
-        StartCoroutine(WaitForPlayers());
+		AirConsole.instance.onConnect += OnConnect;
+		AirConsole.instance.onDisconnect += OnDisconnect;
     }
 
-    IEnumerator WaitForPlayers() {
+	/// <summary>
+	/// We start the game if 2 players are connected and the game is not already running (activePlayers == null).
+	/// 
+	/// NOTE: We store the controller device_ids of the active players. We do not hardcode player device_ids 1 and 2,
+	///       because the two controllers that are connected can have other device_ids e.g. 3 and 7.
+	///       For more information read: http://developers.airconsole.com/#/guides/device_ids_and_states
+	/// 
+	/// </summary>
+	/// <param name="device_id">The device_id that connected</param>
+	void OnConnect(int device_id) {
+		if (activePlayers == null) {
+			List<int> candidatePlayers = AirConsole.instance.GetControllerDeviceIds ();
+			if (candidatePlayers.Count < 2) {
+				if (candidatePlayers.Count == 1) {
+					uiText.text = "NEED 2 MORE PLAYERS";
+				} else if (candidatePlayers.Count == 2) {
+					uiText.text = "NEED 1 MORE PLAYER";
+				}
+				return;
+			}
+			activePlayers = candidatePlayers;
+			ResetBall(true);
+			UpdateScoreUI();
+		}
+	}
 
-        // wait for 2 players (devices[0] is always the screen)
-        while (AirConsole.instance.devices.Count < 3) {
+	/// <summary>
+	/// If the game is running and one of the active players leaves, we reset the game.
+	/// </summary>
+	/// <param name="device_id">The device_id that has left.</param>
+	void OnDisconnect(int device_id) {
+		if (activePlayers != null && activePlayers.Contains(device_id)) {
+			activePlayers = null;
+			ResetBall(false);
+			uiText.text = "PLAYER LEFT - NEED MORE PLAYERS";
+		}
 
-            if (AirConsole.instance.devices.Count == 1) {
-                uiText.text = "NEED 2 MORE PLAYERS";
-            } else if (AirConsole.instance.devices.Count == 2) {
-                uiText.text = "NEED 1 MORE PLAYER";
-            }
+	}
 
-            yield return null;
-        }
-
-        // start ball & update ui text
-        ResetBall();
-        UpdateScoreUI();
-    }
-
-    void ResetBall() {
-
-        // place ball at center
-        this.ball.position = Vector3.zero;
-
-        // push the ball in a random direction
-        Vector3 startDir = new Vector3(Random.Range(-1, 1f), Random.Range(-0.1f, 0.1f), 0);
-        this.ball.velocity = startDir.normalized * this.ballSpeed;
-    }
-
+	/// <summary>
+	/// We check which one of the active players has moved the paddle.
+	/// </summary>
+	/// <param name="from">From.</param>
+	/// <param name="data">Data.</param>
     void OnMessage(int from, JToken data) {
+		if (activePlayers != null) {
+			if (from == activePlayers[0]) {
+				// received movement from first player
+				this.racketLeft.velocity = Vector3.up * (float)data ["move"];
+			}
 
-        if (from == 1) {
-            // received movement from player 1
-            this.racketLeft.velocity = Vector3.up * (float)data["move"];
-        }
-
-        if (from == 2) {
-            // received movement from player 2
-            this.racketRight.velocity = Vector3.up * (float)data["move"];
-        }
+			if (from == activePlayers[1]) {
+				// received movement from second player
+				this.racketRight.velocity = Vector3.up * (float)data ["move"];
+			}
+		}
     }
+
+	void ResetBall(bool move) {
+		
+		// place ball at center
+		this.ball.position = Vector3.zero;
+		
+		// push the ball in a random direction
+		if (move) {
+			Vector3 startDir = new Vector3 (Random.Range (-1, 1f), Random.Range (-0.1f, 0.1f), 0);
+			this.ball.velocity = startDir.normalized * this.ballSpeed;
+		} else {
+			this.ball.velocity = Vector3.zero;
+		}
+	}
 
     void UpdateScoreUI() {
         // update text canvas
@@ -78,13 +112,13 @@ public class ExamplePongLogic : MonoBehaviour {
         if(this.ball.position.x < -9f){
             scoreRacketRight++;
             UpdateScoreUI();
-            ResetBall();
+            ResetBall(true);
         }
 
         if (this.ball.position.x > 9f) {
             scoreRacketLeft++;
             UpdateScoreUI();
-            ResetBall();
+            ResetBall(true);
         }
     }
 
