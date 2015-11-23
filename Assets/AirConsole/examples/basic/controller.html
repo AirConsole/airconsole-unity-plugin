@@ -16,7 +16,8 @@
    -webkit-border-radius: 11;
    -moz-border-radius: 11;
    border-radius: 6px;
-   width: 90%;
+   width: 100%;
+   text-align: left;
   }
   
   #content{
@@ -84,7 +85,6 @@
       }
     }
     
-    
     App.prototype.sendMessageToScreen = function(msg) {
        this.airconsole.message(AirConsole.SCREEN, msg);
     };
@@ -121,9 +121,14 @@
        document.getElementById("profile-pic").style.backgroundImage = "url(" + picUrl + ")";
     };
     
-    App.prototype.getNumberOfControllers = function() {
+    App.prototype.displayNumberOfControllers = function() {
        var number = this.airconsole.getControllerDeviceIds().length;
        document.getElementById("content").innerHTML = "Number of connected Controllers: " + number;
+    };
+    
+    App.prototype.showPlayerNumber = function() {
+       var my_player_number = this.airconsole.convertDeviceIdToPlayerNumber(this.airconsole.getDeviceId());
+       document.getElementById("content").innerHTML = "I am Player # " + my_player_number;
     };
     
     App.prototype.showServerTime = function() {
@@ -162,7 +167,8 @@
          <button class="button" ontouchstart="window.app.displayProfilePicture()">Show Profile Picture</button>
          <button class="button" ontouchstart="window.app.setSomeCustomData()">Set Custom Data on this Device</button>
          <button class="button" ontouchstart="window.app.setCustomDeviceStateProperty('health', 50)">Set 'health' property on this Device</button>
-         <button class="button" ontouchstart="window.app.getNumberOfControllers()">Show Number of connected Controllers</button>
+         <button class="button" ontouchstart="window.app.displayNumberOfControllers()">Show Number of connected Controllers</button>
+         <button class="button" ontouchstart="window.app.showPlayerNumber()">Show my Player Number</button>
          <button class="button" ontouchstart="window.app.showServerTime()">Show Server Time</button>
          <button class="button" ontouchstart="window.app.hideDefaultUI()">Hide Default UI</button>
          <button class="button" ontouchstart="window.app.showDefaultUI()">Show Default UI</button>

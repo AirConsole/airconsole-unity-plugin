@@ -91,18 +91,6 @@ public class ExampleBasicLogic : MonoBehaviour {
 		}
 	}
 
-    void OnGUI() {
-
-        /*
-
-        if (GUILayout.Button("navigateHome")) {
-            AirConsole.instance.NavigateHome();
-        }
-		if (GUILayout.Button("navigateTo http://games.airconsole.com/pong/")) {
-			AirConsole.instance.NavigateTo("http://games.airconsole.com/pong/");
-		}*/
-    }
-
 	public void SendMessageToController1(){
 		//Say Hi to the first controller in the GetControllerDeviceIds List.
 
@@ -122,7 +110,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		logWindow.text = logWindow.text.Insert (0, "Broadcast a message. \n \n");
 	}
 
-	public void GetDeviceID(){
+	public void DisplayDeviceID(){
 		//Get the device id of this device
 		int device_id = AirConsole.instance.GetDeviceId();
 
@@ -130,7 +118,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		logWindow.text = logWindow.text.Insert(0, "This device's id: " + device_id + "\n \n");
 	}
 
-	public void GetNicknameOfFirstController(){
+	public void DisplayNicknameOfFirstController(){
 		//We cannot assume that the first controller's device ID is '1', because device 1 
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!		
@@ -144,7 +132,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		
 	}
 
-	public void GetURLOfProfilePictureOfFirstController(){
+	public void DisplayURLOfProfilePictureOfFirstController(){
 		//We cannot assume that the first controller's device ID is '1', because device 1 
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!		
@@ -155,7 +143,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		logWindow.text = logWindow.text.Insert(0, "URL of Profile Picture of first Controller: " + urlOfProfilePic + "\n \n");
 	}
 
-	public void GetAllCustomDataOfFirstController(){
+	public void DisplayAllCustomDataOfFirstController(){
 		//We cannot assume that the first controller's device ID is '1', because device 1 
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!		
@@ -183,7 +171,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		}
 	}
 
-	public void GetCustomPropertyHealthOnFirstController(){
+	public void DisplayCustomPropertyHealthOnFirstController(){
 		//We cannot assume that the first controller's device ID is '1', because device 1 
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!		
@@ -220,7 +208,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.SetCustomDeviceStateProperty("level", 1);
 	}
 
-	public void GetAllCustomDataFromScreen(){
+	public void DisplayAllCustomDataFromScreen(){
 		//The screen always has device id 0. That is the only device id you're allowed to hardcode.
 		if (AirConsole.instance.GetCustomDeviceState(0) != null) {
 
@@ -230,18 +218,38 @@ public class ExampleBasicLogic : MonoBehaviour {
 			foreach (JToken key in AirConsole.instance.GetCustomDeviceState(0).Children()) {
 				logWindow.text = logWindow.text.Insert (0, "Custom Data on Screen: " + key + " \n");
 			}
-
 		}
 	}
 
-	public void GetNumberOfConnectedControllers(){
+	public void DisplayNumberOfConnectedControllers(){
 		//This does not count devices that have been connected and then left,
 		//only devices that are still active
 		int numberOfActiveControllers = AirConsole.instance.GetControllerDeviceIds ().Count;
 		logWindow.text = logWindow.text.Insert (0, "Number of Active Controllers: " + numberOfActiveControllers + "\n \n");
 	}
 
-	public void GetServerTime(){
+	public void SetActivePlayers(){
+		//Set the currently connected devices as the active players (assigning them a player number)
+		AirConsole.instance.SetActivePlayers ();
+
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "Active Players were set \n \n");
+	}
+
+	public void DisplayDeviceIDOfPlayerOne(){
+
+		int device_id = AirConsole.instance.ConvertPlayerNumberToDeviceId (0);
+
+		//Log to on-screen Console
+		if (device_id != -1) {
+			logWindow.text = logWindow.text.Insert (0, "Player #1 has device ID: " + device_id + " \n \n");
+		} else {
+			logWindow.text = logWindow.text.Insert (0, "There is no active player # 1 - Set Active Players first!\n \n");
+		}
+	}
+
+
+	public void DisplayServerTime(){
 		//Get the Server Time
 		float time = AirConsole.instance.GetServerTime ();
 
