@@ -10,7 +10,6 @@
                          navigator.msVibrate);
 
     var airconsole;
-    var active_players = null;
     /**
      * Sets up the communication to the screen.
      */
@@ -22,38 +21,26 @@
           console.log("Vibrating: " + data.vibrate);
         }
       }
-      airconsole.onConnect = function(device_id) {
-        if (active_players == null) {
-          var candidate_players = airconsole.getControllerDeviceIds();
-          if (candidate_players.length == 2) {
-            active_players = candidate_players;
-          }
-        }
-        updateText();
+      airconsole.onActivePlayersChange = function(player_number) {
+        updateText(player_number);
       }
-      
-      airconsole.onDisconnect = function(device_id) {
-        if (active_players && (active_players[0] == device_id || active_players[1] == device_id)) {
-          active_players = null;
-        }
+      airconsole.onReady = function() {
         updateText();
       }
     }
 
-	function updateText() {
+	function updateText(player_number) {
 	  var div = document.getElementById("player_id");
-      if (active_players) {
-	    if (active_players[0] == airconsole.getDeviceId()) {
-	      div.innerHTML = "You are the player on the left";
-        } else if (active_players[1] == airconsole.getDeviceId()) {
-          div.innerHTML = "You are the player on the right";
-        }
-      } else if (airconsole.getControllerDeviceIds().length < 2) {
+      if (airconsole.getActivePlayerDeviceIds().length == 0) {
         div.innerHTML = "Waiting for more players.";
-      } else {
-         div.innerHTML = "You are not in the game. Cheer!";
-      }
-    }
+      } else if (player_number == undefined) {
+        div.innerHTML = "This is a 2 player game";
+      } else if (player_number == 0) {
+        div.innerHTML = "You are the player on the left";
+      } else if (player_number == 1) {
+        div.innerHTML = "You are the player on the right";
+      };
+	}
 
     /**
      * Tells the screen to move the paddle of this player.

@@ -17,12 +17,6 @@ public class ExamplePongLogic : MonoBehaviour {
     private int scoreRacketLeft = 0;
     private int scoreRacketRight = 0;
 
-	/// <summary>
-	/// Defines the device_ids of the active players.
-	/// If activePlayers is null, the game is not running.
-	/// </summary>
-	private List<int> activePlayers = null;
-
     void Start() {
         AirConsole.instance.onMessage += OnMessage;
 		AirConsole.instance.onConnect += OnConnect;
@@ -39,19 +33,12 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// </summary>
 	/// <param name="device_id">The device_id that connected</param>
 	void OnConnect(int device_id) {
-		if (activePlayers == null) {
-			List<int> candidatePlayers = AirConsole.instance.GetControllerDeviceIds ();
-			if (candidatePlayers.Count < 2) {
-				if (candidatePlayers.Count == 1) {
-					uiText.text = "NEED 2 MORE PLAYERS";
-				} else if (candidatePlayers.Count == 2) {
-					uiText.text = "NEED 1 MORE PLAYER";
-				}
-				return;
+		if (AirConsole.instance.GetActivePlayerDeviceIds.Count == 0) {
+			if (AirConsole.instance.GetControllerDeviceIds().Count >= 2) {
+				StartGame();
+			} else {
+				uiText.text = "NEED MORE PLAYERS";
 			}
-			activePlayers = candidatePlayers;
-			ResetBall(true);
-			UpdateScoreUI();
 		}
 	}
 
@@ -60,12 +47,16 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// </summary>
 	/// <param name="device_id">The device_id that has left.</param>
 	void OnDisconnect(int device_id) {
-		if (activePlayers != null && activePlayers.Contains(device_id)) {
-			activePlayers = null;
-			ResetBall(false);
-			uiText.text = "PLAYER LEFT - NEED MORE PLAYERS";
+		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+		if (active_player != -1) {
+			if (AirConsole.instance.GetControllerDeviceIds ().Count >= 2) {
+				StartGame();
+			} else {
+				AirConsole.instance.SetActivePlayers (0);
+				ResetBall (false);
+				uiText.text = "PLAYER LEFT - NEED MORE PLAYERS";
+			}
 		}
-
 	}
 
 	/// <summary>
@@ -73,19 +64,25 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// </summary>
 	/// <param name="from">From.</param>
 	/// <param name="data">Data.</param>
-    void OnMessage(int from, JToken data) {
-		if (activePlayers != null) {
-			if (from == activePlayers[0]) {
-				// received movement from first player
+    void OnMessage(int device_id, JToken data) {
+		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+		if (active_player != -1) {
+			if (active_player == 0) {
 				this.racketLeft.velocity = Vector3.up * (float)data ["move"];
 			}
-
-			if (from == activePlayers[1]) {
-				// received movement from second player
+			if (active_player == 1) {
 				this.racketRight.velocity = Vector3.up * (float)data ["move"];
 			}
 		}
     }
+
+	void StartGame() {
+		AirConsole.instance.SetActivePlayers (2);
+		ResetBall (true);
+		scoreRacketLeft = 0;
+		scoreRacketRight = 0;
+		UpdateScoreUI();
+	}
 
 	void ResetBall(bool move) {
 		
