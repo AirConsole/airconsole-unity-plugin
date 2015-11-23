@@ -117,10 +117,10 @@ namespace NDream.AirConsole.Editor {
                         if (startUpPath.Contains(Settings.WEBTEMPLATE_PATH)) {
                             url += "?unity-editor-websocket-port=" + Settings.webSocketPort;
                         }
-
-
                         Application.OpenURL(url);
-                    }
+                    } else {
+						AirConsole.instance.ProcessJS("{action:\"onReady\", code:\"0\", devices:[], server_time_offset: 0, device_id: 0, location: \"\" }");
+					}
 
                 } else {
 

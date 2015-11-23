@@ -12,7 +12,6 @@ using Newtonsoft.Json.Linq;
 namespace NDream.AirConsole {
 
     public enum StartMode {
-        Debug,
         VirtualControllers,
         Normal,
         NoBrowserStart
@@ -144,12 +143,9 @@ namespace NDream.AirConsole {
 		///
 		/// DO NOT HARDCODE CONTROLLER DEVICE IDS!
 		///
-		/// In the beginning of a round in your game you should store which players are
-		/// part of this round.
-		/// List<int> active_players = AirConsole.instance.GetControllerDeviceIds(); stores currently
-		/// connected controllers that should be part of this round. Then you can access
-		/// the device_id of the first player at active_players[0], the device_id of
-		/// the second player at active_players[1], and so on ...
+		/// If you want to have a logic with "players numbers" (Player 0, Player 1,
+		/// Player 2, Player 3) use the setActivePlayers helper function! You can
+		/// hardcode player numbers, but not device_ids.
 		///
 		/// Within an AirConsole session, devices keep the same device_id when they
 		/// disconnect and reconnect. Different controllers will never get the same
@@ -168,6 +164,81 @@ namespace NDream.AirConsole {
 			}
 			return _device_id;
 		}
+
+		/// <summary>
+		/// Takes all currently connected controllers and assigns them a player number.
+		///  Can only be called by the screen. You don't have to use this helper
+		/// function, but this mechanism is very convenient if you want to know which
+		/// device is the first player, the second players, the third player ...
+		/// The assigned player numbers always start with 0 and are consecutive.
+		/// You can hardcode player numbers, but not device_ids.
+		/// Once the screen has called setActivePlayers you can get the device_id of
+		/// the first player by calling convertPlayerNumberToDeviceId(0), the device_id
+		/// of the second player by calling convertPlayerNumberToDeviceId(1), ...
+		/// You can also convert device_ids to player numbers by calling
+		/// convertDeviceIdToPlayerNumber(device_id). You can get all device_ids that
+		/// are active players by calling getActivePlayerDeviceIds().
+		/// The screen can call this function every time a game round starts.
+		/// </summary>
+		/// <param name="data">The maximum number of controllers that should 
+		/// get a player number assigned.</param>
+		public void SetActivePlayers(int max_players=-1) {
+			if (!IsReady()) {
+				
+				throw new NotReadyException();
+				
+			}
+
+			List<int> device_ids = GetControllerDeviceIds ();
+			_players.Clear ();
+			if (max_players == -1) {
+				max_players = device_ids.Count;
+		    }
+			for (int i = 0; i < device_ids.Count && i < max_players; ++i) {
+				_players.Add(device_ids[i]);
+			}
+			JObject msg = new JObject();
+			msg.Add("action", "setActivePlayers");
+			msg.Add("max_players", max_players);
+			
+			wsListener.Message(msg);
+	    }
+
+		/// <summary>
+		/// Returns an array of device_ids of the active players previously set by the
+		/// screen by calling setActivePlayers. The first device_id in the array is the
+		/// first player, the second device_id in the array is the second player, ...
+		/// </summary>
+		public ReadOnlyCollection<int> GetActivePlayerDeviceIds {
+			get { return _players.AsReadOnly(); }
+		}
+
+		/// <summary>
+		/// Returns the device_id of a player, if the player is part of the active
+		/// players previously set by the screen by calling setActivePlayers. If fewer
+		/// players are in the game than the passed in player_number or the active
+		/// players have not been set by the screen, this function returns undefined.
+		/// </summary>
+		/// <param name="player_number">Player Number.</param>
+		public int ConvertPlayerNumberToDeviceId(int player_number) {
+			if (player_number >= 0 && player_number < _players.Count) {
+				return _players[player_number];
+		    }
+			return -1;
+	    }
+
+		/// <summary>
+		/// Returns the player number for a device_id, if the device_id is part of the
+		/// active players previously set by the screen by calling setActivePlayers.
+		/// Player numbers are zero based and are consecutive. If the device_id is not
+		/// part of the active players, this function returns -1.
+		/// </summary>
+		/// <param name="device_id">Device id.</param>
+		public int ConvertDeviceIdToPlayerNumber(int device_id) {
+			return _players.IndexOf (device_id);
+		}
+		
+
 
 		/// <summary>
 		/// Returns the globally unique id of a device.
@@ -723,6 +794,7 @@ namespace NDream.AirConsole {
 		private int _device_id;
 		private int _server_time_offset;
 		private string _location;
+		private List<int> _players = new List<int>();
 		private readonly Queue<Action> eventQueue = new Queue<Action>();
 		
 		// unity singleton handling
@@ -747,8 +819,6 @@ namespace NDream.AirConsole {
             switch (mode) {
                 case StartMode.VirtualControllers:
                     return Settings.AIRCONSOLE_NORMAL_URL;
-                case StartMode.Debug:
-                    return Settings.AIRCONSOLE_DEBUG_URL;
                 case StartMode.Normal:
                     return Settings.AIRCONSOLE_URL;
                 default:

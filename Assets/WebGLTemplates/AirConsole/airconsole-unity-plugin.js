@@ -137,6 +137,8 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.navigateHome();
     } else if (data.action == "navigateTo") {
         this.airconsole.navigateTo(data.data);
+    } else if (data.action == "setActivePlayers") {
+        this.airconsole.setActivePlayers(data.max_players);
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }
