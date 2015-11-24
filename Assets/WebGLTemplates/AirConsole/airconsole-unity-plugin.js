@@ -24,7 +24,7 @@ if (wsPort) {
 function App() {
 
     var me = this;
-    me.unity_queue = false;
+    me.queue = false;
 
     me.initEvents = function () {
         me.airconsole = new AirConsole({ "synchronize_time": true });
@@ -117,7 +117,6 @@ App.prototype.postQueue = function () {
 
 App.prototype.postToUnity = function (data) {
     if (isUnityReady) {
-        console.log(data)
 	    if (isEditor) {
 	        // send data over websocket
 	        this.unity_socket.send(JSON.stringify(data));
