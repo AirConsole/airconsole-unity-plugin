@@ -24,7 +24,7 @@ if (wsPort) {
 function App() {
 
     var me = this;
-    me.onReadyData = null;
+    me.queue = false;
 
     me.initEvents = function () {
         me.airconsole = new AirConsole({ "synchronize_time": true });
@@ -38,15 +38,14 @@ function App() {
         };
 
         me.airconsole.onReady = function (code) {
-            me.onReadyData = {
+            me.postToUnity({
                 "action": "onReady",
                 "code": code,
                 "device_id": me.airconsole.device_id,
                 "devices": me.airconsole.devices,
                 "server_time_offset": me.airconsole.server_time_offset,
                 "location": document.location.href
-            };
-            me.postToUnity(me.onReadyData);
+            });
         };
 
         me.airconsole.onDeviceStateChange = function (device_id, device_data) {
@@ -85,10 +84,11 @@ function App() {
             me.unity_socket = new WebSocket("ws://127.0.0.1:" + wsPort + "/api");
 
             me.unity_socket.onopen = function () {
+                isUnityReady = true;
                 if (me.airconsole == null) {
                     me.initEvents();
                 } else {
-                    me.postToUnity(me.onReadyData); // resend onReady event
+                    me.postQueue();
                 }
             };
 
@@ -108,16 +108,31 @@ function App() {
     }
 };
 
+App.prototype.postQueue = function () {
+    for (var i = 0; i < this.queue.length; ++i) {
+      this.postToUnity(this.queue[i]);
+	}
+	this.queue = false;
+}
+
 App.prototype.postToUnity = function (data) {
+    if (isUnityReady) {
+	    if (isEditor) {
+	        // send data over websocket
+	        this.unity_socket.send(JSON.stringify(data));
 
-    if (isEditor) {
-        // send data over websocket
-        this.unity_socket.send(JSON.stringify(data));
-
-    } else if (isUnityReady) {
-        // send data with SendMessage from Unity js library
-        SendMessage("AirConsole", "ProcessJS", JSON.stringify(data));
-    }
+	    } else {
+	        // send data with SendMessage from Unity js library
+	        SendMessage("AirConsole", "ProcessJS", JSON.stringify(data));
+	    }
+	} else {
+	    if (this.queue === false && data.action == "onReady") {
+		  this.queue = [];
+		}
+		if (this.queue !== false) {
+		  this.queue.push(data);
+		}
+	}
 };
 
 App.prototype.processUnityData = function (data) {
@@ -148,7 +163,7 @@ function onGameReady(autoScale) {
     isUnityReady = true;
 
     // send cached onRadyData
-    window.app.postToUnity(window.app.onReadyData);
+    window.app.postQueue();
 
     if (autoScale) {
         resizeCanvas();
