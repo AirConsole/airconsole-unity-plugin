@@ -11,7 +11,7 @@
     <script type="text/javascript" src="http://www.airconsole.com/api/airconsole-1.3.0.js"></script>
     <script type="text/javascript" src="./airconsole-unity-plugin.js"></script>
   </head>
-  <body class="template">
+  <body class="template" onload="initAirConsole()">
     <div class="template-wrap clear">
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" height="%UNITY_HEIGHT%px" width="%UNITY_WIDTH%px"></canvas>
     </div>
