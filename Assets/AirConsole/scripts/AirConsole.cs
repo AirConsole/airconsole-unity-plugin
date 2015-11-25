@@ -639,7 +639,7 @@ namespace NDream.AirConsole {
 				_devices[deviceId] =  (JToken)msg["device_data"];
 				
 				if (this.onDeviceStateChange != null) {
-					eventQueue.Enqueue(() => this.onDeviceStateChange(deviceId, _devices[deviceId]));
+					eventQueue.Enqueue(() => this.onDeviceStateChange(deviceId, GetDevice(_device_id)));
 				}
 				
 				if (Settings.debug.info) {
@@ -763,6 +763,11 @@ namespace NDream.AirConsole {
 				_devices[deviceId] = key;
 				deviceId++;
 			}
+			for (int i = 0; i < _devices.Count; ++i) {
+				if (_devices[i] != null && !_devices[i].HasValues) {
+					_devices[i] = null;
+				}
+		    }
 			
 			if (this.onReady != null) {
 				eventQueue.Enqueue(() => this.onReady((string)msg["code"]));
@@ -830,14 +835,19 @@ namespace NDream.AirConsole {
             wsListener.ProcessMessage(data);
         }
 
-        private JToken GetDevice(int deviceId) {
-
-            if (_devices.ContainsKey(deviceId)) {
-                return _devices[deviceId];
-            } else {
-                return null;
-            }
-        }
+		private JToken GetDevice(int deviceId) {
+			
+			if (_devices.ContainsKey(deviceId)) {
+				JToken result = _devices[deviceId];
+				if (result != null && result.HasValues) {
+					return _devices[deviceId];
+				} else {
+					return null;
+				}
+			} else {
+				return null;
+			}
+		}
 
 		private string GetGameUrl(string url) {
 			if (url == null) {
