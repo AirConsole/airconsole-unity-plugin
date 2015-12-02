@@ -14,7 +14,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	private bool turnLeft;
 	private bool turnRight;
 
-	void Start () {
+	void Awake () {
         // register events
         AirConsole.instance.onReady += OnReady;
         AirConsole.instance.onMessage += OnMessage;

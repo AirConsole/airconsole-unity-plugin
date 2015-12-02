@@ -17,7 +17,7 @@ public class ExamplePongLogic : MonoBehaviour {
     private int scoreRacketLeft = 0;
     private int scoreRacketRight = 0;
 
-    void Start() {
+    void Awake() {
         AirConsole.instance.onMessage += OnMessage;
 		AirConsole.instance.onConnect += OnConnect;
 		AirConsole.instance.onDisconnect += OnDisconnect;
