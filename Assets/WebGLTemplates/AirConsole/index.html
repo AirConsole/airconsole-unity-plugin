@@ -10,10 +10,67 @@
     <script src="TemplateData/UnityProgress.js"></script>
     <script type="text/javascript" src="http://www.airconsole.com/api/airconsole-1.3.0.js"></script>
     <script type="text/javascript" src="./airconsole-unity-plugin.js"></script>
+    <script type="text/javascript" src="https://code.createjs.com/tweenjs-0.6.0.min.js"></script>
+	  <script type="text/javascript" src="TemplateData/CSSPlugin.js"></script>
+    <!--
+      Unity WebGL Custom Progress Bar by Alexander Ocias
+      https://ocias.com/
+      https://ocias.com/blog/unity-webgl-custom-progress-bar/ 
+     -->
+     <style type=text/css>
+      div#loadingBox {
+        width: 100%;
+        height: 20px;
+        position: absolute;
+        top: 50%;
+        margin-top: -10px;
+        text-align: center;
+      }
+      
+      div#bgBar {
+        position: absolute;
+        width: 200px;
+        margin-left: -100px;
+        left: 50%;
+        height: 2px;
+        display: block;
+        background-color: #333;
+        border-radius: 2px;
+      }
+      
+      div#progressBar {
+      left: 50%;
+      position: absolute;
+      margin-left: -100px;
+      width: 0px;
+      height: 2px;
+      background-color: white;
+      border-radius: 2px;
+      }
+        
+      p#loadingInfo {
+      color: #666;
+      letter-spacing: 1px;
+      position: absolute;
+      width: 100%;
+      font-family: "Monaco", sans-serif;
+      text-transform: uppercase;
+      text-align: center;
+      font-size: 8px;
+      margin-top: 10px;
+      }
+    </style>
+    
   </head>
   <body class="template" onload="initAirConsole()">
     <div class="template-wrap clear">
     <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" height="%UNITY_HEIGHT%px" width="%UNITY_WIDTH%px"></canvas>
+      <div id = "loadingBox">
+       <div id = "bgBar"></div>
+       <div id = "progressBar"></div>
+       <img id="spinner" src="TemplateData/gifLoader.gif" style="display: none; margin: 0 auto" />
+       <p id="loadingInfo">Loading...</p>
+     </div>
     </div>
     %UNITY_WEBGL_LOADER_GLUE%
   </body>
