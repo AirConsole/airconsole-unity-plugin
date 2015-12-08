@@ -433,15 +433,14 @@ namespace NDream.AirConsole {
 				throw new NotReadyException();
 				
 			}
-			
 			JObject msg = new JObject();
 			msg.Add("action", "setCustomDeviceState");
 			msg.Add("data", JToken.FromObject(data));
-			
-			if (GetDevice(0) == null) {
-				_devices[0] = new JObject();
+
+			AllocateDeviceSlots(0);
+			if (GetDevice (0) == null) {
+				_devices [0] = new JObject ();
 			}
-			
 			_devices[0]["custom"] = msg["data"];
 			
 			wsListener.Message(msg);
@@ -464,12 +463,13 @@ namespace NDream.AirConsole {
 			msg.Add("action", "setCustomDeviceStateProperty");
 			msg.Add("key", JToken.FromObject(key));
 			msg.Add("value", JToken.FromObject(value));
-			
+
+			AllocateDeviceSlots(0);
 			if (GetDevice(0) == null) {
 				_devices[0] = new JObject();
 			}
 			
-			JToken custom = _devices [0]["custom"];
+			JToken custom = _devices[0]["custom"];
 			if (custom == null) {
 				JObject new_custom = new JObject();
 				_devices[0]["custom"] = JToken.FromObject(new_custom);
@@ -636,7 +636,13 @@ namespace NDream.AirConsole {
 			try {
 				
 				int deviceId = (int)msg["device_id"];
-				_devices[deviceId] =  (JToken)msg["device_data"];
+				AllocateDeviceSlots(deviceId);
+				JToken deviceData = (JToken)msg["device_data"];
+				if (deviceData != null && deviceData.HasValues) {
+					_devices[deviceId] = deviceData;
+				} else {
+					_devices[deviceId] = null;
+				}
 				
 				if (this.onDeviceStateChange != null) {
 					eventQueue.Enqueue(() => this.onDeviceStateChange(deviceId, GetDevice(_device_id)));
@@ -757,17 +763,14 @@ namespace NDream.AirConsole {
 			_location = (string)msg["location"];
 			
 			// load devices
-			int deviceId = 0;
-			
-			foreach (JToken key in (JToken)msg["devices"]) {
-				_devices[deviceId] = key;
-				deviceId++;
-			}
-			for (int i = 0; i < _devices.Count; ++i) {
-				if (_devices[i] != null && !_devices[i].HasValues) {
-					_devices[i] = null;
+			_devices.Clear();
+			foreach (JToken data in (JToken)msg["devices"]) {
+				JToken assign = data;
+				if (data != null && !data.HasValues) {
+					assign = null;
 				}
-		    }
+				_devices.Add(assign);
+			}
 			
 			if (this.onReady != null) {
 				eventQueue.Enqueue(() => this.onReady((string)msg["code"]));
@@ -789,13 +792,15 @@ namespace NDream.AirConsole {
 		          "this collection may not have loaded your game yet. This method will be removed in" +
 		          "the next version.")]
 		public ReadOnlyCollection<JToken> devices {
-			get { return _devices.Values.ToList<JToken>().AsReadOnly(); }
+			get { 
+				return _devices.AsReadOnly(); 
+			}
 		}
 		
 		// private vars
 		private WebSocketServer wsServer;
 		private WebsocketListener wsListener;
-		private Dictionary<int, JToken> _devices = new Dictionary<int, JToken>();
+		private List<JToken> _devices = new List<JToken>();
 		private int _device_id;
 		private int _server_time_offset;
 		private string _location;
@@ -836,17 +841,10 @@ namespace NDream.AirConsole {
         }
 
 		private JToken GetDevice(int deviceId) {
-			
-			if (_devices.ContainsKey(deviceId)) {
-				JToken result = _devices[deviceId];
-				if (result != null && result.HasValues) {
-					return _devices[deviceId];
-				} else {
-					return null;
-				}
-			} else {
-				return null;
+			if (deviceId < _devices.Count && deviceId >= 0) {
+				return _devices[deviceId];
 			}
+			return null;
 		}
 
 		private string GetGameUrl(string url) {
@@ -856,6 +854,12 @@ namespace NDream.AirConsole {
 			url = url.Replace ("screen.html", "");
 			url = url.Replace ("controller.html", "");
 			return url;
+		}
+
+		private void AllocateDeviceSlots(int i) {
+			while (i >= _devices.Count) {
+				_devices.Add(null);
+			}
 		}
 
         #endregion
