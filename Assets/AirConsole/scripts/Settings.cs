@@ -5,7 +5,7 @@ namespace NDream.AirConsole {
 
     public static class Settings {
 
-        public const string VERSION = "1.0";
+        public const string VERSION = "1.3.0.a";
         public const string AIRCONSOLE_URL = "http://airconsole.com/#";
         public const string AIRCONSOLE_NORMAL_URL = "http://airconsole.com/simulator/#";
         public const string AIRCONSOLE_PROFILE_PICTURE_URL = "http://www.airconsole.com/api/profile-picture?uid=";
