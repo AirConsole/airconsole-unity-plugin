@@ -94,13 +94,21 @@ namespace NDream.AirConsole {
 		public event OnCustomDeviceStateChange onCustomDeviceStateChange;
 
 		/// <summary>
+		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
+		/// </summary>
+		/// <returns><c>true</c> if the AirConsole Unity Plugin is ready; otherwise, <c>false</c>.</returns>
+		public bool IsAirConsoleUnityPluginReady() {
+			return wsListener.IsReady();
+		}
+
+		/// <summary>
 		/// Sends a message to another device.
 		/// </summary>
 		/// <param name="to">The device ID to send the message to.</param>
 		/// <param name="data">The data to send.</param>
 		public void Message(int to, object data) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -120,7 +128,7 @@ namespace NDream.AirConsole {
 		/// <param name="data">The message to send.</param>
 		public void Broadcast(object data) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -157,7 +165,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <returns>The device identifier.</returns>
 		public int GetDeviceId() {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -183,7 +191,7 @@ namespace NDream.AirConsole {
 		/// <param name="data">The maximum number of controllers that should 
 		/// get a player number assigned.</param>
 		public void SetActivePlayers(int max_players=-1) {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -246,7 +254,7 @@ namespace NDream.AirConsole {
 		/// <returns>The UID.</returns>
 		/// <param name="device_id">The device id for which you want the uid. Default is this device.</param>
 		public string GetUID(int device_id = -1) {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -264,7 +272,7 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device ID of which you want the custom state. Default is this device.</param>
 		/// <returns> The custom data previously set by the device.</returns>
 		public JToken GetCustomDeviceState(int device_id = -1) {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -300,7 +308,7 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device id for which you want the nickname. Default is this device. Screens don't have nicknames.</param>
 		public string GetNickname(int device_id = -1) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -339,7 +347,7 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device id for which you want a profile picture. Defaults to this device. Screens don't have profile pictures.</param>
 		/// <param name="size">The size of in pixels of the picture. Default is 64.</param>
 		public string GetProfilePicture(int device_id = -1, int size = 64) {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -377,7 +385,7 @@ namespace NDream.AirConsole {
 		/// <returns> Timestamp in milliseconds.</returns>
 		public long GetServerTime() {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -391,7 +399,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		public void NavigateHome() {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -409,7 +417,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		public void NavigateTo(string url) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -428,7 +436,7 @@ namespace NDream.AirConsole {
 		/// <param name="data">The custom data to set.</param>
 		public void SetCustomDeviceState(object data) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -453,7 +461,7 @@ namespace NDream.AirConsole {
 		/// <param name="data">The property value.</param>
 		public void SetCustomDeviceStateProperty(string key, object value) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -487,7 +495,7 @@ namespace NDream.AirConsole {
 		/// <param name="visible">Whether to show or hide the default UI.</param>
 		public void ShowDefaultUI(bool visible) {
 			
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -503,7 +511,7 @@ namespace NDream.AirConsole {
 		/// Returns the device ID of the master controller.
 		/// </summary>
 		public int GetMasterControllerDeviceId() {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -519,7 +527,7 @@ namespace NDream.AirConsole {
 		/// Returns all controller device ids that have loaded your game.
 		/// </summary>
 		public List<int> GetControllerDeviceIds() {
-			if (!IsReady()) {
+			if (!IsAirConsoleUnityPluginReady()) {
 				
 				throw new NotReadyException();
 				
@@ -816,10 +824,6 @@ namespace NDream.AirConsole {
             }
         }
 
-        private bool IsReady() {
-            return wsListener.IsReady();
-        }
-
         private void OnClose() {
             _devices.Clear();
         }
@@ -851,8 +855,16 @@ namespace NDream.AirConsole {
 			if (url == null) {
 				return null;
 			}
-			url = url.Replace ("screen.html", "");
-			url = url.Replace ("controller.html", "");
+			url = url.Split ('#') [0];
+			url = url.Split ('?') [0];
+			if (url.EndsWith ("screen.html")) {
+				url = url.Substring(0, url.Length - 11);
+			} else if (url.EndsWith ("controller.html")) {
+				url = url.Substring(0, url.Length - 15);
+			}
+			if (url.StartsWith ("https://")) {
+				url = "http://" + url.Substring(0, 8);
+			}
 			return url;
 		}
 

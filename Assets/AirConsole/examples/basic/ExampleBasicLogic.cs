@@ -8,6 +8,7 @@ using Newtonsoft.Json.Linq;
 public class ExampleBasicLogic : MonoBehaviour {
 
     public GameObject logo;
+	public Renderer profilePicturePlaneRenderer;
 
 	public Text logWindow;
 
@@ -132,15 +133,36 @@ public class ExampleBasicLogic : MonoBehaviour {
 		
 	}
 
-	public void DisplayURLOfProfilePictureOfFirstController(){
+	private IEnumerator DisplayUrlPicture(string url) {
+		// Start a download of the given URL
+		WWW www = new WWW(url);
+		
+		// Wait for download to complete
+		yield return www;
+		
+		// assign texture
+		profilePicturePlaneRenderer.material.mainTexture = www.texture;
+		Color color = Color.white;
+		color.a = 1;
+		profilePicturePlaneRenderer.material.color = color;
+
+		yield return new WaitForSeconds (3.0f);
+
+		color.a = 0;
+		profilePicturePlaneRenderer.material.color = color;
+		
+	}
+	
+	public void DisplayProfilePictureOfFirstController() {
 		//We cannot assume that the first controller's device ID is '1', because device 1 
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!		
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
 	
-		string urlOfProfilePic = AirConsole.instance.GetProfilePicture (idOfFirstController);
+		string urlOfProfilePic = AirConsole.instance.GetProfilePicture (idOfFirstController, 512);
 		//Log url to on-screen Console
 		logWindow.text = logWindow.text.Insert(0, "URL of Profile Picture of first Controller: " + urlOfProfilePic + "\n \n");
+		StartCoroutine(DisplayUrlPicture (urlOfProfilePic));
 	}
 
 	public void DisplayAllCustomDataOfFirstController(){
