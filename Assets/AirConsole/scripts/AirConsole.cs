@@ -98,7 +98,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <returns><c>true</c> if the AirConsole Unity Plugin is ready; otherwise, <c>false</c>.</returns>
 		public bool IsAirConsoleUnityPluginReady() {
-			return wsListener.IsReady();
+			return wsListener != null && wsListener.IsReady();
 		}
 
 		/// <summary>
@@ -324,11 +324,11 @@ namespace NDream.AirConsole {
 					if (GetDevice(device_id)["nickname"] != null) {
 						return (string)GetDevice(device_id)["nickname"];
 					} else {
-						return "Player " + device_id;
+						return "Guest " + device_id;
 					}
 				}
 				catch (Exception) { 
-					return "Player " + device_id; 
+					return "Guest " + device_id; 
 				}
 				
 			} else {
@@ -863,7 +863,7 @@ namespace NDream.AirConsole {
 				url = url.Substring(0, url.Length - 15);
 			}
 			if (url.StartsWith ("https://")) {
-				url = "http://" + url.Substring(0, 8);
+				url = "http://" + url.Substring(8);
 			}
 			return url;
 		}
