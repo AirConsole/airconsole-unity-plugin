@@ -24,6 +24,7 @@ namespace NDream.AirConsole {
 	public delegate void OnConnect(int device_id);
 	public delegate void OnDisconnect(int device_id);
 	public delegate void OnCustomDeviceStateChange(int device_id, JToken custom_device_data);
+	public delegate void OnDeviceProfileChange(int device_id);
    
     public class AirConsole : MonoBehaviour {
 		#region airconsole api
@@ -92,6 +93,12 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">the device ID that changed its customDeviceState.</param> 
 		/// <param name="cutsom_data">The custom DeviceState data value.</param>
 		public event OnCustomDeviceStateChange onCustomDeviceStateChange;
+
+		/// <summary>
+		/// Gets called when a device updates it's profile pic, nickname or email.
+		/// </summary>
+		/// <param name="device_id">The device_id that changed its profile.</param>
+		public event OnDeviceProfileChange onDeviceProfileChange;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -543,6 +550,38 @@ namespace NDream.AirConsole {
 			return result;
 		}
 
+
+		/// <summary>
+		/// Returns true if a user is logged in.
+		/// </summary>
+		public bool IsUserLoggedIn(int device_id = -1) {
+				
+			if (!IsAirConsoleUnityPluginReady ()) {
+						
+				throw new NotReadyException ();
+						
+			}
+					
+			if (device_id == -1) {
+				device_id = GetDeviceId ();
+			}
+					
+			if (GetDevice (device_id) != null) {
+						
+				try {
+					if (GetDevice (device_id) ["auth"] != null) {
+						return (bool)GetDevice (device_id) ["auth"];
+					}
+				} catch (Exception) { 
+					return false;
+				}
+				return false;
+			}
+
+			return false;
+		}
+
+
 		/// <summary>
 		/// Gets thrown when you call an API method before OnReady was called.
 		/// </summary>
@@ -594,6 +633,7 @@ namespace NDream.AirConsole {
 			wsListener.onConnect += OnConnect;
 			wsListener.onDisconnect += OnDisconnect;
 			wsListener.onCustomDeviceStateChange += OnCustomDeviceStateChange;
+			wsListener.onDeviceProfileChange += OnDeviceProfileChange;
 
             // check if game is running in webgl build
             if (Application.platform != RuntimePlatform.WebGLPlayer) {
@@ -782,6 +822,32 @@ namespace NDream.AirConsole {
 			
 			if (this.onReady != null) {
 				eventQueue.Enqueue(() => this.onReady((string)msg["code"]));
+			}
+		}
+
+		void OnDeviceProfileChange(JObject msg) {
+			
+			if (msg["device_id"] == null) {
+				return;
+			}
+			
+			try {
+				
+				int deviceId = (int)msg["device_id"];
+				
+				if (this.onDeviceProfileChange != null) {
+					eventQueue.Enqueue(() => this.onDeviceProfileChange(deviceId));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log("AirConsole: onDeviceProfileChange " + deviceId);
+				}
+				
+			} catch (Exception e){
+				
+				if (Settings.debug.error) {
+					Debug.LogError(e.Message);
+				}
 			}
 		}
 

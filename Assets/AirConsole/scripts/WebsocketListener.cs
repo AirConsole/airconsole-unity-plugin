@@ -17,6 +17,7 @@ namespace NDream.AirConsole {
 	public delegate void OnConnectInternal(JObject data);
 	public delegate void OnDisconnectInternal(JObject data);
 	public delegate void OnCustomDeviceStateChangeInternal(JObject data);
+	public delegate void OnDeviceProfileChangeInternal(JObject data);
     public delegate void OnCloseInternal();
 
     public class WebsocketListener : WebSocketBehavior {
@@ -29,6 +30,7 @@ namespace NDream.AirConsole {
 		public event OnConnectInternal onConnect;
 		public event OnDisconnectInternal onDisconnect;
 		public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
+		public event OnDeviceProfileChangeInternal onDeviceProfileChange;
 
         // private vars
         private bool isReady;
@@ -117,6 +119,11 @@ namespace NDream.AirConsole {
 
 					if (this.onCustomDeviceStateChange != null) {
 						this.onCustomDeviceStateChange(msg);
+					}
+				} else if ((string)msg["action"] == "onDeviceProfileChange") {
+					
+					if (this.onDeviceProfileChange != null) {
+						this.onDeviceProfileChange(msg);
 					}
 				}
 

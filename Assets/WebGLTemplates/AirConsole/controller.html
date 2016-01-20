@@ -20,6 +20,17 @@
    text-align: left;
   }
   
+  .button-left{
+   width: 50%;
+   left: 0px;   
+  }
+  
+  .button-right{
+   width: 50%;
+   float: right;
+   right: 0px;   
+  }
+  
   #content{
    position:absolute;
    font-family: Arial;
@@ -131,6 +142,11 @@
        document.getElementById("content").innerHTML = "I am Player # " + my_player_number;
     };
     
+    App.prototype.showLoginStatus = function() {
+       var my_login_status = this.airconsole.isUserLoggedIn();
+       document.getElementById("content").innerHTML = "I am logged in: " + my_login_status;
+    };
+    
     App.prototype.showServerTime = function() {
     	var time = this.airconsole.getServerTime();
         document.getElementById("content").innerHTML = "Server time: " +time;
@@ -162,18 +178,19 @@
          <button class="button" ontouchstart="window.app.sendMessageToScreen('left')" ontouchend="window.app.sendMessageToScreen('stop')">Send Message to Screen: Rotate Logo Left</button>
          <button class="button" ontouchstart="window.app.sendMessageToScreen('right')" ontouchend="window.app.sendMessageToScreen('stop')">Send Message to Screen: Rotate Logo Right</button>
          <button class="button" ontouchstart="window.app.broadcastMessage('Hey everyone!')" >Broadcast Message</button>
-         <button class="button" ontouchstart="window.app.displayDeviceId()">Show Device Id</button>
-         <button class="button" ontouchstart="window.app.displayNickname()">Show Nickname</button>
+         <button class="button button-left" ontouchstart="window.app.displayDeviceId()">Show my Device Id</button>
+         <button class="button button-right" ontouchstart="window.app.displayNickname()">Show my Nickname</button>
          <button class="button" ontouchstart="window.app.displayProfilePicture()">Show Profile Picture</button>
          <button class="button" ontouchstart="window.app.setSomeCustomData()">Set Custom Data on this Device</button>
          <button class="button" ontouchstart="window.app.setCustomDeviceStateProperty('health', 50)">Set 'health' property on this Device</button>
          <button class="button" ontouchstart="window.app.displayNumberOfControllers()">Show Number of connected Controllers</button>
          <button class="button" ontouchstart="window.app.showPlayerNumber()">Show my Player Number</button>
-         <button class="button" ontouchstart="window.app.showServerTime()">Show Server Time</button>
-         <button class="button" ontouchstart="window.app.hideDefaultUI()">Hide Default UI</button>
-         <button class="button" ontouchstart="window.app.showDefaultUI()">Show Default UI</button>
-         <button class="button" ontouchstart="window.app.navigateHome()">Navigate Home </button>
-         <button class="button" ontouchstart="window.app.navigateToPong()">Navigate to Pong</button>
+         <button class="button button-left" ontouchstart="window.app.showServerTime()">Show Server Time</button>
+         <button class="button button-right" ontouchstart="window.app.showLoginStatus()">Am I logged in?</button>
+         <button class="button button-left" ontouchstart="window.app.hideDefaultUI()">Hide Default UI</button>
+         <button class="button button-right" ontouchstart="window.app.showDefaultUI()">Show Default UI</button>
+         <button class="button button-left" ontouchstart="window.app.navigateHome()">Navigate Home </button>
+         <button class="button button-right" ontouchstart="window.app.navigateToPong()">Navigate to Pong</button>
         </div>
         
     </div>

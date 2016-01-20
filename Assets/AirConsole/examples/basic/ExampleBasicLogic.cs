@@ -23,6 +23,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.onDisconnect += OnDisconnect;
 		AirConsole.instance.onDeviceStateChange += OnDeviceStateChange;
 		AirConsole.instance.onCustomDeviceStateChange += OnCustomDeviceStateChange;
+		AirConsole.instance.onDeviceProfileChange += OnDeviceProfileChange;
 		logWindow.text = "Connecting... \n \n";
 	}
 
@@ -79,6 +80,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 	void OnCustomDeviceStateChange(int device_id, JToken custom_data){
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert(0, "Custom Device State Change on device: " + device_id + ", data: " + custom_data + "\n \n");
+	}
+
+	void OnDeviceProfileChange(int device_id){
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert(0, "Device " + device_id + " made changes to its profile. \n \n");
 	}
 
 	void Update(){
@@ -270,13 +276,22 @@ public class ExampleBasicLogic : MonoBehaviour {
 		}
 	}
 
-
 	public void DisplayServerTime(){
 		//Get the Server Time
 		float time = AirConsole.instance.GetServerTime ();
-
+		
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "Server Time: " + time + "\n \n");
+	}
+
+	public void DisplayIfFirstContrllerIsLoggedIn(){
+		//Get the Device Id
+		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
+
+		bool firstPlayerLoginStatus = AirConsole.instance.IsUserLoggedIn (idOfFirstController);
+		
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "First Player is logged in: " + firstPlayerLoginStatus + "\n \n");
 	}
 
 	public void HideDefaultUI(){
@@ -318,6 +333,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onDisconnect -= OnDisconnect;
 			AirConsole.instance.onDeviceStateChange -= OnDeviceStateChange;
 			AirConsole.instance.onCustomDeviceStateChange -= OnCustomDeviceStateChange;
+			AirConsole.instance.onDeviceProfileChange -= OnDeviceProfileChange;
         }
     }
 }

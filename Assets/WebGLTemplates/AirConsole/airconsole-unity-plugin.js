@@ -1,4 +1,9 @@
 /**
+ * Copyright by N-Dream AG 2016.
+ * @version 1.3.0.c
+ */
+
+/**
  * Check if plugin is called from Unity-Editor
  */
 
@@ -76,6 +81,13 @@ function App() {
                 "device_id": device_id
             });
         };
+        
+        me.airconsole.onDeviceProfileChange = function(device_id) {
+            me.postToUnity({
+                "action": "onDeviceProfileChange",
+                "device_id": device_id
+            });
+        }
     }
 
     if (isEditor) {
@@ -177,6 +189,7 @@ function resizeCanvas() {
     document.body.style.height = '100%';
     document.body.style.width = '100%';
     document.body.style.margin = '0px';
+    document.body.style.overflow = 'hidden';
     unityCanvas.style.width = 100 + 'vw';
     unityCanvas.style.height = (100 / aspectRatio) + 'vw';
     unityCanvas.style.maxWidth = 100 * aspectRatio + 'vh';
