@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if AIRCONSOLE
+using UnityEngine;
 using System.Collections;
 using UnityEditor;
 
@@ -65,3 +66,4 @@ namespace NDream.AirConsole.Editor {
         }
     }
 }
+#endif

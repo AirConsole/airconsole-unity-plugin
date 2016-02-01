@@ -1,4 +1,5 @@
-﻿using System;
+﻿#if AIRCONSOLE
+using System;
 using System.Threading;
 using System.Net;
 using System.IO;
@@ -26,7 +27,7 @@ namespace NDream.AirConsole.Editor {
                 listener = new HttpListener();
             }
 
-            prefix = string.Format("http://{0}:{1}/", Extentions.GetLocalAddress(), Settings.webServerPort.ToString());
+            prefix = string.Format("http://*:{0}/", Settings.webServerPort.ToString());
 
             if (!listener.IsListening) {
 
@@ -156,5 +157,5 @@ namespace NDream.AirConsole.Editor {
             Start();
         }
     }
-
 }
+#endif

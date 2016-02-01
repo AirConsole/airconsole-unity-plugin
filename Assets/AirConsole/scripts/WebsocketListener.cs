@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if AIRCONSOLE
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.Serialization.Formatters;
@@ -153,5 +154,5 @@ namespace NDream.AirConsole {
         }
 
     }
-
 }
+#endif
