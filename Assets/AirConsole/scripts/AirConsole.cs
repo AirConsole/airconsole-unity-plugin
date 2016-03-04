@@ -27,7 +27,7 @@ namespace NDream.AirConsole {
 	public delegate void OnDeviceProfileChange(int device_id);
    
     public class AirConsole : MonoBehaviour {
-		#if AIRCONSOLE
+		#if !DISABLE_AIRCONSOLE
 		#region airconsole api
 
 		/// <summary>
@@ -601,7 +601,7 @@ namespace NDream.AirConsole {
 		public bool autoScaleCanvas = true;
 		
 		#endregion
-		#if AIRCONSOLE
+		#if !DISABLE_AIRCONSOLE
 		
         #region unity functions
 

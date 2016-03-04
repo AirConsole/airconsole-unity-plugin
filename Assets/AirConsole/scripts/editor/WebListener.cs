@@ -1,4 +1,4 @@
-﻿#if AIRCONSOLE
+﻿#if !DISABLE_AIRCONSOLE
 using System;
 using System.Threading;
 using System.Net;

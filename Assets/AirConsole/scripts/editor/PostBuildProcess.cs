@@ -1,4 +1,4 @@
-﻿#if AIRCONSOLE
+﻿#if !DISABLE_AIRCONSOLE
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
