@@ -25,7 +25,7 @@
 
 using System;
 using System.Collections.Generic;
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System.Dynamic;
 using System.Linq.Expressions;
 #endif
@@ -48,7 +48,7 @@ namespace Newtonsoft.Json.Linq
 #if !SILVERLIGHT
 , ICloneable
 #endif
-#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     , IDynamicMetaObjectProvider
 #endif
  {
@@ -1310,7 +1310,7 @@ namespace Newtonsoft.Json.Linq
       return p.Evaluate(this, errorWhenNoMatch);
     }
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     /// <summary>
     /// Returns the <see cref="T:System.Dynamic.DynamicMetaObject"/> responsible for binding operations performed on this object.
     /// </summary>
@@ -1337,7 +1337,7 @@ namespace Newtonsoft.Json.Linq
 #endif
 
 #if !SILVERLIGHT
-    object ICloneable.Clone()
+        object ICloneable.Clone()
     {
       return DeepClone();
     }

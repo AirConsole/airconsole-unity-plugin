@@ -417,13 +417,13 @@ namespace NDream.AirConsole {
 			msg.Add("action", "navigateHome");
 			
 			wsListener.Message(msg);
-		}
-		
-		/// <summary>
-		/// Request that all devices load a game by url. Note that the custom DeviceStates are preserved. 
-		/// If you don't want that, override SetCustomDeviceState(null) on every device before calling this function.
-		/// </summary>
-		public void NavigateTo(string url) {
+        }
+
+        /// <summary>
+        /// Request that all devices load a game by url. Note that the custom DeviceStates are preserved. 
+        /// If you don't want that, override SetCustomDeviceState(null) on every device before calling this function.
+        /// </summary>
+        public void NavigateTo(string url) {
 			
 			if (!IsAirConsoleUnityPluginReady()) {
 				
@@ -514,7 +514,8 @@ namespace NDream.AirConsole {
 			msg.Add("data", visible);
 			
 			wsListener.Message(msg);
-		}
+        }
+
 		/// <summary>
 		/// Returns the device ID of the master controller.
 		/// </summary>
@@ -599,11 +600,12 @@ namespace NDream.AirConsole {
 		public StartMode browserStartMode;
 		public UnityEngine.Object controllerHtml;
 		public bool autoScaleCanvas = true;
+        public string androidTvGameVersion;
 		
-		#endregion
-		#if !DISABLE_AIRCONSOLE
+#endregion
+#if !DISABLE_AIRCONSOLE
 		
-        #region unity functions
+#region unity functions
 
         void Awake() {
 
@@ -623,12 +625,22 @@ namespace NDream.AirConsole {
         }
 
         void Start() {
-
             // application has to run in background
+#if UNITY_ANDROID
+            Application.runInBackground = false;
+#else
             Application.runInBackground = true;
+#endif
 
             // register all incoming events
+#if UNITY_ANDROID
+            InitWebView();
+            wsListener = new WebsocketListener(webViewObject);
+            wsListener.onUnityWebviewReady += OnUnityWebviewReady;
+            wsListener.onUnityWebviewResize += OnUnityWebviewResize;
+#else
             wsListener = new WebsocketListener();
+#endif
             wsListener.onReady += this.OnReady;
             wsListener.onClose += this.OnClose;
             wsListener.onMessage += this.OnMessage;
@@ -638,8 +650,9 @@ namespace NDream.AirConsole {
 			wsListener.onCustomDeviceStateChange += OnCustomDeviceStateChange;
 			wsListener.onDeviceProfileChange += OnDeviceProfileChange;
 
+
             // check if game is running in webgl build
-            if (Application.platform != RuntimePlatform.WebGLPlayer) {
+            if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
 
                 // start websocket connection
                 wsServer = new WebSocketServer(Settings.webSocketPort);
@@ -652,8 +665,10 @@ namespace NDream.AirConsole {
 
             } else {
 
-                // call external javascript init function
-                Application.ExternalCall("onGameReady", this.autoScaleCanvas);
+                if (Application.platform == RuntimePlatform.WebGLPlayer) {
+                    // call external javascript init function
+                    Application.ExternalCall("onGameReady", this.autoScaleCanvas);
+                }
             }
             
         }
@@ -674,9 +689,9 @@ namespace NDream.AirConsole {
             StopWebsocketServer();
         }
 
-        #endregion
+#endregion
 
-        #region internal functions
+            #region internal functions
 
 		void OnDeviceStateChange(JObject msg) {
 			
@@ -877,7 +892,10 @@ namespace NDream.AirConsole {
 		// private vars
 		private WebSocketServer wsServer;
 		private WebsocketListener wsListener;
-		private List<JToken> _devices = new List<JToken>();
+#if UNITY_ANDROID
+        private WebViewObject webViewObject;
+#endif
+        private List<JToken> _devices = new List<JToken>();
 		private int _device_id;
 		private int _server_time_offset;
 		private string _location;
@@ -943,9 +961,58 @@ namespace NDream.AirConsole {
 			}
 		}
 
-        #endregion.
-		#endif
-		
+
+#if UNITY_ANDROID
+        private void InitWebView() {
+
+            if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
+
+                if(webViewObject == null) {
+
+                    webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+                    webViewObject.Init((msg) => ProcessJS(msg));
+
+                    string url = Settings.AIRCONSOLE_BASE_URL;
+                    url += "client?id=androidunity-" + Settings.VERSION;
+                    url += "&game-id=" + Application.bundleIdentifier;
+                    url += "&version=" + this.androidTvGameVersion;
+
+                    webViewObject.SetMargins(0, 0, 0, 0);
+                    webViewObject.SetVisibility(true);
+                    webViewObject.LoadURL(url);
+                }
+
+            } else {
+                if (Settings.debug.error) {
+                    Debug.LogError("AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
+                }
+            }
+        }
+
+        private void OnUnityWebviewReady(JObject msg) {
+            // TODO(goran): restart app, or download other app
+            Debug.Log("onunitywebviewready");
+        }
+
+        private void OnUnityWebviewResize(JObject msg) {
+
+            int h = Screen.height;
+
+            if (msg["top_bar_height"] != null) {
+                h = (int)msg["top_bar_height"] * 2;
+            }
+
+            webViewObject.SetMargins(0, 0, 0, Screen.height - h);
+
+            Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - h);
+
+        }
+#endif
+
+#endregion
+
+#endif
+
     }
 }
 

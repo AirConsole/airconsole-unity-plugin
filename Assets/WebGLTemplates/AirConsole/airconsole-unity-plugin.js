@@ -1,14 +1,16 @@
 /**
  * Copyright by N-Dream AG 2016.
- * @version 1.3.0.c
+ * @version 1.4
  */
 
 /**
- * Check if plugin is called from Unity-Editor
+ * Check if plugin is called from Unity-Editor or WebView-Component
  */
 
 var isEditor = false;
+var isWebView = false;
 var isUnityReady = false;
+var bundleId;
 
 function getURLParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -21,6 +23,28 @@ var wsPort = getURLParameterByName("unity-editor-websocket-port");
 if (wsPort) {
     isEditor = true;
 }
+
+if (typeof Unity != "undefined") {
+    isWebView = true;
+    isUnityReady = true;
+    window.onbeforeunload = function() {
+        Unity.call(JSON.stringify({"action": "unityWebviewResize"}));
+        // TODO(andrin): Ads
+    };
+    function layout() {
+        Unity.call(JSON.stringify({"action": "unityWebviewResize",
+                                   "top_bar_height": 64 }));
+    }
+    window.addEventListener('resize', layout);
+    layout();
+    // forward WebView postMessage data from parent window
+    window.addEventListener('message', function (event) {
+        if (event.data["action"] == "androidunity") {
+            window.app.processUnityData(event.data["data_string"]);
+        }
+    });
+}
+
 
 /**
  * Sets up the communication to the screen.
@@ -132,7 +156,9 @@ App.prototype.postToUnity = function (data) {
 	    if (isEditor) {
 	        // send data over websocket
 	        this.unity_socket.send(JSON.stringify(data));
-
+	    } else if (isWebView) {
+            // send data over webview interface
+	        Unity.call(JSON.stringify(data));
 	    } else {
 	        // send data with SendMessage from Unity js library
 	        SendMessage("AirConsole", "ProcessJS", JSON.stringify(data));
@@ -172,7 +198,26 @@ App.prototype.processUnityData = function (data) {
 };
 
 function onGameReady(autoScale) {
+
     isUnityReady = true;
+
+    function resizeCanvas() {
+        var unityCanvas = document.getElementById('canvas');
+        var aspectRatio = unityCanvas.width / unityCanvas.height;
+        document.body.style.height = '100%';
+        document.body.style.width = '100%';
+        document.body.style.margin = '0px';
+        document.body.style.overflow = 'hidden';
+        unityCanvas.style.width = 100 + 'vw';
+        unityCanvas.style.height = (100 / aspectRatio) + 'vw';
+        unityCanvas.style.maxWidth = 100 * aspectRatio + 'vh';
+        unityCanvas.style.maxHeight = 100 + 'vh';
+        unityCanvas.style.margin = 'auto';
+        unityCanvas.style.top = '0';
+        unityCanvas.style.bottom = '0';
+        unityCanvas.style.left = '0';
+        unityCanvas.style.right = '0';
+    }
 
     // send cached onRadyData
     window.app.postQueue();
@@ -181,35 +226,27 @@ function onGameReady(autoScale) {
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
     }
+
 }
 
-function resizeCanvas() {
-    var unityCanvas = document.getElementById('canvas');
-    var aspectRatio = unityCanvas.width / unityCanvas.height;
-    document.body.style.height = '100%';
-    document.body.style.width = '100%';
-    document.body.style.margin = '0px';
-    document.body.style.overflow = 'hidden';
-    unityCanvas.style.width = 100 + 'vw';
-    unityCanvas.style.height = (100 / aspectRatio) + 'vw';
-    unityCanvas.style.maxWidth = 100 * aspectRatio + 'vh';
-    unityCanvas.style.maxHeight = 100 + 'vh';
-    unityCanvas.style.margin = 'auto';
-    unityCanvas.style.top = '0';
-    unityCanvas.style.bottom = '0';
-    unityCanvas.style.left = '0';
-    unityCanvas.style.right = '0';
-}
+
 
 /**
  * Run AirConsole
  */
  
 function initAirConsole() {
+
     window.app = new App();
+
 	if (isEditor) {
         document.body.innerHTML = "<div style='position:absolute; top:50%; left:0%; width:100%; margin-top:-32px; color:white;'>"
             + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
             + "</div>";
+	}
+
+	if (isWebView) {
+	    // tell webView screen.html is ready
+	    Unity.call(JSON.stringify({"action": "unityWebviewReady"}));
 	}
 }

@@ -19,6 +19,9 @@ namespace NDream.AirConsole {
 	public delegate void OnDisconnectInternal(JObject data);
 	public delegate void OnCustomDeviceStateChangeInternal(JObject data);
 	public delegate void OnDeviceProfileChangeInternal(JObject data);
+    public delegate void OnUnityWebviewReady(JObject data);
+    public delegate void OnUnityWebviewResize(JObject data);
+    public delegate void OnUnityStop(JObject data);
     public delegate void OnCloseInternal();
 
     public class WebsocketListener : WebSocketBehavior {
@@ -32,13 +35,24 @@ namespace NDream.AirConsole {
 		public event OnDisconnectInternal onDisconnect;
 		public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
 		public event OnDeviceProfileChangeInternal onDeviceProfileChange;
+        public event OnUnityWebviewReady onUnityWebviewReady;
+        public event OnUnityWebviewResize onUnityWebviewResize;
 
         // private vars
         private bool isReady;
 
+#if UNITY_ANDROID
+        WebViewObject webViewObject;
+
+        public WebsocketListener(WebViewObject webViewObject) {
+            base.IgnoreExtensions = true;
+            this.webViewObject = webViewObject;
+        }
+#else
         public WebsocketListener() {
             base.IgnoreExtensions = true;
         }
+#endif
 
         protected override void OnMessage(MessageEventArgs e) {
             this.ProcessMessage(e.Data);
@@ -126,7 +140,17 @@ namespace NDream.AirConsole {
 					if (this.onDeviceProfileChange != null) {
 						this.onDeviceProfileChange(msg);
 					}
-				}
+				} else if ((string)msg["action"] == "unityWebviewReady") {
+
+                    if (this.onUnityWebviewReady != null) {
+                        this.onUnityWebviewReady(msg);
+                    }
+                } else if ((string)msg["action"] == "unityWebviewResize") {
+
+                    if (this.onUnityWebviewResize != null) {
+                        this.onUnityWebviewResize(msg);
+                    }
+                }
 
             }
 
@@ -146,10 +170,18 @@ namespace NDream.AirConsole {
         public void Message(JObject data) {
 
             if (Application.platform == RuntimePlatform.WebGLPlayer) {
+
                 Application.ExternalCall("window.app.processUnityData", data.ToString());
 
-            } else {
-                Send(data.ToString());
+            } else if (Application.platform == RuntimePlatform.Android) {
+
+#if UNITY_ANDROID
+                webViewObject.EvaluateJS("androidUnityPostMessage('" + data.ToString().Replace("'", "\\'") + "');");
+#endif
+
+             } else {
+
+                 Send(data.ToString());
             }
         }
 

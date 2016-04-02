@@ -13,6 +13,9 @@ namespace NDream.AirConsole.Editor {
         Texture logo;
         AirConsole controller;
 
+        private SerializedProperty gameId;
+        private SerializedProperty gameVersion;
+
         public void OnEnable() {
 
             // get logos
@@ -40,7 +43,7 @@ namespace NDream.AirConsole.Editor {
             GUILayout.Label("v" + Settings.VERSION, styleBlack);
             EditorGUILayout.EndHorizontal();
 
-            // Show default inspector property editor withouth script referenz
+            // show default inspector property editor withouth script referenz
             serializedObject.Update();
             DrawPropertiesExcluding(serializedObject, new string[] { "m_Script" });
             serializedObject.ApplyModifiedProperties();

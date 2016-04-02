@@ -1,4 +1,4 @@
-﻿#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+﻿#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
 using System;
 using System.Collections.Generic;
 using System.Dynamic;

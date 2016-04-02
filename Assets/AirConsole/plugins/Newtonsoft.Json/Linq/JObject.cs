@@ -28,7 +28,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System.Dynamic;
 using System.Linq.Expressions;
 #endif
@@ -46,11 +46,11 @@ namespace Newtonsoft.Json.Linq
 #if !(PocketPC || SILVERLIGHT)
     , ICustomTypeDescriptor
 #endif
-#if !(PocketPC || SILVERLIGHT || NET20 || UNITY_WEBGL || UNITY_EDITOR)
+#if !(PocketPC || SILVERLIGHT || NET20 || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     , INotifyPropertyChanging
 #endif
  {
-    private class JPropertKeyedCollection : KeyedCollection<string, JToken>
+        private class JPropertKeyedCollection : KeyedCollection<string, JToken>
     {
       public JPropertKeyedCollection(IEqualityComparer<string> comparer)
         : base(comparer)
@@ -99,17 +99,17 @@ namespace Newtonsoft.Json.Linq
     /// </summary>
     public event PropertyChangedEventHandler PropertyChanged;
 
-#if !(PocketPC || SILVERLIGHT || NET20 || UNITY_WEBGL || UNITY_EDITOR)
+#if !(PocketPC || SILVERLIGHT || NET20 || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     /// <summary>
     /// Occurs when a property value is changing.
     /// </summary>
     public event PropertyChangingEventHandler PropertyChanging;
 #endif
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="JObject"/> class.
-    /// </summary>
-    public JObject()
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JObject"/> class.
+        /// </summary>
+        public JObject()
     {
     }
 
@@ -179,17 +179,17 @@ namespace Newtonsoft.Json.Linq
     internal void InternalPropertyChanged(JProperty childProperty)
     {
       OnPropertyChanged(childProperty.Name);
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, IndexOfItem(childProperty)));
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, childProperty, childProperty, IndexOfItem(childProperty)));
 #endif
-    }
+        }
 
-    internal void InternalPropertyChanging(JProperty childProperty)
+        internal void InternalPropertyChanging(JProperty childProperty)
     {
-#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR
+#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR && !UNITY_ANDROID
       OnPropertyChanging(childProperty.Name);
 #endif
     }
@@ -294,7 +294,7 @@ namespace Newtonsoft.Json.Linq
         }
         else
         {
-#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR
+#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR && !UNITY_ANDROID
           OnPropertyChanging(propertyName);
 #endif
           Add(new JProperty(propertyName, value));
@@ -537,7 +537,7 @@ namespace Newtonsoft.Json.Linq
         PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
     }
 
-#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR
+#if !PocketPC && !SILVERLIGHT && !NET20 && !UNITY_WEBGL && !UNITY_EDITOR && !UNITY_ANDROID
     /// <summary>
     /// Raises the <see cref="PropertyChanging"/> event with the provided arguments.
     /// </summary>
@@ -705,10 +705,10 @@ namespace Newtonsoft.Json.Linq
     {
       return null;
     }
-    #endregion
+        #endregion
 #endif
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     /// <summary>
     /// Returns the <see cref="T:System.Dynamic.DynamicMetaObject"/> responsible for binding operations performed on this object.
     /// </summary>
@@ -748,5 +748,5 @@ namespace Newtonsoft.Json.Linq
       }
     }
 #endif
-  }
+    }
 }

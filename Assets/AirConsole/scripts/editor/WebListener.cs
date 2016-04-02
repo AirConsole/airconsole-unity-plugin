@@ -30,11 +30,14 @@ namespace NDream.AirConsole.Editor {
             prefix = string.Format("http://*:{0}/", Settings.webServerPort.ToString());
 
             if (!listener.IsListening) {
-
                 listener.Start();
 
                 if (!listener.Prefixes.Contains(prefix)) {
                     listener.Prefixes.Add(prefix);
+                }
+
+                if (t != null && t.IsAlive) {
+                    t.Abort();
                 }
 
                 t = new Thread(new ThreadStart(ClientListener));

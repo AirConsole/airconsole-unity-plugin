@@ -66,7 +66,7 @@ namespace Newtonsoft.Json.Utilities
     public static string GetTypeName(Type t, FormatterAssemblyStyle assemblyFormat, SerializationBinder binder)
     {
       string fullyQualifiedTypeName;
-#if !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       if (binder != null)
       {
         string assemblyName, typeName;
@@ -78,7 +78,7 @@ namespace Newtonsoft.Json.Utilities
         fullyQualifiedTypeName = t.AssemblyQualifiedName;
       }
 #else
-      fullyQualifiedTypeName = t.AssemblyQualifiedName;
+            fullyQualifiedTypeName = t.AssemblyQualifiedName;
 #endif
 
       switch (assemblyFormat)

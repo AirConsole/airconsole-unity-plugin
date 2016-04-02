@@ -32,7 +32,7 @@ using System.ComponentModel;
 using Newtonsoft.Json.Serialization;
 using System.Reflection;
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System.Data.SqlTypes;
 #endif
 
@@ -235,10 +235,10 @@ namespace Newtonsoft.Json.Utilities
         if (targetType == typeof (Uri))
           return new Uri((string) initialValue);
         if (targetType == typeof (TimeSpan))
-#if !(NET35 || NET20 || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
           return TimeSpan.Parse((string) initialValue, CultureInfo.InvariantCulture);
 #else
-            return TimeSpan.Parse((string)initialValue);
+                    return TimeSpan.Parse((string)initialValue);
 #endif
       }
 
@@ -275,12 +275,12 @@ namespace Newtonsoft.Json.Utilities
         
         throw new Exception("Can not convert null {0} into non-nullable {1}.".FormatWith(CultureInfo.InvariantCulture, initialType, targetType));
       }
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (initialValue is INullable)
         return EnsureTypeAssignable(ToValue((INullable)initialValue), initialType, targetType);
 #endif
 
-      throw new Exception("Can not convert from {0} to {1}.".FormatWith(CultureInfo.InvariantCulture, initialType, targetType));
+            throw new Exception("Can not convert from {0} to {1}.".FormatWith(CultureInfo.InvariantCulture, initialType, targetType));
     }
     #endregion
 
@@ -467,7 +467,7 @@ namespace Newtonsoft.Json.Utilities
       throw new Exception("Could not cast or convert from {0} to {1}.".FormatWith(CultureInfo.InvariantCulture, (initialType != null) ? initialType.ToString() : "{null}", targetType));
     }
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     public static object ToValue(INullable nullableValue)
     {
       if (nullableValue == null)
@@ -488,7 +488,7 @@ namespace Newtonsoft.Json.Utilities
 #endif
 
 #if !PocketPC
-    internal static TypeConverter GetConverter(Type t)
+        internal static TypeConverter GetConverter(Type t)
     {
       return JsonTypeReflector.GetTypeConverter(t);
     }
