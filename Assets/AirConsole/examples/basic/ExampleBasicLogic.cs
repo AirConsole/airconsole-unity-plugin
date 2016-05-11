@@ -24,6 +24,9 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.onDeviceStateChange += OnDeviceStateChange;
 		AirConsole.instance.onCustomDeviceStateChange += OnCustomDeviceStateChange;
 		AirConsole.instance.onDeviceProfileChange += OnDeviceProfileChange;
+		AirConsole.instance.onAdShow += OnAdShow;
+		AirConsole.instance.onAdComplete += OnAdComplete;
+		AirConsole.instance.onGameEnd += OnGameEnd;
 		logWindow.text = "Connecting... \n \n";
 	}
 
@@ -60,6 +63,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 			turnLeft = false;
 			turnRight = false;
 		}
+
+		//Show an Ad
+		if ((string)data == "show_ad") {
+			AirConsole.instance.ShowAd();
+		}
     }
 
 	void OnConnect(int device_id){
@@ -85,6 +93,22 @@ public class ExampleBasicLogic : MonoBehaviour {
 	void OnDeviceProfileChange(int device_id){
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert(0, "Device " + device_id + " made changes to its profile. \n \n");
+	}
+
+	void OnAdShow(){
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert(0, "On Ad Show \n \n");
+	}
+
+	void OnAdComplete(bool adWasShown){
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert(0, "Ad Complete. Ad was shown: " + adWasShown + "\n \n");
+	}
+
+	void OnGameEnd(){
+		Debug.Log ("OnGameEnd is called");
+		Camera.main.enabled = false;
+		Time.timeScale = 0.0f;
 	}
 
 	void Update(){
@@ -323,6 +347,13 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.NavigateTo("http://games.airconsole.com/pong/");
 	}
 
+	public void ShowAd(){
+		//Display an Advertisement
+		AirConsole.instance.ShowAd();
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "Called ShowAd" + "\n \n");
+	}
+
     void OnDestroy() {
 
         // unregister events
@@ -333,7 +364,9 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onDisconnect -= OnDisconnect;
 			AirConsole.instance.onDeviceStateChange -= OnDeviceStateChange;
 			AirConsole.instance.onCustomDeviceStateChange -= OnCustomDeviceStateChange;
-			AirConsole.instance.onDeviceProfileChange -= OnDeviceProfileChange;
+			AirConsole.instance.onAdShow -= OnAdShow;
+			AirConsole.instance.onAdComplete -= OnAdComplete;
+			AirConsole.instance.onGameEnd -= OnGameEnd;
         }
     }
 }

@@ -25,6 +25,9 @@ namespace NDream.AirConsole {
 	public delegate void OnDisconnect(int device_id);
 	public delegate void OnCustomDeviceStateChange(int device_id, JToken custom_device_data);
 	public delegate void OnDeviceProfileChange(int device_id);
+	public delegate void OnAdShow();
+	public delegate void OnAdComplete(bool ad_was_shown);
+	public delegate void OnGameEnd();
    
     public class AirConsole : MonoBehaviour {
 		#if !DISABLE_AIRCONSOLE
@@ -100,6 +103,24 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="device_id">The device_id that changed its profile.</param>
 		public event OnDeviceProfileChange onDeviceProfileChange;
+
+		/// <summary>
+		/// Gets called if a fullscreen advertisement is shown on this screen.
+		/// In case this event gets called, please mute all sounds.
+		/// </summary>
+		public event OnAdShow onAdShow;
+
+		/// <summary>
+		/// Gets called when an advertisement is finished or no advertisement was shown.
+		/// <param name="ad_was_shown">True if an ad was shown and onAdShow was called.</param>
+		/// </summary>
+		public event OnAdComplete onAdComplete;
+
+		/// <summary>
+		/// Gets called when the game should be terminated. 
+		/// In case this event gets called, please mute all sounds and stop all animations.
+		/// </summary>
+		public event OnGameEnd onGameEnd;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -496,7 +517,27 @@ namespace NDream.AirConsole {
 			
 			wsListener.Message(msg);
 		}
-		
+
+		/// <summary>
+		/// Requests that AirConsole shows a multiscreen advertisment.
+		/// onAdShow is called on all connected devices if an advertisement
+		/// is shown (in this event please mute all sounds).
+		/// onAdComplete is called on all connected devices when the
+		/// advertisement is complete or no advertisement was shown.
+		/// </summary>
+		public void ShowAd(){
+			if (!IsAirConsoleUnityPluginReady()) {
+				
+				throw new NotReadyException();
+				
+			}
+			
+			JObject msg = new JObject();
+			msg.Add("action", "showAd");
+			
+			wsListener.Message(msg);
+		}
+
 		/// <summary>
 		/// Shows or hides the default UI.
 		/// </summary>
@@ -626,7 +667,7 @@ namespace NDream.AirConsole {
 
         void Start() {
             // application has to run in background
-#if UNITY_ANDROID
+#if UNITY_ANDROID && !UNITY_EDITOR
             Application.runInBackground = false;
 #else
             Application.runInBackground = true;
@@ -636,8 +677,10 @@ namespace NDream.AirConsole {
 #if UNITY_ANDROID
             InitWebView();
             wsListener = new WebsocketListener(webViewObject);
-            wsListener.onUnityWebviewReady += OnUnityWebviewReady;
+            wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
+
+			Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
 #endif
@@ -649,6 +692,9 @@ namespace NDream.AirConsole {
 			wsListener.onDisconnect += OnDisconnect;
 			wsListener.onCustomDeviceStateChange += OnCustomDeviceStateChange;
 			wsListener.onDeviceProfileChange += OnDeviceProfileChange;
+			wsListener.onAdShow += OnAdShow;
+			wsListener.onAdComplete += OnAdComplete;
+			wsListener.onGameEnd += OnGameEnd;
 
 
             // check if game is running in webgl build
@@ -869,6 +915,74 @@ namespace NDream.AirConsole {
 			}
 		}
 
+		void OnAdShow(JObject msg) {
+#if UNITY_ANDROID
+            webViewObject.SetMargins(0, 0, 0, 0);
+#endif
+			try {
+				
+				if (this.onAdShow != null) {
+					eventQueue.Enqueue(() => this.onAdShow());
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log("AirConsole: onAdShow");
+				}
+				
+			} catch (Exception e){
+				
+				if (Settings.debug.error) {
+					Debug.LogError(e.Message);
+				}
+			}
+		}
+
+		void OnAdComplete(JObject msg) {
+#if UNITY_ANDROID
+            webViewObject.SetMargins(0, 0, 0, Screen.height - webViewHeight);
+#endif
+			try {
+				
+				bool adWasShown = (bool)msg["ad_was_shown"];
+				
+				if (this.onAdComplete != null) {
+					eventQueue.Enqueue(() => this.onAdComplete(adWasShown));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log("AirConsole: onAdComplete");
+				}
+				
+			} catch (Exception e){
+				
+				if (Settings.debug.error) {
+					Debug.LogError(e.Message);
+				}
+			}
+		}
+
+		void OnGameEnd(JObject msg) {
+#if UNITY_ANDROID
+			webViewObject.SetMargins(0, 0, 0, 0);
+#endif
+			try {
+				
+				if (this.onGameEnd != null) {
+					eventQueue.Enqueue(() => this.onGameEnd());
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log("AirConsole: onGameEnd");
+				}
+				
+			} catch (Exception e){
+				
+				if (Settings.debug.error) {
+					Debug.LogError(e.Message);
+				}
+			}
+		}
+
 		[Obsolete("Please use GetServerTime(). This method will be removed in the next version.")]
 		public int server_time_offset {
 			get { return _server_time_offset; }
@@ -894,6 +1008,7 @@ namespace NDream.AirConsole {
 		private WebsocketListener wsListener;
 #if UNITY_ANDROID
         private WebViewObject webViewObject;
+		private int webViewHeight;
 #endif
         private List<JToken> _devices = new List<JToken>();
 		private int _device_id;
@@ -975,7 +1090,7 @@ namespace NDream.AirConsole {
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
                     url += "&game-id=" + Application.bundleIdentifier;
-                    url += "&version=" + this.androidTvGameVersion;
+                    url += "&game-version=" + this.androidTvGameVersion;
 
                     webViewObject.SetMargins(0, 0, 0, 0);
                     webViewObject.SetVisibility(true);
@@ -989,24 +1104,67 @@ namespace NDream.AirConsole {
             }
         }
 
-        private void OnUnityWebviewReady(JObject msg) {
-            // TODO(goran): restart app, or download other app
-            Debug.Log("onunitywebviewready");
+        private void OnLaunchApp(JObject msg) {
+            Debug.Log("onLaunchApp");
+			string bundleId = (string)msg ["bundle_id"];
+			if (bundleId != Application.bundleIdentifier) {
+				
+				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
+				AndroidJavaObject launchIntent = null;
+				try {
+					launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", bundleId);
+				} catch (Exception) {
+					Debug.Log("getLeanbackLaunchIntentForPackage for " + bundleId + " failed");
+				}
+				if (launchIntent == null) {
+					try {
+						launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", bundleId);
+					} catch (Exception) {
+						Debug.Log("getLaunchIntentForPackage for " + bundleId + " failed");
+					}
+				}
+				if (launchIntent != null) {
+					ca.Call("startActivity", launchIntent);
+				} else {
+					Application.OpenURL("market://details?id=" + bundleId);
+				}
+				up.Dispose();
+				ca.Dispose();
+				packageManager.Dispose();
+				launchIntent.Dispose();
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+			}
         }
 
         private void OnUnityWebviewResize(JObject msg) {
-
+			Debug.Log("OnUnityWebviewResize");
+			Debug.Log("msg: " + msg.ToString());
+			if (_devices.Count > 0) {
+				Debug.Log("screen device data: " + _devices[0].ToString());
+			}
+			
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
                 h = (int)msg["top_bar_height"] * 2;
-            }
+				webViewHeight = h;
+			}
+
+			Debug.Log("screen height: " + Screen.height + ", h: " + h);
 
             webViewObject.SetMargins(0, 0, 0, Screen.height - h);
 
             Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - h);
 
         }
+
+		void OnApplicationPause(bool pauseStatus){
+			if (pauseStatus) {
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+			}
+		}
 #endif
 
 #endregion

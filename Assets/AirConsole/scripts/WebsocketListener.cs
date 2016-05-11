@@ -19,9 +19,11 @@ namespace NDream.AirConsole {
 	public delegate void OnDisconnectInternal(JObject data);
 	public delegate void OnCustomDeviceStateChangeInternal(JObject data);
 	public delegate void OnDeviceProfileChangeInternal(JObject data);
-    public delegate void OnUnityWebviewReady(JObject data);
-    public delegate void OnUnityWebviewResize(JObject data);
-    public delegate void OnUnityStop(JObject data);
+	public delegate void OnAdShowInternal(JObject data);
+	public delegate void OnAdCompleteInternal(JObject data);
+	public delegate void OnGameEndInternal(JObject data);
+	public delegate void OnLaunchAppInternal(JObject data);
+	public delegate void OnUnityWebviewResizeInternal(JObject data);
     public delegate void OnCloseInternal();
 
     public class WebsocketListener : WebSocketBehavior {
@@ -35,8 +37,11 @@ namespace NDream.AirConsole {
 		public event OnDisconnectInternal onDisconnect;
 		public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
 		public event OnDeviceProfileChangeInternal onDeviceProfileChange;
-        public event OnUnityWebviewReady onUnityWebviewReady;
-        public event OnUnityWebviewResize onUnityWebviewResize;
+		public event OnAdShowInternal onAdShow;
+		public event OnAdCompleteInternal onAdComplete;
+		public event OnGameEndInternal onGameEnd;
+		public event OnLaunchAppInternal onLaunchApp;
+		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
 
         // private vars
         private bool isReady;
@@ -140,12 +145,27 @@ namespace NDream.AirConsole {
 					if (this.onDeviceProfileChange != null) {
 						this.onDeviceProfileChange(msg);
 					}
-				} else if ((string)msg["action"] == "unityWebviewReady") {
+				}else if ((string)msg["action"] == "onAdShow") {
+					
+					if (this.onAdShow != null) {
+						this.onAdShow(msg);
+					}
+				} else if ((string)msg["action"] == "onAdComplete") {
+					
+					if (this.onAdComplete != null) {
+						this.onAdComplete(msg);
+					}
+				} else if ((string)msg["action"] == "onGameEnd") {
+					
+					if (this.onGameEnd != null) {
+						this.onGameEnd(msg);
+					}
+				} else if ((string)msg["action"] == "onLaunchApp") {
 
-                    if (this.onUnityWebviewReady != null) {
-                        this.onUnityWebviewReady(msg);
+					if (this.onLaunchApp != null) {
+						this.onLaunchApp(msg);
                     }
-                } else if ((string)msg["action"] == "unityWebviewResize") {
+                } else if ((string)msg["action"] == "onUnityWebviewResize") {
 
                     if (this.onUnityWebviewResize != null) {
                         this.onUnityWebviewResize(msg);

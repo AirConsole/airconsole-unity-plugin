@@ -11,6 +11,7 @@ var isEditor = false;
 var isWebView = false;
 var isUnityReady = false;
 var bundleId;
+var ignoreResize = false;
 
 function getURLParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -25,15 +26,18 @@ if (wsPort) {
 }
 
 if (typeof Unity != "undefined") {
+    var top_bar_height = window.outerHeight - window.innerHeight;
     isWebView = true;
     isUnityReady = true;
     window.onbeforeunload = function() {
-        Unity.call(JSON.stringify({"action": "unityWebviewResize"}));
-        // TODO(andrin): Ads
+        Unity.call(JSON.stringify({"action": "onGameEnd"}));
+        ignoreResize = true;
     };
     function layout() {
-        Unity.call(JSON.stringify({"action": "unityWebviewResize",
-                                   "top_bar_height": 64 }));
+        if (!ignoreResize) {
+            Unity.call(JSON.stringify({"action": "onUnityWebviewResize",
+                                    "top_bar_height": top_bar_height }));
+        }
     }
     window.addEventListener('resize', layout);
     layout();
@@ -111,7 +115,22 @@ function App() {
                 "action": "onDeviceProfileChange",
                 "device_id": device_id
             });
-        }
+        };
+        
+        me.airconsole.onAdShow = function() {
+            ignoreResize = true;
+            me.postToUnity({
+                "action": "onAdShow"
+            });
+        };
+        
+        me.airconsole.onAdComplete = function(ad_was_shown) {
+            ignoreResize = false;
+            me.postToUnity({
+                "action": "onAdComplete",
+                "ad_was_shown": ad_was_shown
+            });
+        };
     }
 
     if (isEditor) {
@@ -192,6 +211,8 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.navigateTo(data.data);
     } else if (data.action == "setActivePlayers") {
         this.airconsole.setActivePlayers(data.max_players);
+    } else if (data.action == "showAd") {
+        this.airconsole.showAd();
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }
@@ -247,6 +268,6 @@ function initAirConsole() {
 
 	if (isWebView) {
 	    // tell webView screen.html is ready
-	    Unity.call(JSON.stringify({"action": "unityWebviewReady"}));
+	    Unity.call(JSON.stringify({"action": "onLaunchApp", "bundle_id" : bundleId}));
 	}
 }
