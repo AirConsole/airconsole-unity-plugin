@@ -43,10 +43,10 @@ namespace NDream.AirConsole.Editor {
 
                 // add bundleId to javascript file
                 string jsFile = File.ReadAllText(pathFolder + "/airconsole-unity-plugin.js");
-                jsFile = jsFile.Replace("var bundleId;", "var bundleId = \"" + PlayerSettings.bundleIdentifier +"\";");
+				jsFile = jsFile.Replace("var game_id;", "var game_id = \"" + PlayerSettings.bundleIdentifier +"\";");
+				jsFile = jsFile.Replace("var game_version;", "var game_version = \"" + AirConsole.androidTvGameVersion +"\";");
                 File.WriteAllText(pathFolder + "/airconsole-unity-plugin.js", jsFile);
             }
-
 
         }
 

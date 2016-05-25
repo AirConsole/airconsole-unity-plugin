@@ -17,6 +17,12 @@ namespace NDream.AirConsole {
         NoBrowserStart
     }
 
+	public enum AndroidUIResizeMode{
+		NoResizing,
+		ResizeCamera,
+		ResizeCameraAndReferenceResolution
+	}
+
     public delegate void OnReady(string code);
 
     public delegate void OnMessage(int from, JToken data);
@@ -641,7 +647,11 @@ namespace NDream.AirConsole {
 		public StartMode browserStartMode;
 		public UnityEngine.Object controllerHtml;
 		public bool autoScaleCanvas = true;
-        public string androidTvGameVersion;
+#if UNITY_ANDROID
+        public static string androidTvGameVersion;
+		public AndroidUIResizeMode androidUIResizeMode;
+		public Sprite webViewLoadingSprite;
+#endif
 		
 #endregion
 #if !DISABLE_AIRCONSOLE
@@ -679,6 +689,7 @@ namespace NDream.AirConsole {
             wsListener = new WebsocketListener(webViewObject);
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
+			wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
 
 			Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
@@ -1008,6 +1019,9 @@ namespace NDream.AirConsole {
 		private WebsocketListener wsListener;
 #if UNITY_ANDROID
         private WebViewObject webViewObject;
+		private Canvas webViewLoadingCanvas;
+		private UnityEngine.UI.Image webViewLoadingImage;
+		private UnityEngine.UI.Image webViewLoadingBG;
 		private int webViewHeight;
 #endif
         private List<JToken> _devices = new List<JToken>();
@@ -1080,7 +1094,7 @@ namespace NDream.AirConsole {
 #if UNITY_ANDROID
         private void InitWebView() {
 
-            if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
+			if (AirConsole.androidTvGameVersion != null && AirConsole.androidTvGameVersion != "") {
 
                 if(webViewObject == null) {
 
@@ -1090,11 +1104,24 @@ namespace NDream.AirConsole {
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
                     url += "&game-id=" + Application.bundleIdentifier;
-                    url += "&game-version=" + this.androidTvGameVersion;
+					url += "&game-version=" + AirConsole.androidTvGameVersion;
 
                     webViewObject.SetMargins(0, 0, 0, 0);
                     webViewObject.SetVisibility(true);
                     webViewObject.LoadURL(url);
+
+					//Display loading Screen
+					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
+					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform);
+					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform);
+					webViewLoadingImage.sprite = webViewLoadingSprite;
+					webViewLoadingBG.color = Color.black;
+					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+					webViewLoadingImage.preserveAspect = true;
+					//
                 }
 
             } else {
@@ -1106,29 +1133,30 @@ namespace NDream.AirConsole {
 
         private void OnLaunchApp(JObject msg) {
             Debug.Log("onLaunchApp");
-			string bundleId = (string)msg ["bundle_id"];
-			if (bundleId != Application.bundleIdentifier) {
+			string gameId = (string)msg ["game_id"];
+			string gameVersion = (string)msg ["game_version"];
+			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.androidTvGameVersion) {
 				
 				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
 				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
 				AndroidJavaObject launchIntent = null;
 				try {
-					launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", bundleId);
+					launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", gameId);
 				} catch (Exception) {
-					Debug.Log("getLeanbackLaunchIntentForPackage for " + bundleId + " failed");
+					Debug.Log("getLeanbackLaunchIntentForPackage for " + gameId + " failed");
 				}
 				if (launchIntent == null) {
 					try {
-						launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", bundleId);
+						launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", gameId);
 					} catch (Exception) {
-						Debug.Log("getLaunchIntentForPackage for " + bundleId + " failed");
+						Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
 					}
 				}
 				if (launchIntent != null) {
 					ca.Call("startActivity", launchIntent);
 				} else {
-					Application.OpenURL("market://details?id=" + bundleId);
+					Application.OpenURL("market://details?id=" + gameId);
 				}
 				up.Dispose();
 				ca.Dispose();
@@ -1140,7 +1168,6 @@ namespace NDream.AirConsole {
 
         private void OnUnityWebviewResize(JObject msg) {
 			Debug.Log("OnUnityWebviewResize");
-			Debug.Log("msg: " + msg.ToString());
 			if (_devices.Count > 0) {
 				Debug.Log("screen device data: " + _devices[0].ToString());
 			}
@@ -1152,13 +1179,29 @@ namespace NDream.AirConsole {
 				webViewHeight = h;
 			}
 
-			Debug.Log("screen height: " + Screen.height + ", h: " + h);
-
             webViewObject.SetMargins(0, 0, 0, Screen.height - h);
-
-            Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - h);
-
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera) {
+				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - h);
+			}
         }
+
+        private void OnUnityWebviewPlatformReady(JObject msg) {
+			GameObject.Destroy (webViewLoadingCanvas.gameObject);
+		}
+
+		private void OnLevelWasLoaded(){
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera) {
+				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - webViewHeight);
+			}
+
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
+				
+				for (int i = 0; i < allCanvasScalers.Length; ++i) {
+					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - webViewHeight) * allCanvasScalers[i].referenceResolution.y);
+				}
+			}
+		}
 
 		void OnApplicationPause(bool pauseStatus){
 			if (pauseStatus) {

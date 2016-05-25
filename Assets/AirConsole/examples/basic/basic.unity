@@ -2260,7 +2260,9 @@ MonoBehaviour:
   browserStartMode: 0
   controllerHtml: {fileID: 4900000, guid: 24d0ea9f52a200b479f21be5710f94ac, type: 3}
   autoScaleCanvas: 1
-  androidTvGameVersion: 2016-05-10-12-42-08
+  androidUIResizeMode: 0
+  webViewLoadingSprite: {fileID: 21300000, guid: d26cf9a463e394e66a893e01348b94dc,
+    type: 3}
 --- !u!4 &841124342
 Transform:
   m_ObjectHideFlags: 0

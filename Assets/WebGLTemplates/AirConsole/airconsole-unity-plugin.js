@@ -7,11 +7,12 @@
  * Check if plugin is called from Unity-Editor or WebView-Component
  */
 
-var isEditor = false;
-var isWebView = false;
-var isUnityReady = false;
-var bundleId;
-var ignoreResize = false;
+var is_editor = false;
+var is_web_view = false;
+var is_unity_ready = false;
+var game_id;
+var game_version;
+var ignore_resize = false;
 
 function getURLParameterByName(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
@@ -22,19 +23,19 @@ function getURLParameterByName(name) {
 
 var wsPort = getURLParameterByName("unity-editor-websocket-port");
 if (wsPort) {
-    isEditor = true;
+    is_editor = true;
 }
 
 if (typeof Unity != "undefined") {
     var top_bar_height = window.outerHeight - window.innerHeight;
-    isWebView = true;
-    isUnityReady = true;
+    is_web_view = true;
+    is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({"action": "onGameEnd"}));
-        ignoreResize = true;
+        ignore_resize = true;
     };
     function layout() {
-        if (!ignoreResize) {
+        if (!ignore_resize) {
             Unity.call(JSON.stringify({"action": "onUnityWebviewResize",
                                     "top_bar_height": top_bar_height }));
         }
@@ -118,14 +119,14 @@ function App() {
         };
         
         me.airconsole.onAdShow = function() {
-            ignoreResize = true;
+            ignore_resize = true;
             me.postToUnity({
                 "action": "onAdShow"
             });
         };
         
         me.airconsole.onAdComplete = function(ad_was_shown) {
-            ignoreResize = false;
+            ignore_resize = false;
             me.postToUnity({
                 "action": "onAdComplete",
                 "ad_was_shown": ad_was_shown
@@ -133,13 +134,13 @@ function App() {
         };
     }
 
-    if (isEditor) {
+    if (is_editor) {
         me.setupConnection = function () {
 
             me.unity_socket = new WebSocket("ws://127.0.0.1:" + wsPort + "/api");
 
             me.unity_socket.onopen = function () {
-                isUnityReady = true;
+                is_unity_ready = true;
                 if (me.airconsole == null) {
                     me.initEvents();
                 } else {
@@ -171,11 +172,11 @@ App.prototype.postQueue = function () {
 }
 
 App.prototype.postToUnity = function (data) {
-    if (isUnityReady) {
-	    if (isEditor) {
+    if (is_unity_ready) {
+	    if (is_editor) {
 	        // send data over websocket
 	        this.unity_socket.send(JSON.stringify(data));
-	    } else if (isWebView) {
+	    } else if (is_web_view) {
             // send data over webview interface
 	        Unity.call(JSON.stringify(data));
 	    } else {
@@ -220,7 +221,7 @@ App.prototype.processUnityData = function (data) {
 
 function onGameReady(autoScale) {
 
-    isUnityReady = true;
+    is_unity_ready = true;
 
     function resizeCanvas() {
         var unityCanvas = document.getElementById('canvas');
@@ -260,14 +261,14 @@ function initAirConsole() {
 
     window.app = new App();
 
-	if (isEditor) {
+	if (is_editor) {
         document.body.innerHTML = "<div style='position:absolute; top:50%; left:0%; width:100%; margin-top:-32px; color:white;'>"
             + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
             + "</div>";
 	}
 
-	if (isWebView) {
+	if (is_web_view) {
 	    // tell webView screen.html is ready
-	    Unity.call(JSON.stringify({"action": "onLaunchApp", "bundle_id" : bundleId}));
+	    Unity.call(JSON.stringify({"action": "onLaunchApp", "game_id" : game_id, "game_version" : game_version}));
 	}
 }

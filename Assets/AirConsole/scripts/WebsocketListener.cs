@@ -24,6 +24,7 @@ namespace NDream.AirConsole {
 	public delegate void OnGameEndInternal(JObject data);
 	public delegate void OnLaunchAppInternal(JObject data);
 	public delegate void OnUnityWebviewResizeInternal(JObject data);
+	public delegate void OnUnityWebviewPlatformReadyInternal(JObject data);
     public delegate void OnCloseInternal();
 
     public class WebsocketListener : WebSocketBehavior {
@@ -42,6 +43,7 @@ namespace NDream.AirConsole {
 		public event OnGameEndInternal onGameEnd;
 		public event OnLaunchAppInternal onLaunchApp;
 		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
+		public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
 
         // private vars
         private bool isReady;
@@ -170,7 +172,13 @@ namespace NDream.AirConsole {
                     if (this.onUnityWebviewResize != null) {
                         this.onUnityWebviewResize(msg);
                     }
-                }
+				} else if ((string)msg["action"] == "onUnityWebviewPlatformReady") {
+					
+					if (this.onUnityWebviewPlatformReady != null) {
+						this.onUnityWebviewPlatformReady(msg);
+					}
+				}
+
 
             }
 
