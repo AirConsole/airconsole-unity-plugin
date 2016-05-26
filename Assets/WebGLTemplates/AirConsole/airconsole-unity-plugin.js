@@ -10,8 +10,6 @@
 var is_editor = false;
 var is_web_view = false;
 var is_unity_ready = false;
-var game_id;
-var game_version;
 var ignore_resize = false;
 
 function getURLParameterByName(name) {
@@ -269,6 +267,7 @@ function initAirConsole() {
 
 	if (is_web_view) {
 	    // tell webView screen.html is ready
-	    Unity.call(JSON.stringify({"action": "onLaunchApp", "game_id" : game_id, "game_version" : game_version}));
+        var parts = document.location.href.split("/");
+	    Unity.call(JSON.stringify({"action": "onLaunchApp", "game_id" : parts[parts.length-3].replace(".cdn.airconsole.com", ""), "game_version" : parts[parts.length-2]}));
 	}
 }

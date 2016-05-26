@@ -648,7 +648,7 @@ namespace NDream.AirConsole {
 		public UnityEngine.Object controllerHtml;
 		public bool autoScaleCanvas = true;
 #if UNITY_ANDROID
-        public static string androidTvGameVersion;
+        public string androidTvGameVersion;
 		public AndroidUIResizeMode androidUIResizeMode;
 		public Sprite webViewLoadingSprite;
 #endif
@@ -676,7 +676,8 @@ namespace NDream.AirConsole {
         }
 
         void Start() {
-            // application has to run in background
+						
+			// application has to run in background
 #if UNITY_ANDROID && !UNITY_EDITOR
             Application.runInBackground = false;
 #else
@@ -1094,7 +1095,7 @@ namespace NDream.AirConsole {
 #if UNITY_ANDROID
         private void InitWebView() {
 
-			if (AirConsole.androidTvGameVersion != null && AirConsole.androidTvGameVersion != "") {
+            if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
 
                 if(webViewObject == null) {
 
@@ -1104,23 +1105,30 @@ namespace NDream.AirConsole {
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
                     url += "&game-id=" + Application.bundleIdentifier;
-					url += "&game-version=" + AirConsole.androidTvGameVersion;
+                    url += "&game-version=" + this.androidTvGameVersion;
 
-                    webViewObject.SetMargins(0, 0, 0, 0);
+                    webViewObject.SetMargins(0, Screen.height, 0, -Screen.height);
                     webViewObject.SetVisibility(true);
                     webViewObject.LoadURL(url);
 
 					//Display loading Screen
 					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
-					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
 					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
-					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform);
-					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform);
+					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
 					webViewLoadingImage.sprite = webViewLoadingSprite;
 					webViewLoadingBG.color = Color.black;
+					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
+					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
 					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
 					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
 					webViewLoadingImage.preserveAspect = true;
+
+					if (webViewLoadingSprite == null){
+						webViewLoadingImage.sprite = Resources.Load("AirConsoleLogoLoadingScreen", typeof(Sprite)) as Sprite;
+					}
 					//
                 }
 
@@ -1135,7 +1143,7 @@ namespace NDream.AirConsole {
             Debug.Log("onLaunchApp");
 			string gameId = (string)msg ["game_id"];
 			string gameVersion = (string)msg ["game_version"];
-			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.androidTvGameVersion) {
+			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
 				
 				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
@@ -1187,6 +1195,7 @@ namespace NDream.AirConsole {
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
 			GameObject.Destroy (webViewLoadingCanvas.gameObject);
+			webViewObject.SetMargins(0, 0, 0, 0);
 		}
 
 		private void OnLevelWasLoaded(){
