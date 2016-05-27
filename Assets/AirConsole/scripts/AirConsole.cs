@@ -659,15 +659,8 @@ namespace NDream.AirConsole {
 #region unity functions
 
         void Awake() {
-
-            // unity singleton implementation
-            if (_instance == null) {
-                _instance = this;
-                DontDestroyOnLoad(this);
-            } else {
-                if (this != _instance) {
-                    Destroy(this.gameObject);
-                }
+			if (instance != this) {
+              Destroy(this.gameObject);
             }
 
             // always set default object name 
@@ -1100,6 +1093,7 @@ namespace NDream.AirConsole {
                 if(webViewObject == null) {
 
                     webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+					GameObject.DontDestroyOnLoad(webViewObject.gameObject);
                     webViewObject.Init((msg) => ProcessJS(msg));
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
@@ -1112,7 +1106,9 @@ namespace NDream.AirConsole {
                     webViewObject.LoadURL(url);
 
 					//Display loading Screen
+
 					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
+#if !UNITY_EDITOR
 					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
 					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
 					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
@@ -1129,7 +1125,7 @@ namespace NDream.AirConsole {
 					if (webViewLoadingSprite == null){
 						webViewLoadingImage.sprite = Resources.Load("AirConsoleLogoLoadingScreen", typeof(Sprite)) as Sprite;
 					}
-					//
+#endif
                 }
 
             } else {
@@ -1198,7 +1194,11 @@ namespace NDream.AirConsole {
 			webViewObject.SetMargins(0, 0, 0, 0);
 		}
 
-		private void OnLevelWasLoaded(){
+		private void OnLevelWasLoaded() {
+			if (instance != this) {
+				return;
+			}
+
 			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera) {
 				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - webViewHeight);
 			}

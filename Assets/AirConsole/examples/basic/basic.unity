@@ -2260,7 +2260,7 @@ MonoBehaviour:
   browserStartMode: 0
   controllerHtml: {fileID: 4900000, guid: 24d0ea9f52a200b479f21be5710f94ac, type: 3}
   autoScaleCanvas: 1
-  androidTvGameVersion: 2016-05-26-08-14-04
+  androidTvGameVersion: 2016-05-27-12-17-10
   androidUIResizeMode: 1
   webViewLoadingSprite: {fileID: 0}
 --- !u!4 &841124342
@@ -3932,7 +3932,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1064046635}
   m_Direction: 2
   m_Value: 0
-  m_Size: 1
+  m_Size: 0.99999994
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
