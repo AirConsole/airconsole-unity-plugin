@@ -1184,7 +1184,7 @@ namespace NDream.AirConsole {
 			}
 
             webViewObject.SetMargins(0, 0, 0, Screen.height - h);
-			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera) {
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
 				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - h);
 			}
         }
@@ -1199,7 +1199,7 @@ namespace NDream.AirConsole {
 				return;
 			}
 
-			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera) {
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
 				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - webViewHeight);
 			}
 
