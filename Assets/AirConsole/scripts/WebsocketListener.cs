@@ -11,29 +11,42 @@ using Newtonsoft.Json.Linq;
 
 namespace NDream.AirConsole {
 
-    // event delegates
-    public delegate void OnReadyInternal(JObject data);
-    public delegate void OnMessageInternal(JObject data);
-    public delegate void OnDeviceStateChangeInternal(JObject data);
-	public delegate void OnConnectInternal(JObject data);
-	public delegate void OnDisconnectInternal(JObject data);
-	public delegate void OnCustomDeviceStateChangeInternal(JObject data);
-	public delegate void OnDeviceProfileChangeInternal(JObject data);
-	public delegate void OnAdShowInternal(JObject data);
-	public delegate void OnAdCompleteInternal(JObject data);
-	public delegate void OnGameEndInternal(JObject data);
-	public delegate void OnLaunchAppInternal(JObject data);
-	public delegate void OnUnityWebviewResizeInternal(JObject data);
-	public delegate void OnUnityWebviewPlatformReadyInternal(JObject data);
-    public delegate void OnCloseInternal();
+	// event delegates
+	public delegate void OnReadyInternal (JObject data);
 
-    public class WebsocketListener : WebSocketBehavior {
+	public delegate void OnMessageInternal (JObject data);
 
-        // events
-        public event OnReadyInternal onReady;
-        public event OnCloseInternal onClose;
-        public event OnMessageInternal onMessage;
-        public event OnDeviceStateChangeInternal onDeviceStateChange;
+	public delegate void OnDeviceStateChangeInternal (JObject data);
+
+	public delegate void OnConnectInternal (JObject data);
+
+	public delegate void OnDisconnectInternal (JObject data);
+
+	public delegate void OnCustomDeviceStateChangeInternal (JObject data);
+
+	public delegate void OnDeviceProfileChangeInternal (JObject data);
+
+	public delegate void OnAdShowInternal (JObject data);
+
+	public delegate void OnAdCompleteInternal (JObject data);
+
+	public delegate void OnGameEndInternal (JObject data);
+
+	public delegate void OnLaunchAppInternal (JObject data);
+
+	public delegate void OnUnityWebviewResizeInternal (JObject data);
+
+	public delegate void OnUnityWebviewPlatformReadyInternal (JObject data);
+
+	public delegate void OnCloseInternal ();
+
+	public class WebsocketListener : WebSocketBehavior {
+
+		// events
+		public event OnReadyInternal onReady;
+		public event OnCloseInternal onClose;
+		public event OnMessageInternal onMessage;
+		public event OnDeviceStateChangeInternal onDeviceStateChange;
 		public event OnConnectInternal onConnect;
 		public event OnDisconnectInternal onDisconnect;
 		public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
@@ -45,8 +58,8 @@ namespace NDream.AirConsole {
 		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
 		public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
 
-        // private vars
-        private bool isReady;
+		// private vars
+		private bool isReady;
 
 #if UNITY_ANDROID
         WebViewObject webViewObject;
@@ -56,163 +69,161 @@ namespace NDream.AirConsole {
             this.webViewObject = webViewObject;
         }
 #else
-        public WebsocketListener() {
-            base.IgnoreExtensions = true;
-        }
+		public WebsocketListener () {
+			base.IgnoreExtensions = true;
+		}
 #endif
 
-        protected override void OnMessage(MessageEventArgs e) {
-            this.ProcessMessage(e.Data);
-        }
+		protected override void OnMessage (MessageEventArgs e) {
+			this.ProcessMessage (e.Data);
+		}
 
-        protected override void OnOpen() {
-            base.OnOpen();
+		protected override void OnOpen () {
+			base.OnOpen ();
 
-            // send welcome debug message to screen.html
-            Send(@"{ ""action"": ""debug"", ""data"": ""welcome screen.html!"" }");
+			// send welcome debug message to screen.html
+			Send (@"{ ""action"": ""debug"", ""data"": ""welcome screen.html!"" }");
 
-            if (Settings.debug.info) {
-                Debug.Log("AirConsole: screen.html connected!");
-            }
-        }
+			if (Settings.debug.info) {
+				Debug.Log ("AirConsole: screen.html connected!");
+			}
+		}
 
-        protected override void OnClose(CloseEventArgs e) {
-            this.isReady = false;
+		protected override void OnClose (CloseEventArgs e) {
+			this.isReady = false;
 
-            if (this.onClose != null) {
-                this.onClose();
-            }
+			if (this.onClose != null) {
+				this.onClose ();
+			}
 
-            if (Settings.debug.info) {
-                Debug.Log("AirConsole: screen.html disconnected");
-            }
+			if (Settings.debug.info) {
+				Debug.Log ("AirConsole: screen.html disconnected");
+			}
            
-            base.OnClose(e);
-        }
+			base.OnClose (e);
+		}
 
-        protected override void OnError(ErrorEventArgs e) {
-            base.OnError(e);
+		protected override void OnError (ErrorEventArgs e) {
+			base.OnError (e);
 
-            if (Settings.debug.error) {
-                Debug.LogError("AirConsole: "+e.Message);
-                Debug.LogError("AirConsole: "+e.Exception);
-            }
-        }
+			if (Settings.debug.error) {
+				Debug.LogError ("AirConsole: " + e.Message);
+				Debug.LogError ("AirConsole: " + e.Exception);
+			}
+		}
 
-        public void ProcessMessage(string data) {
+		public void ProcessMessage (string data) {
 
-            try {
+			try {
 
-                // parse json string
-                JObject msg = JObject.Parse(data);
+				// parse json string
+				JObject msg = JObject.Parse (data);
 
-                if ((string)msg["action"] == "onReady") {
+				if ((string)msg ["action"] == "onReady") {
 
-                    this.isReady = true;
+					this.isReady = true;
 
-                    if (this.onReady != null) {
-                        this.onReady(msg);
-                    }
+					if (this.onReady != null) {
+						this.onReady (msg);
+					}
 
-                    if (Settings.debug.info) {
-                        Debug.Log("AirConsole: Connections are ready!");
-                    }
-                } else if ((string)msg["action"] == "onMessage") {
+					if (Settings.debug.info) {
+						Debug.Log ("AirConsole: Connections are ready!");
+					}
+				} else if ((string)msg ["action"] == "onMessage") {
 
-                    if (this.onMessage != null) {
-                        this.onMessage(msg);
-                    }
-                } else if ((string)msg["action"] == "onDeviceStateChange") {
+					if (this.onMessage != null) {
+						this.onMessage (msg);
+					}
+				} else if ((string)msg ["action"] == "onDeviceStateChange") {
 
-                    if (this.onDeviceStateChange != null) {
-                        this.onDeviceStateChange(msg);
-                    }
-				} else if ((string)msg["action"] == "onConnect") {
+					if (this.onDeviceStateChange != null) {
+						this.onDeviceStateChange (msg);
+					}
+				} else if ((string)msg ["action"] == "onConnect") {
 					
 					if (this.onConnect != null) {
-						this.onConnect(msg);
+						this.onConnect (msg);
 					}
-				} else if ((string)msg["action"] == "onDisconnect") {
+				} else if ((string)msg ["action"] == "onDisconnect") {
 					
 					if (this.onDisconnect != null) {
-						this.onDisconnect(msg);
+						this.onDisconnect (msg);
 					}
-				} else if ((string)msg["action"] == "onCustomDeviceStateChange") {
+				} else if ((string)msg ["action"] == "onCustomDeviceStateChange") {
 
 					if (this.onCustomDeviceStateChange != null) {
-						this.onCustomDeviceStateChange(msg);
+						this.onCustomDeviceStateChange (msg);
 					}
-				} else if ((string)msg["action"] == "onDeviceProfileChange") {
+				} else if ((string)msg ["action"] == "onDeviceProfileChange") {
 					
 					if (this.onDeviceProfileChange != null) {
-						this.onDeviceProfileChange(msg);
+						this.onDeviceProfileChange (msg);
 					}
-				}else if ((string)msg["action"] == "onAdShow") {
+				} else if ((string)msg ["action"] == "onAdShow") {
 					
 					if (this.onAdShow != null) {
-						this.onAdShow(msg);
+						this.onAdShow (msg);
 					}
-				} else if ((string)msg["action"] == "onAdComplete") {
+				} else if ((string)msg ["action"] == "onAdComplete") {
 					
 					if (this.onAdComplete != null) {
-						this.onAdComplete(msg);
+						this.onAdComplete (msg);
 					}
-				} else if ((string)msg["action"] == "onGameEnd") {
+				} else if ((string)msg ["action"] == "onGameEnd") {
 					
 					if (this.onGameEnd != null) {
-						this.onGameEnd(msg);
+						this.onGameEnd (msg);
 					}
-				} else if ((string)msg["action"] == "onLaunchApp") {
+				} else if ((string)msg ["action"] == "onLaunchApp") {
 
 					if (this.onLaunchApp != null) {
-						this.onLaunchApp(msg);
-                    }
-                } else if ((string)msg["action"] == "onUnityWebviewResize") {
+						this.onLaunchApp (msg);
+					}
+				} else if ((string)msg ["action"] == "onUnityWebviewResize") {
 
-                    if (this.onUnityWebviewResize != null) {
-                        this.onUnityWebviewResize(msg);
-                    }
-				} else if ((string)msg["action"] == "onUnityWebviewPlatformReady") {
+					if (this.onUnityWebviewResize != null) {
+						this.onUnityWebviewResize (msg);
+					}
+				} else if ((string)msg ["action"] == "onUnityWebviewPlatformReady") {
 					
 					if (this.onUnityWebviewPlatformReady != null) {
-						this.onUnityWebviewPlatformReady(msg);
+						this.onUnityWebviewPlatformReady (msg);
 					}
 				}
 
 
-            }
+			} catch (Exception e) {
 
-            catch (Exception e) {
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+					Debug.LogError (e.StackTrace);
+				}
+			}
+		}
 
-                if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
-                    Debug.LogError(e.StackTrace);
-                }
-            }
-        }
+		public bool IsReady () {
+			return isReady;
+		}
 
-        public bool IsReady() {
-            return isReady;
-        }
+		public void Message (JObject data) {
 
-        public void Message(JObject data) {
+			if (Application.platform == RuntimePlatform.WebGLPlayer) {
 
-            if (Application.platform == RuntimePlatform.WebGLPlayer) {
+				Application.ExternalCall ("window.app.processUnityData", data.ToString ());
 
-                Application.ExternalCall("window.app.processUnityData", data.ToString());
-
-            } else if (Application.platform == RuntimePlatform.Android) {
+			} else if (Application.platform == RuntimePlatform.Android) {
 
 #if UNITY_ANDROID
                 webViewObject.EvaluateJS("androidUnityPostMessage('" + data.ToString().Replace("'", "\\'") + "');");
 #endif
 
-             } else {
+			} else {
 
-                 Send(data.ToString());
-            }
-        }
+				Send (data.ToString ());
+			}
+		}
 
-    }
+	}
 }
 #endif

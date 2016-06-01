@@ -4,94 +4,92 @@ using UnityEditor;
 using System.Collections;
 
 namespace NDream.AirConsole.Editor {
+	public class SettingWindow : EditorWindow {
 
-    public class SettingWindow : EditorWindow {
+		GUIStyle styleBlack = new GUIStyle ();
+		bool groupEnabled = false;
+		static Texture2D bg;
+		static Texture logo;
+		static Texture logoSmall;
+		static GUIContent titleInfo;
 
-        GUIStyle styleBlack = new GUIStyle();
-        bool groupEnabled = false;
+		public void OnEnable () {
 
-        static Texture2D bg;
-        static Texture logo;
-        static Texture logoSmall;
-        static GUIContent titleInfo;
+			// get images
+			bg = (Texture2D)Resources.Load ("AirConsoleBg");
+			logo = (Texture)Resources.Load ("AirConsoleLogoText");
+			logoSmall = (Texture)Resources.Load ("AirConsoleLogoSmall");
+			titleInfo = new GUIContent ("AirConsole", logoSmall, "AirConsole Settings");
 
-        public void OnEnable() {
+			// setup style for airconsole logo
+			styleBlack.normal.background = bg;
+			styleBlack.normal.textColor = Color.white;
+			styleBlack.margin.top = 5;
+			styleBlack.padding.right = 5;
+		}
 
-            // get images
-            bg = (Texture2D)Resources.Load("AirConsoleBg");
-            logo = (Texture)Resources.Load("AirConsoleLogoText");
-            logoSmall = (Texture)Resources.Load("AirConsoleLogoSmall");
-            titleInfo = new GUIContent("AirConsole", logoSmall, "AirConsole Settings");
+		[MenuItem("Window/AirConsole/Settings")]
+		static void Init () {
 
-            // setup style for airconsole logo
-            styleBlack.normal.background = bg;
-            styleBlack.normal.textColor = Color.white;
-            styleBlack.margin.top = 5;
-            styleBlack.padding.right = 5;
-        }
+			SettingWindow window = (SettingWindow)EditorWindow.GetWindow (typeof(SettingWindow));
+			window.titleContent = titleInfo;
+			window.Show ();
+		}
 
-        [MenuItem("Window/AirConsole/Settings")]
-        static void Init() {
+		void OnGUI () {
 
-            SettingWindow window = (SettingWindow)EditorWindow.GetWindow(typeof(SettingWindow));
-            window.titleContent = titleInfo;
-            window.Show();
-        }
+			// show logo & version
+			EditorGUILayout.BeginHorizontal (styleBlack, GUILayout.Height (30));
+			GUILayout.Label (logo, GUILayout.Width (128), GUILayout.Height (30));
+			GUILayout.FlexibleSpace ();
+			GUILayout.Label ("v" + Settings.VERSION, styleBlack);
+			EditorGUILayout.EndHorizontal ();
 
-        void OnGUI() {
+			GUILayout.Label ("AirConsole Settings", EditorStyles.boldLabel);
 
-            // show logo & version
-            EditorGUILayout.BeginHorizontal(styleBlack, GUILayout.Height(30));
-            GUILayout.Label(logo, GUILayout.Width(128), GUILayout.Height(30));
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("v" + Settings.VERSION, styleBlack);
-            EditorGUILayout.EndHorizontal();
+			Settings.webSocketPort = EditorGUILayout.IntField ("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth (200));
+			EditorPrefs.SetInt ("webSocketPort", Settings.webSocketPort);
 
-            GUILayout.Label("AirConsole Settings", EditorStyles.boldLabel);
+			Settings.webServerPort = EditorGUILayout.IntField ("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth (200));
+			EditorPrefs.SetInt ("webServerPort", Settings.webServerPort);
 
-            Settings.webSocketPort = EditorGUILayout.IntField("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth(200));
-            EditorPrefs.SetInt("webSocketPort", Settings.webSocketPort);
+			EditorGUILayout.LabelField ("Webserver is running", Extentions.webserver.IsRunning ().ToString ());
 
-            Settings.webServerPort = EditorGUILayout.IntField("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth(200));
-            EditorPrefs.SetInt("webServerPort", Settings.webServerPort);
+			GUILayout.BeginHorizontal ();
 
-            EditorGUILayout.LabelField("Webserver is running", Extentions.webserver.IsRunning().ToString());
+			GUILayout.Space (150);
+			if (GUILayout.Button ("Stop", GUILayout.MaxWidth (60))) {
+				Extentions.webserver.Stop ();
+			}
+			if (GUILayout.Button ("Restart", GUILayout.MaxWidth (60))) {
+				Extentions.webserver.Restart ();
+			}
 
-            GUILayout.BeginHorizontal();
+			GUILayout.EndHorizontal ();
 
-            GUILayout.Space(150);
-            if (GUILayout.Button("Stop", GUILayout.MaxWidth(60))) {
-                Extentions.webserver.Stop();
-            }
-            if (GUILayout.Button("Restart", GUILayout.MaxWidth(60))) {
-                Extentions.webserver.Restart();
-            }
+			groupEnabled = EditorGUILayout.BeginToggleGroup ("Debug Settings", groupEnabled);
 
-            GUILayout.EndHorizontal();
+			Settings.debug.info = EditorGUILayout.Toggle ("Info", Settings.debug.info);
+			EditorPrefs.SetBool ("debugInfo", Settings.debug.info);
 
-            groupEnabled = EditorGUILayout.BeginToggleGroup("Debug Settings", groupEnabled);
+			Settings.debug.warning = EditorGUILayout.Toggle ("Warning", Settings.debug.warning);
+			EditorPrefs.SetBool ("debugWarning", Settings.debug.warning);
 
-            Settings.debug.info = EditorGUILayout.Toggle("Info", Settings.debug.info);
-            EditorPrefs.SetBool("debugInfo", Settings.debug.info);
+			Settings.debug.error = EditorGUILayout.Toggle ("Error", Settings.debug.error);
+			EditorPrefs.SetBool ("debugError", Settings.debug.error);
 
-            Settings.debug.warning = EditorGUILayout.Toggle("Warning", Settings.debug.warning);
-            EditorPrefs.SetBool("debugWarning", Settings.debug.warning);
+			EditorGUILayout.EndToggleGroup ();
 
-            Settings.debug.error = EditorGUILayout.Toggle("Error", Settings.debug.error);
-            EditorPrefs.SetBool("debugError", Settings.debug.error);
-
-            EditorGUILayout.EndToggleGroup();
-
-            EditorGUILayout.BeginHorizontal(styleBlack);
+			EditorGUILayout.BeginHorizontal (styleBlack);
             
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Reset Settings", GUILayout.MaxWidth(110))) {
-                Extentions.ResetDefaultValues();
-            }
+			GUILayout.FlexibleSpace ();
+			if (GUILayout.Button ("Reset Settings", GUILayout.MaxWidth (110))) {
+				Extentions.ResetDefaultValues ();
+			}
 
-            GUILayout.EndHorizontal();
+			GUILayout.EndHorizontal ();
 
-        }
-    }
+		}
+	}
 }
 #endif

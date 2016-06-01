@@ -4,69 +4,67 @@ using System.Collections;
 using UnityEditor;
 
 namespace NDream.AirConsole.Editor {
+	[CustomEditor(typeof(AirConsole))]
+	public class Inspector : UnityEditor.Editor {
 
-    [CustomEditor(typeof(AirConsole))]
-    public class Inspector : UnityEditor.Editor {
+		GUIStyle styleBlack = new GUIStyle ();
+		Texture2D bg;
+		Texture logo;
+		AirConsole controller;
+		private SerializedProperty gameId;
+		private SerializedProperty gameVersion;
 
-        GUIStyle styleBlack = new GUIStyle();
-        Texture2D bg;
-        Texture logo;
-        AirConsole controller;
+		public void OnEnable () {
 
-        private SerializedProperty gameId;
-        private SerializedProperty gameVersion;
+			// get logos
+			bg = (Texture2D)Resources.Load ("AirConsoleBg");
+			logo = (Texture)Resources.Load ("AirConsoleLogoText");
 
-        public void OnEnable() {
+			// setup style for airconsole logo
+			styleBlack.normal.background = bg;
+			styleBlack.normal.textColor = Color.white;
+			styleBlack.alignment = TextAnchor.MiddleRight;
+			styleBlack.margin.top = 5;
+			styleBlack.margin.bottom = 5;
+			styleBlack.padding.right = 2;
+			styleBlack.padding.bottom = 2;
+		}
 
-            // get logos
-            bg = (Texture2D)Resources.Load("AirConsoleBg");
-            logo = (Texture)Resources.Load("AirConsoleLogoText");
+		public override void OnInspectorGUI () {
 
-            // setup style for airconsole logo
-            styleBlack.normal.background = bg;
-            styleBlack.normal.textColor = Color.white;
-            styleBlack.alignment = TextAnchor.MiddleRight;
-            styleBlack.margin.top = 5;
-            styleBlack.margin.bottom = 5;
-            styleBlack.padding.right = 2;
-            styleBlack.padding.bottom = 2;
-        }
+			controller = (AirConsole)target;
 
-        public override void OnInspectorGUI() {
+			// show logo & version
+			EditorGUILayout.BeginHorizontal (styleBlack, GUILayout.Height (30));
+			GUILayout.Label (logo, GUILayout.Width (128), GUILayout.Height (30));
+			GUILayout.FlexibleSpace ();
+			GUILayout.Label ("v" + Settings.VERSION, styleBlack);
+			EditorGUILayout.EndHorizontal ();
 
-            controller = (AirConsole)target;
+			// show default inspector property editor withouth script referenz
+			serializedObject.Update ();
+			DrawPropertiesExcluding (serializedObject, new string[] { "m_Script" });
+			serializedObject.ApplyModifiedProperties ();
 
-            // show logo & version
-            EditorGUILayout.BeginHorizontal(styleBlack, GUILayout.Height(30));
-            GUILayout.Label(logo, GUILayout.Width(128), GUILayout.Height(30));
-            GUILayout.FlexibleSpace();
-            GUILayout.Label("v" + Settings.VERSION, styleBlack);
-            EditorGUILayout.EndHorizontal();
+			EditorGUILayout.BeginHorizontal (styleBlack);
+			// check if a port was exported
+			if (System.IO.File.Exists (EditorPrefs.GetString ("airconsolePortPath") + "/screen.html")) {
 
-            // show default inspector property editor withouth script referenz
-            serializedObject.Update();
-            DrawPropertiesExcluding(serializedObject, new string[] { "m_Script" });
-            serializedObject.ApplyModifiedProperties();
+				if (GUILayout.Button ("Open Exported Port", GUILayout.MaxWidth (130))) {
 
-            EditorGUILayout.BeginHorizontal(styleBlack);
-            // check if a port was exported
-            if (System.IO.File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
+					Extentions.OpenBrowser (controller, EditorPrefs.GetString ("airconsolePortPath"));
+				}
+			}
 
-                if (GUILayout.Button("Open Exported Port", GUILayout.MaxWidth(130))) {
+			GUILayout.FlexibleSpace ();
 
-                    Extentions.OpenBrowser(controller, EditorPrefs.GetString("airconsolePortPath"));
-                }
-            }
+			if (GUILayout.Button ("Settings")) {
+				SettingWindow window = (SettingWindow)EditorWindow.GetWindow (typeof(SettingWindow));
+				window.Show ();
+			}
 
-            GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("Settings")) {
-                SettingWindow window = (SettingWindow)EditorWindow.GetWindow(typeof(SettingWindow));
-                window.Show();
-            }
-
-            EditorGUILayout.EndHorizontal();
-        }
-    }
+			EditorGUILayout.EndHorizontal ();
+		}
+	}
 }
 #endif
