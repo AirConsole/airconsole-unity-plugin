@@ -27,7 +27,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
 using System.Dynamic;
 #endif
 using System.Globalization;
@@ -155,15 +155,15 @@ namespace Newtonsoft.Json.Serialization
         SerializeISerializable(writer, (ISerializable) value, (JsonISerializableContract) valueContract);
       }
 #endif
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       else if (valueContract is JsonDynamicContract)
       {
         SerializeDynamic(writer, (IDynamicMetaObjectProvider) value, (JsonDynamicContract) valueContract);
       }
 #endif
-    }
+        }
 
-    private bool ShouldWriteReference(object value, JsonProperty property, JsonContract contract)
+        private bool ShouldWriteReference(object value, JsonProperty property, JsonContract contract)
     {
       if (value == null)
         return false;
@@ -498,7 +498,7 @@ namespace Newtonsoft.Json.Serialization
     }
 #endif
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
     /// <summary>
     /// Serializes the dynamic.
     /// </summary>
@@ -533,7 +533,7 @@ namespace Newtonsoft.Json.Serialization
     }
 #endif
 
-    private bool ShouldWriteType(TypeNameHandling typeNameHandlingFlag, JsonContract contract, JsonProperty member, JsonContract collectionValueContract)
+        private bool ShouldWriteType(TypeNameHandling typeNameHandlingFlag, JsonContract contract, JsonProperty member, JsonContract collectionValueContract)
     {
       if (HasFlag(((member != null) ? member.TypeNameHandling : null) ?? Serializer.TypeNameHandling, typeNameHandlingFlag))
         return true;

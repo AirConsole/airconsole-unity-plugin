@@ -42,18 +42,18 @@ namespace Newtonsoft.Json.Linq
   /// Represents a token that can contain other tokens.
   /// </summary>
   public abstract class JContainer : JToken, IList<JToken>
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     , ITypedList, IBindingList
-#elif !(UNITY_WEBGL || UNITY_EDITOR)
+#elif !(UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 , IList, INotifyCollectionChanged
 #else
 , IList
 #endif
-#if !(SILVERLIGHT || NET20 || NET35 || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || NET20 || NET35 || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     , INotifyCollectionChanged
 #endif
  {
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     /// <summary>
     /// Occurs when the list changes or an item in the list changes.
     /// </summary>
@@ -64,18 +64,18 @@ namespace Newtonsoft.Json.Linq
     /// </summary>
     public event AddingNewEventHandler AddingNew;
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
     /// <summary>
     /// Occurs when the items list of the collection has changed, or the collection is reset.
     /// </summary>
     public event NotifyCollectionChangedEventHandler CollectionChanged;
 #endif
 
-      /// <summary>
-    /// Gets the container's children tokens.
-    /// </summary>
-    /// <value>The container's children tokens.</value>
-    protected abstract IList<JToken> ChildrenTokens { get; }
+        /// <summary>
+        /// Gets the container's children tokens.
+        /// </summary>
+        /// <value>The container's children tokens.</value>
+        protected abstract IList<JToken> ChildrenTokens { get; }
 
     private object _syncRoot;
     private bool _busy;
@@ -100,7 +100,7 @@ namespace Newtonsoft.Json.Linq
         throw new InvalidOperationException("Cannot change {0} during a collection change event.".FormatWith(CultureInfo.InvariantCulture, GetType()));
     }
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     /// <summary>
     /// Raises the <see cref="AddingNew"/> event.
     /// </summary>
@@ -134,7 +134,7 @@ namespace Newtonsoft.Json.Linq
       }
     }
 #endif
-#if SILVERLIGHT && !UNITY_WEBGL || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL) 
+#if SILVERLIGHT && !UNITY_WEBGL || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
     /// <summary>
     /// Raises the <see cref="CollectionChanged"/> event.
     /// </summary>
@@ -158,13 +158,13 @@ namespace Newtonsoft.Json.Linq
     }
 #endif
 
-    /// <summary>
-    /// Gets a value indicating whether this token has childen tokens.
-    /// </summary>
-    /// <value>
-    /// 	<c>true</c> if this token has child values; otherwise, <c>false</c>.
-    /// </value>
-    public override bool HasValues
+        /// <summary>
+        /// Gets a value indicating whether this token has childen tokens.
+        /// </summary>
+        /// <value>
+        /// 	<c>true</c> if this token has child values; otherwise, <c>false</c>.
+        /// </value>
+        public override bool HasValues
     {
       get { return ChildrenTokens.Count > 0; }
     }
@@ -340,17 +340,17 @@ namespace Newtonsoft.Json.Linq
 
       ChildrenTokens.Insert(index, item);
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (ListChanged != null)
         OnListChanged(new ListChangedEventArgs(ListChangedType.ItemAdded, index));
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       if (CollectionChanged != null)
         OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
 #endif
-    }
+        }
 
-    internal virtual void RemoveItemAt(int index)
+        internal virtual void RemoveItemAt(int index)
     {
       if (index < 0)
         throw new ArgumentOutOfRangeException("index", "Index is less than 0.");
@@ -374,15 +374,15 @@ namespace Newtonsoft.Json.Linq
 
       ChildrenTokens.RemoveAt(index);
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       OnListChanged(new ListChangedEventArgs(ListChangedType.ItemDeleted, index));
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
 #endif
-    }
+        }
 
-    internal virtual bool RemoveItem(JToken item)
+        internal virtual bool RemoveItem(JToken item)
     {
       int index = IndexOfItem(item);
       if (index >= 0)
@@ -436,15 +436,15 @@ namespace Newtonsoft.Json.Linq
       existing.Previous = null;
       existing.Next = null;
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       OnListChanged(new ListChangedEventArgs(ListChangedType.ItemChanged, index));
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, existing, index));
 #endif
-    }
+        }
 
-    internal virtual void ClearItems()
+        internal virtual void ClearItems()
     {
       CheckReentrancy();
 
@@ -457,15 +457,15 @@ namespace Newtonsoft.Json.Linq
 
       ChildrenTokens.Clear();
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
 #endif
-#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL)
+#if !UNITY_WEBGL && SILVERLIGHT || !(NET20 || NET35 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
 #endif
-    }
+        }
 
-    internal virtual void ReplaceItem(JToken existing, JToken replacement)
+        internal virtual void ReplaceItem(JToken existing, JToken replacement)
     {
       if (existing == null || existing.Parent != this)
         return;
@@ -724,7 +724,7 @@ namespace Newtonsoft.Json.Linq
       return hashCode;
     }
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     string ITypedList.GetListName(PropertyDescriptor[] listAccessors)
     {
       return string.Empty;
@@ -740,9 +740,9 @@ namespace Newtonsoft.Json.Linq
     }
 #endif
 
-    #region IList<JToken> Members
+        #region IList<JToken> Members
 
-    int IList<JToken>.IndexOf(JToken item)
+        int IList<JToken>.IndexOf(JToken item)
     {
       return IndexOfItem(item);
     }
@@ -899,11 +899,11 @@ namespace Newtonsoft.Json.Linq
 
     }
 
-    #endregion
+        #endregion
 
-    #region IBindingList Members
+        #region IBindingList Members
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     void IBindingList.AddIndex(PropertyDescriptor property)
     {
     }
@@ -990,6 +990,6 @@ namespace Newtonsoft.Json.Linq
     }
 #endif
 
-    #endregion
-  }
+        #endregion
+    }
 }

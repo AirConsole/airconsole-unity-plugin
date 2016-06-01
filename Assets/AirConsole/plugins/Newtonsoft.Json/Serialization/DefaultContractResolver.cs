@@ -27,7 +27,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System.Dynamic;
 #endif
 using System.Globalization;
@@ -90,12 +90,12 @@ namespace Newtonsoft.Json.Serialization
 #if !PocketPC && !SILVERLIGHT && !NET20
         new EntityKeyMemberConverter(),
 #endif
-#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
         new ExpandoObjectConverter(),
 #endif
         new BinaryConverter(),
         new KeyValuePairConverter(),
-#if !(SILVERLIGHT || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
         new XmlNodeConverter(),
         new DataSetConverter(),
         new DataTableConverter(),
@@ -669,12 +669,12 @@ namespace Newtonsoft.Json.Serialization
         return CreateISerializableContract(t);
 #endif
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (typeof(IDynamicMetaObjectProvider).IsAssignableFrom(t))
         return CreateDynamicContract(t);
 #endif
 
-      return CreateObjectContract(t);
+            return CreateObjectContract(t);
     }
 
     internal static bool CanConvertToString(Type type)

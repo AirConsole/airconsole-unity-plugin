@@ -24,7 +24,7 @@
 #endregion
 
 using System;
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System.Data.SqlTypes;
 #endif
 using System.Globalization;
@@ -79,11 +79,11 @@ namespace Newtonsoft.Json.Converters
         return binary.ToArray();
       }
 #endif
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (value is SqlBinary)
         return ((SqlBinary) value).Value;
 #endif
-      throw new Exception("Unexpected value type when writing binary: {0}".FormatWith(CultureInfo.InvariantCulture, value.GetType()));
+            throw new Exception("Unexpected value type when writing binary: {0}".FormatWith(CultureInfo.InvariantCulture, value.GetType()));
     }
 
     /// <summary>
@@ -130,11 +130,11 @@ namespace Newtonsoft.Json.Converters
       if (t.AssignableToTypeName(BinaryTypeName))
         return Activator.CreateInstance(t, data);
 #endif
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (t == typeof(SqlBinary))
         return new SqlBinary(data);
 #endif
-      throw new Exception("Unexpected object type when writing binary: {0}".FormatWith(CultureInfo.InvariantCulture, objectType));
+            throw new Exception("Unexpected object type when writing binary: {0}".FormatWith(CultureInfo.InvariantCulture, objectType));
     }
 
     private byte[] ReadByteArray(JsonReader reader)
@@ -174,11 +174,11 @@ namespace Newtonsoft.Json.Converters
       if (objectType.AssignableToTypeName(BinaryTypeName))
         return true;
 #endif
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
       if (objectType == typeof(SqlBinary) || objectType == typeof(SqlBinary?))
         return true;
 #endif
-      return false;
+            return false;
     }
   }
 }

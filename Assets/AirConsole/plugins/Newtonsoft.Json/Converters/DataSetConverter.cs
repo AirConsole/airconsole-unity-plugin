@@ -23,7 +23,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 #endregion
 
-#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
 using System;
 using System.Data;
 using Newtonsoft.Json.Serialization;

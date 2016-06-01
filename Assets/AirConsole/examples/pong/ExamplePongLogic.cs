@@ -7,21 +7,19 @@ using Newtonsoft.Json.Linq;
 
 public class ExamplePongLogic : MonoBehaviour {
 
-    public Rigidbody2D racketLeft;
-    public Rigidbody2D racketRight;
-    public Rigidbody2D ball;
-    public float ballSpeed = 10f;
-    public Text uiText;
+	public Rigidbody2D racketLeft;
+	public Rigidbody2D racketRight;
+	public Rigidbody2D ball;
+	public float ballSpeed = 10f;
+	public Text uiText;
+	private int scoreRacketLeft = 0;
+	private int scoreRacketRight = 0;
 
-
-    private int scoreRacketLeft = 0;
-    private int scoreRacketRight = 0;
-
-    void Awake() {
-        AirConsole.instance.onMessage += OnMessage;
+	void Awake () {
+		AirConsole.instance.onMessage += OnMessage;
 		AirConsole.instance.onConnect += OnConnect;
 		AirConsole.instance.onDisconnect += OnDisconnect;
-    }
+	}
 
 	/// <summary>
 	/// We start the game if 2 players are connected and the game is not already running (activePlayers == null).
@@ -32,10 +30,10 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// 
 	/// </summary>
 	/// <param name="device_id">The device_id that connected</param>
-	void OnConnect(int device_id) {
+	void OnConnect (int device_id) {
 		if (AirConsole.instance.GetActivePlayerDeviceIds.Count == 0) {
-			if (AirConsole.instance.GetControllerDeviceIds().Count >= 2) {
-				StartGame();
+			if (AirConsole.instance.GetControllerDeviceIds ().Count >= 2) {
+				StartGame ();
 			} else {
 				uiText.text = "NEED MORE PLAYERS";
 			}
@@ -46,11 +44,11 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// If the game is running and one of the active players leaves, we reset the game.
 	/// </summary>
 	/// <param name="device_id">The device_id that has left.</param>
-	void OnDisconnect(int device_id) {
-		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+	void OnDisconnect (int device_id) {
+		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber (device_id);
 		if (active_player != -1) {
 			if (AirConsole.instance.GetControllerDeviceIds ().Count >= 2) {
-				StartGame();
+				StartGame ();
 			} else {
 				AirConsole.instance.SetActivePlayers (0);
 				ResetBall (false);
@@ -64,8 +62,8 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// </summary>
 	/// <param name="from">From.</param>
 	/// <param name="data">Data.</param>
-    void OnMessage(int device_id, JToken data) {
-		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+	void OnMessage (int device_id, JToken data) {
+		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber (device_id);
 		if (active_player != -1) {
 			if (active_player == 0) {
 				this.racketLeft.velocity = Vector3.up * (float)data ["move"];
@@ -74,17 +72,17 @@ public class ExamplePongLogic : MonoBehaviour {
 				this.racketRight.velocity = Vector3.up * (float)data ["move"];
 			}
 		}
-    }
+	}
 
-	void StartGame() {
+	void StartGame () {
 		AirConsole.instance.SetActivePlayers (2);
 		ResetBall (true);
 		scoreRacketLeft = 0;
 		scoreRacketRight = 0;
-		UpdateScoreUI();
+		UpdateScoreUI ();
 	}
 
-	void ResetBall(bool move) {
+	void ResetBall (bool move) {
 		
 		// place ball at center
 		this.ball.position = Vector3.zero;
@@ -98,32 +96,32 @@ public class ExamplePongLogic : MonoBehaviour {
 		}
 	}
 
-    void UpdateScoreUI() {
-        // update text canvas
-        uiText.text = scoreRacketLeft + ":" + scoreRacketRight;
-    }
+	void UpdateScoreUI () {
+		// update text canvas
+		uiText.text = scoreRacketLeft + ":" + scoreRacketRight;
+	}
 
-    void FixedUpdate() {
+	void FixedUpdate () {
 
-        // check if ball reached one of the ends
-        if(this.ball.position.x < -9f){
-            scoreRacketRight++;
-            UpdateScoreUI();
-            ResetBall(true);
-        }
+		// check if ball reached one of the ends
+		if (this.ball.position.x < -9f) {
+			scoreRacketRight++;
+			UpdateScoreUI ();
+			ResetBall (true);
+		}
 
-        if (this.ball.position.x > 9f) {
-            scoreRacketLeft++;
-            UpdateScoreUI();
-            ResetBall(true);
-        }
-    }
+		if (this.ball.position.x > 9f) {
+			scoreRacketLeft++;
+			UpdateScoreUI ();
+			ResetBall (true);
+		}
+	}
 
-    void OnDestroy() {
+	void OnDestroy () {
 
-        // unregister airconsole events on scene change
-        if (AirConsole.instance != null) {
-            AirConsole.instance.onMessage -= OnMessage;
-        }
-    }
+		// unregister airconsole events on scene change
+		if (AirConsole.instance != null) {
+			AirConsole.instance.onMessage -= OnMessage;
+		}
+	}
 }

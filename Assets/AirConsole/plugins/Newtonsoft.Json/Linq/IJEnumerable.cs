@@ -10,7 +10,7 @@ namespace Newtonsoft.Json.Linq
   /// </summary>
   /// <typeparam name="T">The type of token</typeparam>
   public interface IJEnumerable<
-#if !(NET20 || NET35 || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET20 || NET35 || SILVERLIGHT || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
     out
 #endif
 T> : IEnumerable<T> where T : JToken

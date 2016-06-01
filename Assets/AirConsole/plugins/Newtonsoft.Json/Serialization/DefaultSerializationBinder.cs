@@ -117,7 +117,7 @@ namespace Newtonsoft.Json.Serialization
       return _typeCache.Get(new TypeNameKey(assemblyName, typeName));
     }
 
-#if !(NET35 || NET20 || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
     /// <summary>
     /// When overridden in a derived class, controls the binding of a serialized object to a type.
     /// </summary>
@@ -135,5 +135,5 @@ namespace Newtonsoft.Json.Serialization
 #endif
     }
 #endif
-  }
+    }
 }

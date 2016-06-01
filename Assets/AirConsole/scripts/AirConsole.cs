@@ -8,25 +8,40 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 
-
 namespace NDream.AirConsole {
+	public enum StartMode {
+		VirtualControllers,
+		Normal,
+		NoBrowserStart
+	}
 
-    public enum StartMode {
-        VirtualControllers,
-        Normal,
-        NoBrowserStart
-    }
+	public enum AndroidUIResizeMode {
+		NoResizing,
+		ResizeCamera,
+		ResizeCameraAndReferenceResolution
+	}
 
-    public delegate void OnReady(string code);
+	public delegate void OnReady (string code);
 
-    public delegate void OnMessage(int from, JToken data);
-    public delegate void OnDeviceStateChange(int device_id, JToken user_data);
-	public delegate void OnConnect(int device_id);
-	public delegate void OnDisconnect(int device_id);
-	public delegate void OnCustomDeviceStateChange(int device_id, JToken custom_device_data);
-	public delegate void OnDeviceProfileChange(int device_id);
+	public delegate void OnMessage (int from, JToken data);
+
+	public delegate void OnDeviceStateChange (int device_id, JToken user_data);
+
+	public delegate void OnConnect (int device_id);
+
+	public delegate void OnDisconnect (int device_id);
+
+	public delegate void OnCustomDeviceStateChange (int device_id, JToken custom_device_data);
+
+	public delegate void OnDeviceProfileChange (int device_id);
+
+	public delegate void OnAdShow ();
+
+	public delegate void OnAdComplete (bool ad_was_shown);
+
+	public delegate void OnGameEnd ();
    
-    public class AirConsole : MonoBehaviour {
+	public class AirConsole : MonoBehaviour {
 		#if !DISABLE_AIRCONSOLE
 		#region airconsole api
 
@@ -39,9 +54,9 @@ namespace NDream.AirConsole {
 			get {
 				
 				if (_instance == null) {
-					_instance = GameObject.FindObjectOfType<AirConsole>();
+					_instance = GameObject.FindObjectOfType<AirConsole> ();
 					if (_instance != null) {
-						DontDestroyOnLoad(_instance.gameObject);
+						DontDestroyOnLoad (_instance.gameObject);
 					}
 				}
 				
@@ -57,7 +72,7 @@ namespace NDream.AirConsole {
 		/// connected, have loaded your game and have set a custom Device State.
 		/// </summary>
 		/// <param name="code">The AirConsole join code.</param> 
-        public event OnReady onReady;
+		public event OnReady onReady;
 
 		/// <summary>
 		/// Gets called when a message is received from another device
@@ -65,7 +80,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="from">The device ID that sent the message.</param> 
 		/// <param name="data">The data that was sent.</param>
-        public event OnMessage onMessage;
+		public event OnMessage onMessage;
 
 		/// <summary>
 		/// Gets called when a device joins/leaves a game session or updates its DeviceState (custom DeviceState, profile pic, nickname). 
@@ -73,7 +88,7 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="device_id">the device ID that changed its DeviceState.</param>
 		/// <param name="data"> the data of that device. If undefined, the device has left.</param>
-        public event OnDeviceStateChange onDeviceStateChange;
+		public event OnDeviceStateChange onDeviceStateChange;
 
 		/// <summary>
 		/// Gets called when a device has connected and loaded the game.
@@ -102,11 +117,29 @@ namespace NDream.AirConsole {
 		public event OnDeviceProfileChange onDeviceProfileChange;
 
 		/// <summary>
+		/// Gets called if a fullscreen advertisement is shown on this screen.
+		/// In case this event gets called, please mute all sounds.
+		/// </summary>
+		public event OnAdShow onAdShow;
+
+		/// <summary>
+		/// Gets called when an advertisement is finished or no advertisement was shown.
+		/// <param name="ad_was_shown">True if an ad was shown and onAdShow was called.</param>
+		/// </summary>
+		public event OnAdComplete onAdComplete;
+
+		/// <summary>
+		/// Gets called when the game should be terminated. 
+		/// In case this event gets called, please mute all sounds and stop all animations.
+		/// </summary>
+		public event OnGameEnd onGameEnd;
+
+		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
 		/// </summary>
 		/// <returns><c>true</c> if the AirConsole Unity Plugin is ready; otherwise, <c>false</c>.</returns>
-		public bool IsAirConsoleUnityPluginReady() {
-			return wsListener != null && wsListener.IsReady();
+		public bool IsAirConsoleUnityPluginReady () {
+			return wsListener != null && wsListener.IsReady ();
 		}
 
 		/// <summary>
@@ -114,39 +147,39 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="to">The device ID to send the message to.</param>
 		/// <param name="data">The data to send.</param>
-		public void Message(int to, object data) {
+		public void Message (int to, object data) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "message");
-			msg.Add("from", to);
-			msg.Add("data", JToken.FromObject(data));
+			JObject msg = new JObject ();
+			msg.Add ("action", "message");
+			msg.Add ("from", to);
+			msg.Add ("data", JToken.FromObject (data));
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
 
 		/// <summary>
 		/// Sends a message to all devices.
 		/// </summary>
 		/// <param name="data">The message to send.</param>
-		public void Broadcast(object data) {
+		public void Broadcast (object data) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "broadcast");
-			msg.Add("data", JToken.FromObject(data));
+			JObject msg = new JObject ();
+			msg.Add ("action", "broadcast");
+			msg.Add ("data", JToken.FromObject (data));
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
 
 		/// <summary>
@@ -172,10 +205,10 @@ namespace NDream.AirConsole {
 		/// http:// developers.airconsole.com/#/guides/device_ids_and_states
 		/// </summary>
 		/// <returns>The device identifier.</returns>
-		public int GetDeviceId() {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public int GetDeviceId () {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			return _device_id;
@@ -198,10 +231,10 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="data">The maximum number of controllers that should 
 		/// get a player number assigned.</param>
-		public void SetActivePlayers(int max_players=-1) {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public void SetActivePlayers (int max_players=-1) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 
@@ -209,16 +242,16 @@ namespace NDream.AirConsole {
 			_players.Clear ();
 			if (max_players == -1) {
 				max_players = device_ids.Count;
-		    }
-			for (int i = 0; i < device_ids.Count && i < max_players; ++i) {
-				_players.Add(device_ids[i]);
 			}
-			JObject msg = new JObject();
-			msg.Add("action", "setActivePlayers");
-			msg.Add("max_players", max_players);
+			for (int i = 0; i < device_ids.Count && i < max_players; ++i) {
+				_players.Add (device_ids [i]);
+			}
+			JObject msg = new JObject ();
+			msg.Add ("action", "setActivePlayers");
+			msg.Add ("max_players", max_players);
 			
-			wsListener.Message(msg);
-	    }
+			wsListener.Message (msg);
+		}
 
 		/// <summary>
 		/// Returns an array of device_ids of the active players previously set by the
@@ -226,7 +259,7 @@ namespace NDream.AirConsole {
 		/// first player, the second device_id in the array is the second player, ...
 		/// </summary>
 		public ReadOnlyCollection<int> GetActivePlayerDeviceIds {
-			get { return _players.AsReadOnly(); }
+			get { return _players.AsReadOnly (); }
 		}
 
 		/// <summary>
@@ -236,12 +269,12 @@ namespace NDream.AirConsole {
 		/// players have not been set by the screen, this function returns undefined.
 		/// </summary>
 		/// <param name="player_number">Player Number.</param>
-		public int ConvertPlayerNumberToDeviceId(int player_number) {
+		public int ConvertPlayerNumberToDeviceId (int player_number) {
 			if (player_number >= 0 && player_number < _players.Count) {
-				return _players[player_number];
-		    }
+				return _players [player_number];
+			}
 			return -1;
-	    }
+		}
 
 		/// <summary>
 		/// Returns the player number for a device_id, if the device_id is part of the
@@ -250,7 +283,7 @@ namespace NDream.AirConsole {
 		/// part of the active players, this function returns -1.
 		/// </summary>
 		/// <param name="device_id">Device id.</param>
-		public int ConvertDeviceIdToPlayerNumber(int device_id) {
+		public int ConvertDeviceIdToPlayerNumber (int device_id) {
 			return _players.IndexOf (device_id);
 		}
 		
@@ -261,16 +294,16 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <returns>The UID.</returns>
 		/// <param name="device_id">The device id for which you want the uid. Default is this device.</param>
-		public string GetUID(int device_id = -1) {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public string GetUID (int device_id = -1) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			if (device_id == -1) {
-				device_id = GetDeviceId();
+				device_id = GetDeviceId ();
 			}
-			return (string)GetDevice(GetDeviceId())["uid"];
+			return (string)GetDevice (GetDeviceId ()) ["uid"];
 			
 		}
 		
@@ -279,24 +312,23 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="device_id">The device ID of which you want the custom state. Default is this device.</param>
 		/// <returns> The custom data previously set by the device.</returns>
-		public JToken GetCustomDeviceState(int device_id = -1) {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public JToken GetCustomDeviceState (int device_id = -1) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			if (device_id == -1) {
-				device_id = GetDeviceId();
+				device_id = GetDeviceId ();
 			}
-			if (GetDevice(device_id) != null) {
+			if (GetDevice (device_id) != null) {
 				
 				try {
-					return GetDevice(device_id)["custom"];
-				}
-				catch (Exception e) {
+					return GetDevice (device_id) ["custom"];
+				} catch (Exception e) {
 					
 					if (Settings.debug.error) {
-						Debug.LogError("AirConsole: " + e.Message);
+						Debug.LogError ("AirConsole: " + e.Message);
 					}
 					return null;
 				}
@@ -304,7 +336,7 @@ namespace NDream.AirConsole {
 			} else {
 				
 				if (Settings.debug.warning) {
-					Debug.LogWarning("AirConsole: GetCustomDeviceState: device_id " + device_id + " not found");
+					Debug.LogWarning ("AirConsole: GetCustomDeviceState: device_id " + device_id + " not found");
 				}
 				return null;
 			}
@@ -314,35 +346,34 @@ namespace NDream.AirConsole {
 		/// Returns the nickname of a user.
 		/// </summary>
 		/// <param name="device_id">The device id for which you want the nickname. Default is this device. Screens don't have nicknames.</param>
-		public string GetNickname(int device_id = -1) {
+		public string GetNickname (int device_id = -1) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 
 			if (device_id == -1) {
-				device_id = GetDeviceId();
+				device_id = GetDeviceId ();
 			}
 
-			if (GetDevice(device_id) != null) {
+			if (GetDevice (device_id) != null) {
 				
 				try {
-					if (GetDevice(device_id)["nickname"] != null) {
-						return (string)GetDevice(device_id)["nickname"];
+					if (GetDevice (device_id) ["nickname"] != null) {
+						return (string)GetDevice (device_id) ["nickname"];
 					} else {
 						return "Guest " + device_id;
 					}
-				}
-				catch (Exception) { 
+				} catch (Exception) { 
 					return "Guest " + device_id; 
 				}
 				
 			} else {
 				
 				if (Settings.debug.warning) {
-					Debug.LogWarning("AirConsole: GetNickname: device_id " + device_id + " not found");
+					Debug.LogWarning ("AirConsole: GetNickname: device_id " + device_id + " not found");
 				}
 				return null;
 			}
@@ -354,24 +385,23 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="device_id">The device id for which you want a profile picture. Defaults to this device. Screens don't have profile pictures.</param>
 		/// <param name="size">The size of in pixels of the picture. Default is 64.</param>
-		public string GetProfilePicture(int device_id = -1, int size = 64) {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public string GetProfilePicture (int device_id = -1, int size = 64) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			if (device_id == -1) {
-				device_id = GetDeviceId();
+				device_id = GetDeviceId ();
 			}
-			if (GetDevice(GetDeviceId()) != null) {
+			if (GetDevice (GetDeviceId ()) != null) {
 				
 				try {
-					return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice(device_id)["uid"] + "&size=" + size;
-				}
-				catch (Exception) {
+					return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice (device_id) ["uid"] + "&size=" + size;
+				} catch (Exception) {
 					
 					if (Settings.debug.warning) {
-						Debug.LogWarning("AirConsole: GetProfilePicture: can't find profile picture of device_id:" + device_id);
+						Debug.LogWarning ("AirConsole: GetProfilePicture: can't find profile picture of device_id:" + device_id);
 					}
 					return null;
 				}
@@ -379,7 +409,7 @@ namespace NDream.AirConsole {
 			} else {
 				
 				if (Settings.debug.warning) {
-					Debug.LogWarning("AirConsole: GetProfilePicture: " + device_id + " not found");
+					Debug.LogWarning ("AirConsole: GetProfilePicture: " + device_id + " not found");
 				}
 				return null;
 			}
@@ -391,75 +421,75 @@ namespace NDream.AirConsole {
 		/// This allows you to have a synchronized clock: You can send the servertime in a message to know exactly at what point something happened on a device. 
 		/// </summary>
 		/// <returns> Timestamp in milliseconds.</returns>
-		public long GetServerTime() {
+		public long GetServerTime () {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			return (long)(DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1))).TotalMilliseconds + _server_time_offset;
+			return (long)(DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalMilliseconds + _server_time_offset;
 		}
 		
 		/// <summary>
 		/// Request that all devices return to the AirConsole store.
 		/// </summary>
-		public void NavigateHome() {
+		public void NavigateHome () {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "navigateHome");
+			JObject msg = new JObject ();
+			msg.Add ("action", "navigateHome");
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
-		
+
 		/// <summary>
 		/// Request that all devices load a game by url. Note that the custom DeviceStates are preserved. 
 		/// If you don't want that, override SetCustomDeviceState(null) on every device before calling this function.
 		/// </summary>
-		public void NavigateTo(string url) {
+		public void NavigateTo (string url) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "navigateTo");
-			msg.Add("data", url);
+			JObject msg = new JObject ();
+			msg.Add ("action", "navigateTo");
+			msg.Add ("data", url);
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
 		
 		/// <summary>
 		/// Sets the custom DeviceState of this device.
 		/// </summary>
 		/// <param name="data">The custom data to set.</param>
-		public void SetCustomDeviceState(object data) {
+		public void SetCustomDeviceState (object data) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
-			JObject msg = new JObject();
-			msg.Add("action", "setCustomDeviceState");
-			msg.Add("data", JToken.FromObject(data));
+			JObject msg = new JObject ();
+			msg.Add ("action", "setCustomDeviceState");
+			msg.Add ("data", JToken.FromObject (data));
 
-			AllocateDeviceSlots(0);
+			AllocateDeviceSlots (0);
 			if (GetDevice (0) == null) {
 				_devices [0] = new JObject ();
 			}
-			_devices[0]["custom"] = msg["data"];
+			_devices [0] ["custom"] = msg ["data"];
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
 		
 		/// <summary>
@@ -467,66 +497,87 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="data">The property name.</param>
 		/// <param name="data">The property value.</param>
-		public void SetCustomDeviceStateProperty(string key, object value) {
+		public void SetCustomDeviceStateProperty (string key, object value) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "setCustomDeviceStateProperty");
-			msg.Add("key", JToken.FromObject(key));
-			msg.Add("value", JToken.FromObject(value));
+			JObject msg = new JObject ();
+			msg.Add ("action", "setCustomDeviceStateProperty");
+			msg.Add ("key", JToken.FromObject (key));
+			msg.Add ("value", JToken.FromObject (value));
 
-			AllocateDeviceSlots(0);
-			if (GetDevice(0) == null) {
-				_devices[0] = new JObject();
+			AllocateDeviceSlots (0);
+			if (GetDevice (0) == null) {
+				_devices [0] = new JObject ();
 			}
 			
-			JToken custom = _devices[0]["custom"];
+			JToken custom = _devices [0] ["custom"];
 			if (custom == null) {
-				JObject new_custom = new JObject();
-				_devices[0]["custom"] = JToken.FromObject(new_custom);
+				JObject new_custom = new JObject ();
+				_devices [0] ["custom"] = JToken.FromObject (new_custom);
 			}
 			
 			
-			_devices[0]["custom"][key] = msg["value"];
+			_devices [0] ["custom"] [key] = msg ["value"];
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
-		
+
+		/// <summary>
+		/// Requests that AirConsole shows a multiscreen advertisment.
+		/// onAdShow is called on all connected devices if an advertisement
+		/// is shown (in this event please mute all sounds).
+		/// onAdComplete is called on all connected devices when the
+		/// advertisement is complete or no advertisement was shown.
+		/// </summary>
+		public void ShowAd () {
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+			
+			JObject msg = new JObject ();
+			msg.Add ("action", "showAd");
+			
+			wsListener.Message (msg);
+		}
+
 		/// <summary>
 		/// Shows or hides the default UI.
 		/// </summary>
 		/// <param name="visible">Whether to show or hide the default UI.</param>
-		public void ShowDefaultUI(bool visible) {
+		public void ShowDefaultUI (bool visible) {
 			
-			if (!IsAirConsoleUnityPluginReady()) {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			
-			JObject msg = new JObject();
-			msg.Add("action", "showDefaultUI");
-			msg.Add("data", visible);
+			JObject msg = new JObject ();
+			msg.Add ("action", "showDefaultUI");
+			msg.Add ("data", visible);
 			
-			wsListener.Message(msg);
+			wsListener.Message (msg);
 		}
+
 		/// <summary>
 		/// Returns the device ID of the master controller.
 		/// </summary>
-		public int GetMasterControllerDeviceId() {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public int GetMasterControllerDeviceId () {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
-			List<int> result = GetControllerDeviceIds();
+			List<int> result = GetControllerDeviceIds ();
 			if (result.Count > 0) {
-				return result[0];
+				return result [0];
 			}
 			return 0;
 		}
@@ -534,18 +585,18 @@ namespace NDream.AirConsole {
 		/// <summary>
 		/// Returns all controller device ids that have loaded your game.
 		/// </summary>
-		public List<int> GetControllerDeviceIds() {
-			if (!IsAirConsoleUnityPluginReady()) {
+		public List<int> GetControllerDeviceIds () {
+			if (!IsAirConsoleUnityPluginReady ()) {
 				
-				throw new NotReadyException();
+				throw new NotReadyException ();
 				
 			}
 			List<int> result = new List<int> ();
-			string game_url = GetGameUrl(_location);
+			string game_url = GetGameUrl (_location);
 			for (int i = 1; i < _devices.Count; ++i) {
-				JToken device = GetDevice(i);
-				if (device != null && GetGameUrl((string)device["location"]) == game_url) {
-					result.Add(i);
+				JToken device = GetDevice (i);
+				if (device != null && GetGameUrl ((string)device ["location"]) == game_url) {
+					result.Add (i);
 				} 
 			}
 			return result;
@@ -555,7 +606,7 @@ namespace NDream.AirConsole {
 		/// <summary>
 		/// Returns true if a user is logged in.
 		/// </summary>
-		public bool IsUserLoggedIn(int device_id = -1) {
+		public bool IsUserLoggedIn (int device_id = -1) {
 				
 			if (!IsAirConsoleUnityPluginReady ()) {
 						
@@ -587,7 +638,8 @@ namespace NDream.AirConsole {
 		/// Gets thrown when you call an API method before OnReady was called.
 		/// </summary>
 		public class NotReadyException: SystemException {
-			public NotReadyException() : base() {}
+			public NotReadyException () : base() {
+			}
 		}
 
 
@@ -599,257 +651,340 @@ namespace NDream.AirConsole {
 		public StartMode browserStartMode;
 		public UnityEngine.Object controllerHtml;
 		public bool autoScaleCanvas = true;
+#if UNITY_ANDROID
+        public string androidTvGameVersion;
+		public AndroidUIResizeMode androidUIResizeMode;
+		public Sprite webViewLoadingSprite;
+#endif
 		
-		#endregion
-		#if !DISABLE_AIRCONSOLE
+#endregion
+#if !DISABLE_AIRCONSOLE
 		
-        #region unity functions
+#region unity functions
 
-        void Awake() {
+		void Awake () {
+			if (instance != this) {
+				Destroy (this.gameObject);
+			}
 
-            // unity singleton implementation
-            if (_instance == null) {
-                _instance = this;
-                DontDestroyOnLoad(this);
-            } else {
-                if (this != _instance) {
-                    Destroy(this.gameObject);
-                }
-            }
+			// always set default object name 
+			// important for unity webgl communication
+			gameObject.name = "AirConsole";
+		}
 
-            // always set default object name 
-            // important for unity webgl communication
-            gameObject.name = "AirConsole";
-        }
+		void Start () {
+						
+			// application has to run in background
+#if UNITY_ANDROID && !UNITY_EDITOR
+            Application.runInBackground = false;
+#else
+			Application.runInBackground = true;
+#endif
 
-        void Start() {
+			// register all incoming events
+#if UNITY_ANDROID
+            InitWebView();
+            wsListener = new WebsocketListener(webViewObject);
+            wsListener.onLaunchApp += OnLaunchApp;
+            wsListener.onUnityWebviewResize += OnUnityWebviewResize;
+			wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
 
-            // application has to run in background
-            Application.runInBackground = true;
-
-            // register all incoming events
-            wsListener = new WebsocketListener();
-            wsListener.onReady += this.OnReady;
-            wsListener.onClose += this.OnClose;
-            wsListener.onMessage += this.OnMessage;
-            wsListener.onDeviceStateChange += OnDeviceStateChange;
+			Screen.sleepTimeout = SleepTimeout.NeverSleep;
+#else
+			wsListener = new WebsocketListener ();
+#endif
+			wsListener.onReady += this.OnReady;
+			wsListener.onClose += this.OnClose;
+			wsListener.onMessage += this.OnMessage;
+			wsListener.onDeviceStateChange += OnDeviceStateChange;
 			wsListener.onConnect += OnConnect;
 			wsListener.onDisconnect += OnDisconnect;
 			wsListener.onCustomDeviceStateChange += OnCustomDeviceStateChange;
 			wsListener.onDeviceProfileChange += OnDeviceProfileChange;
+			wsListener.onAdShow += OnAdShow;
+			wsListener.onAdComplete += OnAdComplete;
+			wsListener.onGameEnd += OnGameEnd;
 
-            // check if game is running in webgl build
-            if (Application.platform != RuntimePlatform.WebGLPlayer) {
 
-                // start websocket connection
-                wsServer = new WebSocketServer(Settings.webSocketPort);
-                wsServer.AddWebSocketService<WebsocketListener>(Settings.WEBSOCKET_PATH, () => wsListener);
-                wsServer.Start();
+			// check if game is running in webgl build
+			if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
 
-                if (Settings.debug.info) {
-                    Debug.Log("AirConsole: Dev-Server started!");
-                }
+				// start websocket connection
+				wsServer = new WebSocketServer (Settings.webSocketPort);
+				wsServer.AddWebSocketService<WebsocketListener> (Settings.WEBSOCKET_PATH, () => wsListener);
+				wsServer.Start ();
 
-            } else {
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: Dev-Server started!");
+				}
 
-                // call external javascript init function
-                Application.ExternalCall("onGameReady", this.autoScaleCanvas);
-            }
+			} else {
+
+				if (Application.platform == RuntimePlatform.WebGLPlayer) {
+					// call external javascript init function
+					Application.ExternalCall ("onGameReady", this.autoScaleCanvas);
+				}
+			}
             
-        }
+		}
 
-        void Update() {
+		void Update () {
 
-            // dispatch event queue on main unity thread
-            while (eventQueue.Count > 0) {
-                eventQueue.Dequeue().Invoke();
-            }
-        }
+			// dispatch event queue on main unity thread
+			while (eventQueue.Count > 0) {
+				eventQueue.Dequeue ().Invoke ();
+			}
+		}
 
-        void OnApplicationQuit() {
-            StopWebsocketServer();
-        }
+		void OnApplicationQuit () {
+			StopWebsocketServer ();
+		}
 
-        void OnDisable() {
-            StopWebsocketServer();
-        }
+		void OnDisable () {
+			StopWebsocketServer ();
+		}
 
-        #endregion
+#endregion
 
-        #region internal functions
+            #region internal functions
 
-		void OnDeviceStateChange(JObject msg) {
+		void OnDeviceStateChange (JObject msg) {
 			
-			if (msg["device_id"] == null) {
+			if (msg ["device_id"] == null) {
 				return;
 			}
 			
 			try {
 				
-				int deviceId = (int)msg["device_id"];
-				AllocateDeviceSlots(deviceId);
-				JToken deviceData = (JToken)msg["device_data"];
+				int deviceId = (int)msg ["device_id"];
+				AllocateDeviceSlots (deviceId);
+				JToken deviceData = (JToken)msg ["device_data"];
 				if (deviceData != null && deviceData.HasValues) {
-					_devices[deviceId] = deviceData;
+					_devices [deviceId] = deviceData;
 				} else {
-					_devices[deviceId] = null;
+					_devices [deviceId] = null;
 				}
 				
 				if (this.onDeviceStateChange != null) {
-					eventQueue.Enqueue(() => this.onDeviceStateChange(deviceId, GetDevice(_device_id)));
+					eventQueue.Enqueue (() => this.onDeviceStateChange (deviceId, GetDevice (_device_id)));
 				}
 				
 				if (Settings.debug.info) {
-					Debug.Log("AirConsole: saved devicestate of " + deviceId);
+					Debug.Log ("AirConsole: saved devicestate of " + deviceId);
 				}
 				
-			} catch (Exception e){
+			} catch (Exception e) {
 				
 				if (Settings.debug.error) {
-					Debug.LogError(e.Message);
+					Debug.LogError (e.Message);
 				}
 			}
 			
 		}
 		
-		void OnConnect(JObject msg) {
+		void OnConnect (JObject msg) {
 			
-			if (msg["device_id"] == null) {
+			if (msg ["device_id"] == null) {
 				return;
 			}
 			
 			try {
 				
-				int deviceId = (int)msg["device_id"];
+				int deviceId = (int)msg ["device_id"];
 				
 				if (this.onConnect != null) {
-					eventQueue.Enqueue(() => this.onConnect(deviceId));
+					eventQueue.Enqueue (() => this.onConnect (deviceId));
 				}
 				
 				if (Settings.debug.info) {
-					Debug.Log("AirConsole: onConnect " + deviceId);
+					Debug.Log ("AirConsole: onConnect " + deviceId);
 				}
 				
-			} catch (Exception e){
+			} catch (Exception e) {
 				
 				if (Settings.debug.error) {
-					Debug.LogError(e.Message);
+					Debug.LogError (e.Message);
 				}
 			}
 			
 		}
 		
-		
-		void OnDisconnect(JObject msg) {
+		void OnDisconnect (JObject msg) {
 			
-			if (msg["device_id"] == null) {
+			if (msg ["device_id"] == null) {
 				return;
 			}
 			
 			try {
 				
-				int deviceId = (int)msg["device_id"];
+				int deviceId = (int)msg ["device_id"];
 				
 				if (this.onDisconnect != null) {
-					eventQueue.Enqueue(() => this.onDisconnect(deviceId));
+					eventQueue.Enqueue (() => this.onDisconnect (deviceId));
 				}
 				
 				if (Settings.debug.info) {
-					Debug.Log("AirConsole: onDisconnect " + deviceId);
+					Debug.Log ("AirConsole: onDisconnect " + deviceId);
 				}
 				
-			} catch (Exception e){
+			} catch (Exception e) {
 				if (Settings.debug.error) {
-					Debug.LogError(e.Message);
+					Debug.LogError (e.Message);
 				}
 			}
 			
 		}
 		
-		
-		void OnCustomDeviceStateChange(JObject msg) {
+		void OnCustomDeviceStateChange (JObject msg) {
 			
-			if (msg["device_id"] == null) {
+			if (msg ["device_id"] == null) {
 				return;
 			}
 			
 			try {
 				
-				int deviceId = (int)msg["device_id"];
+				int deviceId = (int)msg ["device_id"];
 				
 				if (this.onCustomDeviceStateChange != null) {
-					eventQueue.Enqueue(() => this.onCustomDeviceStateChange(deviceId, GetCustomDeviceState(deviceId)));
+					eventQueue.Enqueue (() => this.onCustomDeviceStateChange (deviceId, GetCustomDeviceState (deviceId)));
 				}
 				
 				if (Settings.debug.info) {
-					Debug.Log("AirConsole: onCustomDeviceStateChange " + deviceId);
+					Debug.Log ("AirConsole: onCustomDeviceStateChange " + deviceId);
 				}
 				
-			} catch (Exception e){
+			} catch (Exception e) {
 				
 				if (Settings.debug.error) {
-					Debug.LogError(e.Message);
+					Debug.LogError (e.Message);
 				}
 			}
 			
 		}
 		
-		void OnMessage(JObject msg) {
+		void OnMessage (JObject msg) {
 			
 			if (this.onMessage != null) {
-				eventQueue.Enqueue(() => this.onMessage((int)msg["from"], (JToken)msg["data"]));
+				eventQueue.Enqueue (() => this.onMessage ((int)msg ["from"], (JToken)msg ["data"]));
 			}
 		}
 		
-		
-		void OnReady(JObject msg) {
+		void OnReady (JObject msg) {
 			
 			// parse server_time_offset
-			_server_time_offset = (int)msg["server_time_offset"];
+			_server_time_offset = (int)msg ["server_time_offset"];
 			
 			// parse device_id
-			_device_id = (int)msg["device_id"];
+			_device_id = (int)msg ["device_id"];
 			
 			// parse location
-			_location = (string)msg["location"];
+			_location = (string)msg ["location"];
 			
 			// load devices
-			_devices.Clear();
+			_devices.Clear ();
 			foreach (JToken data in (JToken)msg["devices"]) {
 				JToken assign = data;
 				if (data != null && !data.HasValues) {
 					assign = null;
 				}
-				_devices.Add(assign);
+				_devices.Add (assign);
 			}
 			
 			if (this.onReady != null) {
-				eventQueue.Enqueue(() => this.onReady((string)msg["code"]));
+				eventQueue.Enqueue (() => this.onReady ((string)msg ["code"]));
 			}
 		}
 
-		void OnDeviceProfileChange(JObject msg) {
+		void OnDeviceProfileChange (JObject msg) {
 			
-			if (msg["device_id"] == null) {
+			if (msg ["device_id"] == null) {
 				return;
 			}
 			
 			try {
 				
-				int deviceId = (int)msg["device_id"];
+				int deviceId = (int)msg ["device_id"];
 				
 				if (this.onDeviceProfileChange != null) {
-					eventQueue.Enqueue(() => this.onDeviceProfileChange(deviceId));
+					eventQueue.Enqueue (() => this.onDeviceProfileChange (deviceId));
 				}
 				
 				if (Settings.debug.info) {
-					Debug.Log("AirConsole: onDeviceProfileChange " + deviceId);
+					Debug.Log ("AirConsole: onDeviceProfileChange " + deviceId);
 				}
 				
-			} catch (Exception e){
+			} catch (Exception e) {
 				
 				if (Settings.debug.error) {
-					Debug.LogError(e.Message);
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnAdShow (JObject msg) {
+#if UNITY_ANDROID
+            webViewObject.SetMargins(0, 0, 0, 0);
+#endif
+			try {
+				
+				if (this.onAdShow != null) {
+					eventQueue.Enqueue (() => this.onAdShow ());
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onAdShow");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnAdComplete (JObject msg) {
+#if UNITY_ANDROID
+            webViewObject.SetMargins(0, 0, 0, Screen.height - webViewHeight);
+#endif
+			try {
+				
+				bool adWasShown = (bool)msg ["ad_was_shown"];
+				
+				if (this.onAdComplete != null) {
+					eventQueue.Enqueue (() => this.onAdComplete (adWasShown));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onAdComplete");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnGameEnd (JObject msg) {
+#if UNITY_ANDROID
+			webViewObject.SetMargins(0, 0, 0, 0);
+#endif
+			try {
+				
+				if (this.onGameEnd != null) {
+					eventQueue.Enqueue (() => this.onGameEnd ());
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onGameEnd");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
 				}
 			}
 		}
@@ -862,7 +997,7 @@ namespace NDream.AirConsole {
 		[Obsolete("device_id is deprecated, please use GetDeviceId instead. This method will be " +
 		          "removed in the next version.")]
 		public int device_id {
-			get { return GetDeviceId(); }
+			get { return GetDeviceId (); }
 		}
 		
 		[Obsolete("Do not use .devices directly. Use the getter and setter functions. Devices in " +
@@ -870,83 +1005,226 @@ namespace NDream.AirConsole {
 		          "the next version.")]
 		public ReadOnlyCollection<JToken> devices {
 			get { 
-				return _devices.AsReadOnly(); 
+				return _devices.AsReadOnly (); 
 			}
 		}
 		
 		// private vars
 		private WebSocketServer wsServer;
 		private WebsocketListener wsListener;
-		private List<JToken> _devices = new List<JToken>();
+#if UNITY_ANDROID
+        private WebViewObject webViewObject;
+		private Canvas webViewLoadingCanvas;
+		private UnityEngine.UI.Image webViewLoadingImage;
+		private UnityEngine.UI.Image webViewLoadingBG;
+		private int webViewHeight;
+#endif
+		private List<JToken> _devices = new List<JToken> ();
 		private int _device_id;
 		private int _server_time_offset;
 		private string _location;
-		private List<int> _players = new List<int>();
-		private readonly Queue<Action> eventQueue = new Queue<Action>();
+		private List<int> _players = new List<int> ();
+		private readonly Queue<Action> eventQueue = new Queue<Action> ();
 		
 		// unity singleton handling
 		private static AirConsole _instance;
 
-        private void StopWebsocketServer() {
-            if (wsServer != null) {
-                wsServer.Stop();
-            }
-        }
+		private void StopWebsocketServer () {
+			if (wsServer != null) {
+				wsServer.Stop ();
+			}
+		}
 
-        private void OnClose() {
-            _devices.Clear();
-        }
+		private void OnClose () {
+			_devices.Clear ();
+		}
 
-        public static string GetUrl(StartMode mode) {
+		public static string GetUrl (StartMode mode) {
 
-            switch (mode) {
-                case StartMode.VirtualControllers:
-                    return Settings.AIRCONSOLE_NORMAL_URL;
-                case StartMode.Normal:
-                    return Settings.AIRCONSOLE_URL;
-                default:
-                    return "";
-            }
-        }
+			switch (mode) {
+			case StartMode.VirtualControllers:
+				return Settings.AIRCONSOLE_NORMAL_URL;
+			case StartMode.Normal:
+				return Settings.AIRCONSOLE_URL;
+			default:
+				return "";
+			}
+		}
 
-        public void ProcessJS(string data) {
-            wsListener.ProcessMessage(data);
-        }
+		public void ProcessJS (string data) {
+			wsListener.ProcessMessage (data);
+		}
 
-		private JToken GetDevice(int deviceId) {
+		private JToken GetDevice (int deviceId) {
 			if (deviceId < _devices.Count && deviceId >= 0) {
-				return _devices[deviceId];
+				return _devices [deviceId];
 			}
 			return null;
 		}
 
-		private string GetGameUrl(string url) {
+		private string GetGameUrl (string url) {
 			if (url == null) {
 				return null;
 			}
 			url = url.Split ('#') [0];
 			url = url.Split ('?') [0];
 			if (url.EndsWith ("screen.html")) {
-				url = url.Substring(0, url.Length - 11);
+				url = url.Substring (0, url.Length - 11);
 			} else if (url.EndsWith ("controller.html")) {
-				url = url.Substring(0, url.Length - 15);
+				url = url.Substring (0, url.Length - 15);
 			}
 			if (url.StartsWith ("https://")) {
-				url = "http://" + url.Substring(8);
+				url = "http://" + url.Substring (8);
 			}
 			return url;
 		}
 
-		private void AllocateDeviceSlots(int i) {
+		private void AllocateDeviceSlots (int i) {
 			while (i >= _devices.Count) {
-				_devices.Add(null);
+				_devices.Add (null);
 			}
 		}
 
-        #endregion.
-		#endif
-		
-    }
+
+#if UNITY_ANDROID
+        private void InitWebView() {
+
+            if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
+
+                if(webViewObject == null) {
+
+                    webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
+					GameObject.DontDestroyOnLoad(webViewObject.gameObject);
+                    webViewObject.Init((msg) => ProcessJS(msg));
+
+                    string url = Settings.AIRCONSOLE_BASE_URL;
+                    url += "client?id=androidunity-" + Settings.VERSION;
+                    url += "&game-id=" + Application.bundleIdentifier;
+                    url += "&game-version=" + this.androidTvGameVersion;
+
+                    webViewObject.SetMargins(0, Screen.height, 0, -Screen.height);
+                    webViewObject.SetVisibility(true);
+                    webViewObject.LoadURL(url);
+
+					//Display loading Screen
+
+					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
+#if !UNITY_EDITOR
+					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
+					webViewLoadingImage.sprite = webViewLoadingSprite;
+					webViewLoadingBG.color = Color.black;
+					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
+					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
+					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+					webViewLoadingImage.preserveAspect = true;
+
+					if (webViewLoadingSprite == null){
+						webViewLoadingImage.sprite = Resources.Load("AirConsoleLogoLoadingScreen", typeof(Sprite)) as Sprite;
+					}
+#endif
+                }
+
+            } else {
+                if (Settings.debug.error) {
+                    Debug.LogError("AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
+                }
+            }
+        }
+
+        private void OnLaunchApp(JObject msg) {
+            Debug.Log("onLaunchApp");
+			string gameId = (string)msg ["game_id"];
+			string gameVersion = (string)msg ["game_version"];
+			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
+				
+				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
+				AndroidJavaObject launchIntent = null;
+				try {
+					launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", gameId);
+				} catch (Exception) {
+					Debug.Log("getLeanbackLaunchIntentForPackage for " + gameId + " failed");
+				}
+				if (launchIntent == null) {
+					try {
+						launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", gameId);
+					} catch (Exception) {
+						Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
+					}
+				}
+				if (launchIntent != null) {
+					ca.Call("startActivity", launchIntent);
+				} else {
+					Application.OpenURL("market://details?id=" + gameId);
+				}
+				up.Dispose();
+				ca.Dispose();
+				packageManager.Dispose();
+				launchIntent.Dispose();
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+			}
+        }
+
+        private void OnUnityWebviewResize(JObject msg) {
+			Debug.Log("OnUnityWebviewResize");
+			if (_devices.Count > 0) {
+				Debug.Log("screen device data: " + _devices[0].ToString());
+			}
+			
+            int h = Screen.height;
+
+            if (msg["top_bar_height"] != null) {
+                h = (int)msg["top_bar_height"] * 2;
+				webViewHeight = h;
+			}
+
+            webViewObject.SetMargins(0, 0, 0, Screen.height - h);
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - h);
+			}
+        }
+
+        private void OnUnityWebviewPlatformReady(JObject msg) {
+			GameObject.Destroy (webViewLoadingCanvas.gameObject);
+			webViewObject.SetMargins(0, 0, 0, 0);
+		}
+
+		private void OnLevelWasLoaded() {
+			if (instance != this) {
+				return;
+			}
+
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - webViewHeight);
+			}
+
+			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
+				
+				for (int i = 0; i < allCanvasScalers.Length; ++i) {
+					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - webViewHeight) * allCanvasScalers[i].referenceResolution.y);
+				}
+			}
+		}
+
+		void OnApplicationPause(bool pauseStatus){
+			if (pauseStatus) {
+				System.Diagnostics.Process.GetCurrentProcess().Kill();
+			}
+		}
+#endif
+
+#endregion
+
+#endif
+
+	}
 }
 
 

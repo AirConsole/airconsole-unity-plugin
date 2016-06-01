@@ -27,7 +27,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
 using System.Dynamic;
 #endif
 using System.Globalization;
@@ -430,7 +430,7 @@ namespace Newtonsoft.Json.Serialization
       }
 #endif
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
       JsonDynamicContract dynamicContract = contract as JsonDynamicContract;
       if (dynamicContract != null)
       {
@@ -438,7 +438,7 @@ namespace Newtonsoft.Json.Serialization
       }
 #endif
 
-      throw new JsonSerializationException("Cannot deserialize JSON object into type '{0}'.".FormatWith(CultureInfo.InvariantCulture, objectType));
+            throw new JsonSerializationException("Cannot deserialize JSON object into type '{0}'.".FormatWith(CultureInfo.InvariantCulture, objectType));
     }
 
     private JsonArrayContract EnsureArrayContract(Type objectType, JsonContract contract)
@@ -481,7 +481,7 @@ namespace Newtonsoft.Json.Serialization
     private bool HasDefinedType(Type type)
     {
       return (type != null && type != typeof (object) && !typeof (JToken).IsAssignableFrom(type)
-#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR)
+#if !(NET35 || NET20 || WINDOWS_PHONE || UNITY_WEBGL || UNITY_EDITOR || UNITY_ANDROID)
         && type != typeof (IDynamicMetaObjectProvider)
 #endif
 );
@@ -807,7 +807,7 @@ namespace Newtonsoft.Json.Serialization
     }
 #endif
 
-#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL)
+#if !(NET35 || NET20 || WINDOWS_PHONE || SILVERLIGHT || UNITY_EDITOR || UNITY_WEBGL || UNITY_ANDROID)
     private object CreateDynamic(JsonReader reader, JsonDynamicContract contract, string id)
     {
       IDynamicMetaObjectProvider newObject = null;
@@ -878,7 +878,7 @@ namespace Newtonsoft.Json.Serialization
     }
 #endif
 
-    private object CreateAndPopulateObject(JsonReader reader, JsonObjectContract contract, string id)
+        private object CreateAndPopulateObject(JsonReader reader, JsonObjectContract contract, string id)
     {
       object newObject = null;
 
