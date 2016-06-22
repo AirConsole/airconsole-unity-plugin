@@ -331,6 +331,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 		logWindow.text = logWindow.text.Insert (0, "Showed Default UI" + "\n \n");
 	}
 
+	public void CauseException () {
+		int[] numbers = new int[3];
+		logWindow.text = logWindow.text.Insert (0, "a number: " + numbers[5] + "\n \n");
+	}
+
 	public void NavigateHome () {
 		//Navigate back to the AirConsole store
 		AirConsole.instance.NavigateHome ();
