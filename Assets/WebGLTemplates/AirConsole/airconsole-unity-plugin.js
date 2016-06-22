@@ -46,6 +46,7 @@ if (typeof Unity != "undefined") {
             window.app.processUnityData(event.data["data_string"]);
         }
     });
+} else {
     window.onerror = function(message) {
         if (message.indexOf("UnknownError") != -1 ||
             message.indexOf("Program terminated with exit(0)") != -1 ||
@@ -72,7 +73,7 @@ if (typeof Unity != "undefined") {
         container.style.color = "#fff";
         container.style.fontSize = "36px";
         var message = document.createElement("div");
-        message.innerHTML = "An <span style='color:red'>error</span> has occured, the AirConsole team got informed.";
+        message.innerHTML = "An <span style='color:red'>error</span> has occured, the AirConsole team was informed.";
         message.style.position = "absolute";
         message.style.textAlign = "center";
         message.style.top = "40%";
