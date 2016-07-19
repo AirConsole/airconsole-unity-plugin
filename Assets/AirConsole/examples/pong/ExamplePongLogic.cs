@@ -12,6 +12,7 @@ public class ExamplePongLogic : MonoBehaviour {
 	public Rigidbody2D ball;
 	public float ballSpeed = 10f;
 	public Text uiText;
+#if !DISABLE_AIRCONSOLE 
 	private int scoreRacketLeft = 0;
 	private int scoreRacketRight = 0;
 
@@ -124,4 +125,5 @@ public class ExamplePongLogic : MonoBehaviour {
 			AirConsole.instance.onMessage -= OnMessage;
 		}
 	}
+#endif
 }

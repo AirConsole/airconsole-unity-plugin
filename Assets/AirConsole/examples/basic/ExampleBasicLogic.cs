@@ -13,6 +13,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	private bool turnLeft;
 	private bool turnRight;
 
+#if !DISABLE_AIRCONSOLE
 	void Awake () {
 		// register events
 		AirConsole.instance.onReady += OnReady;
@@ -366,5 +367,6 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onGameEnd -= OnGameEnd;
 		}
 	}
+#endif
 }
 
