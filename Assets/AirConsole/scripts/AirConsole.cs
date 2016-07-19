@@ -1212,12 +1212,13 @@ namespace NDream.AirConsole {
 				}
 			}
 		}
-
+#if !UNITY_EDITOR
 		void OnApplicationPause(bool pauseStatus){
 			if (pauseStatus) {
 				System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
 		}
+#endif
 #endif
 
 #endregion
