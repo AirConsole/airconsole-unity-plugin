@@ -13,6 +13,9 @@ public class ExampleBasicLogic : MonoBehaviour {
 	private bool turnLeft;
 	private bool turnRight;
 
+	private float highScore = 0;
+	public Text highScoreDisplay;
+
 #if !DISABLE_AIRCONSOLE
 	void Awake () {
 		// register events
@@ -26,6 +29,8 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.onAdShow += OnAdShow;
 		AirConsole.instance.onAdComplete += OnAdComplete;
 		AirConsole.instance.onGameEnd += OnGameEnd;
+		AirConsole.instance.onHighScores += OnHighScores;
+		AirConsole.instance.onHighScoreStored += OnHighScoreStored;
 		logWindow.text = "Connecting... \n \n";
 	}
 
@@ -108,6 +113,20 @@ public class ExampleBasicLogic : MonoBehaviour {
 		Debug.Log ("OnGameEnd is called");
 		Camera.main.enabled = false;
 		Time.timeScale = 0.0f;
+	}
+
+	void OnHighScores (JToken highscores) {
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "On High Scores " + highscores + " \n \n");
+	}
+
+	void OnHighScoreStored (JToken highscore) {
+		//Log to on-screen Console
+		if (highscore == null) {
+			logWindow.text = logWindow.text.Insert (0, "On High Scores Stored (null)\n \n");
+		} else {
+			logWindow.text = logWindow.text.Insert (0, "On High Scores Stored " + highscore + "\n \n");
+		}		
 	}
 
 	void Update () {
@@ -352,6 +371,28 @@ public class ExampleBasicLogic : MonoBehaviour {
 		logWindow.text = logWindow.text.Insert (0, "Called ShowAd" + "\n \n");
 	}
 
+	public void IncreaseScore () {
+		//increase current score and show on ui
+		highScore += 1;
+		highScoreDisplay.text = "Current Score: " + highScore;
+	}
+
+	public void ResetScore () {
+		//increase current score and show on ui
+		highScore = 0;
+		highScoreDisplay.text = "Current Score: " + highScore;
+	}
+
+	public void RequestHighScores () {
+		AirConsole.instance.RequestHighScores ("Basic Example", "v1.0");
+	}
+
+	public void StoreHighScore () {
+		JObject testData = new JObject();
+		testData.Add ("test", "data");
+		AirConsole.instance.StoreHighScore ("Basic Example", "v1.0", highScore, AirConsole.instance.GetUID(AirConsole.instance.GetMasterControllerDeviceId()), testData);
+	}
+
 	void OnDestroy () {
 
 		// unregister events
@@ -365,6 +406,8 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onAdShow -= OnAdShow;
 			AirConsole.instance.onAdComplete -= OnAdComplete;
 			AirConsole.instance.onGameEnd -= OnGameEnd;
+			AirConsole.instance.onHighScores += OnHighScores;
+			AirConsole.instance.onHighScoreStored += OnHighScoreStored;
 		}
 	}
 #endif

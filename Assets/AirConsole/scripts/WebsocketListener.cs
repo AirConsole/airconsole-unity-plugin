@@ -32,6 +32,10 @@ namespace NDream.AirConsole {
 
 	public delegate void OnGameEndInternal (JObject data);
 
+	public delegate void OnHighScoresInternal (JObject data);
+
+	public delegate void OnHighScoreStoredInternal (JObject data);
+	
 	public delegate void OnLaunchAppInternal (JObject data);
 
 	public delegate void OnUnityWebviewResizeInternal (JObject data);
@@ -54,6 +58,8 @@ namespace NDream.AirConsole {
 		public event OnAdShowInternal onAdShow;
 		public event OnAdCompleteInternal onAdComplete;
 		public event OnGameEndInternal onGameEnd;
+		public event OnHighScoresInternal onHighScores;
+		public event OnHighScoreStoredInternal onHighScoreStored;
 		public event OnLaunchAppInternal onLaunchApp;
 		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
 		public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
@@ -174,6 +180,16 @@ namespace NDream.AirConsole {
 					
 					if (this.onGameEnd != null) {
 						this.onGameEnd (msg);
+					}
+				} else if ((string)msg ["action"] == "onHighScores") {
+					
+					if (this.onHighScores != null) {
+						this.onHighScores (msg);
+					}
+				} else if ((string)msg ["action"] == "onHighScoreStored") {
+					
+					if (this.onHighScoreStored != null) {
+						this.onHighScoreStored (msg);
 					}
 				} else if ((string)msg ["action"] == "onLaunchApp") {
 

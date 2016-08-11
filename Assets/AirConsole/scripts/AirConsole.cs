@@ -7,6 +7,7 @@ using System;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
+using UnityEngine.SceneManagement;
 
 namespace NDream.AirConsole {
 	public enum StartMode {
@@ -40,6 +41,10 @@ namespace NDream.AirConsole {
 	public delegate void OnAdComplete (bool ad_was_shown);
 
 	public delegate void OnGameEnd ();
+
+	public delegate void OnHighScores (JToken highscores);
+	
+	public delegate void OnHighScoreStored (JToken highscore);
    
 	public class AirConsole : MonoBehaviour {
 		#if !DISABLE_AIRCONSOLE
@@ -133,6 +138,18 @@ namespace NDream.AirConsole {
 		/// In case this event gets called, please mute all sounds and stop all animations.
 		/// </summary>
 		public event OnGameEnd onGameEnd;
+
+		/// <summary> 
+		/// Gets called when high scores are returned after calling requestHighScores.
+		/// <param name="highscores">The high scores.</param>
+		/// </summary>
+		public event OnHighScores onHighScores;
+
+		/// <summary>
+		/// Gets called when a high score was successfully stored.
+		/// <param name="highscore">The stored high score if it is a new best for the user or else null.</param>
+		/// </summary>
+		public event OnHighScoreStored onHighScoreStored;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -303,8 +320,7 @@ namespace NDream.AirConsole {
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
-			return (string)GetDevice (GetDeviceId ()) ["uid"];
-			
+			return (string)GetDevice (device_id) ["uid"];
 		}
 		
 		/// <summary>
@@ -633,6 +649,77 @@ namespace NDream.AirConsole {
 			return false;
 		}
 
+		/// <summary>
+		/// Requests high score data of players (including global high scores and friends). 
+		/// Will call onHighScores when data was received.
+		/// <param name="level_name">The name of the level.</param>
+		/// <param name="level_version">The version of the level.</param>
+		/// </summary>
+		public void RequestHighScores (string level_name, string level_version, List<string> uids = null) {
+			
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+
+
+			
+			JObject msg = new JObject ();
+			msg.Add ("action", "requestHighScores");
+			msg.Add ("level_name", level_name);
+			msg.Add ("level_version", level_version);
+
+			JArray uidsJArray = null;
+			
+			if (uids != null) {
+				uidsJArray = new JArray();
+				foreach (string uid in uids){
+					uidsJArray.Add(uid);
+				}
+				msg.Add ("uids", uidsJArray);
+			}
+			
+			wsListener.Message (msg);
+		}
+
+		/// <summary>
+		/// Stores a high score of the current user on the AirConsole servers. 
+		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
+		/// Calls onHighScoreStored when the request is done.
+		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
+		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
+		/// <param name="score">The score the user has achieved</param>
+		/// <param name="uid">The UID of the user that achieved the high score. Default is null.</param>
+		/// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
+		/// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
+		/// </summary>
+		public void StoreHighScore (string level_name, string level_version, float score, string uid = null, JObject data = null, string score_string = null) {
+
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+			
+			JObject msg = new JObject ();
+			msg.Add ("action", "storeHighScore");
+			msg.Add ("level_name", level_name);
+			msg.Add ("level_version", level_version);
+			msg.Add ("score", score);
+
+			if (uid != null) {
+				msg.Add ("uid", uid);
+			}
+			if (data != null) {
+				msg.Add ("data", data);
+			}
+			if (score_string != null) {
+				msg.Add ("score_string", score_string);
+			}
+			
+			wsListener.Message (msg);
+		}
 
 		/// <summary>
 		/// Gets thrown when you call an API method before OnReady was called.
@@ -689,6 +776,7 @@ namespace NDream.AirConsole {
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
 			wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
 
+			SceneManager.sceneLoaded += OnSceneLoaded;
 			Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
 			wsListener = new WebsocketListener ();
@@ -704,6 +792,8 @@ namespace NDream.AirConsole {
 			wsListener.onAdShow += OnAdShow;
 			wsListener.onAdComplete += OnAdComplete;
 			wsListener.onGameEnd += OnGameEnd;
+			wsListener.onHighScores += OnHighScores;
+			wsListener.onHighScoreStored += OnHighScoreStored;
 
 
 			// check if game is running in webgl build
@@ -989,6 +1079,52 @@ namespace NDream.AirConsole {
 			}
 		}
 
+		void OnHighScores (JObject msg) {
+			try {
+
+				JToken highscores = msg ["highscores"];
+				
+				if (this.onHighScores != null) {
+					eventQueue.Enqueue (() => this.onHighScores (highscores));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onHighScores");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnHighScoreStored (JObject msg) {
+			try {
+
+				JToken highscore = msg ["highscore"];
+
+				if (highscore != null && !highscore.HasValues) {
+					highscore = null;
+				} 
+
+				if (this.onHighScoreStored != null) {
+					eventQueue.Enqueue (() => this.onHighScoreStored (highscore));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onHighScoreStored");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
 		[Obsolete("Please use GetServerTime(). This method will be removed in the next version.")]
 		public int server_time_offset {
 			get { return _server_time_offset; }
@@ -1195,7 +1331,7 @@ namespace NDream.AirConsole {
 			webViewObject.SetMargins(0, 0, 0, 0);
 		}
 
-		private void OnLevelWasLoaded() {
+		private void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
 			if (instance != this) {
 				return;
 			}
