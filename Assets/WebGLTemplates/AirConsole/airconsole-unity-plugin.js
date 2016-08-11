@@ -1,6 +1,6 @@
 /**
  * Copyright by N-Dream AG 2016.
- * @version 1.4
+ * @version 1.5
  */
 
 /**
@@ -172,6 +172,20 @@ function App() {
                 "ad_was_shown": ad_was_shown
             });
         };
+
+        me.airconsole.onHighScores = function(highscores) {
+            me.postToUnity({
+                "action": "onHighScores",
+                "highscores": highscores
+            });
+        };
+
+        me.airconsole.onHighScoreStored = function(highscore) {
+            me.postToUnity({
+                "action": "onHighScoreStored",
+                "highscore": highscore
+            });
+        };
     }
 
     if (is_editor) {
@@ -254,6 +268,10 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setActivePlayers(data.max_players);
     } else if (data.action == "showAd") {
         this.airconsole.showAd();
+    } else if (data.action == "requestHighScores") {
+        this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids);
+    } else if (data.action == "storeHighScore") {
+        this.airconsole.storeHighScore(data.level_name, data.level_version, data.score, data.uid, data.data, data.score_string);
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }

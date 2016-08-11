@@ -10,7 +10,7 @@ You don't need to install any other webserver or services.
 
 # Documentation
 ------------------------
-All install instructions and examples are documented in the file "Documentation_1.4.0.pdf" inside this folder. 
+All install instructions and examples are documented in the file "Documentation_1.5.0.pdf" inside this folder. 
 There are more examples on the website: http://developers.airconsole.com/#/guides
 
 # Platforms

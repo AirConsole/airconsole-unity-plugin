@@ -4,7 +4,7 @@ using System.Collections;
 namespace NDream.AirConsole {
 	public static class Settings {
 
-		public const string VERSION = "1.4";
+		public const string VERSION = "1.5";
 		public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
 		public const string AIRCONSOLE_URL = "http://airconsole.com/#";
 		public const string AIRCONSOLE_NORMAL_URL = "http://airconsole.com/simulator/#";
