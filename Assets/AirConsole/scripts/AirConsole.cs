@@ -663,28 +663,29 @@ namespace NDream.AirConsole {
 				
 			}
 
-			JArray uidsJArray = null;
 
-			if (uids != null) {
-				uidsJArray = new JArray();
-				foreach (string uid in uids){
-					uidsJArray.Add(uid);
-				}
-			}
 			
 			JObject msg = new JObject ();
 			msg.Add ("action", "requestHighScores");
 			msg.Add ("level_name", level_name);
 			msg.Add ("level_version", level_version);
-			msg.Add ("uids", uidsJArray);
+
+			JArray uidsJArray = null;
+			
+			if (uids != null) {
+				uidsJArray = new JArray();
+				foreach (string uid in uids){
+					uidsJArray.Add(uid);
+				}
+				msg.Add ("uids", uidsJArray);
+			}
 			
 			wsListener.Message (msg);
 		}
 
-		//for params, explain that you can pass null for uid, data, scorestring
 		/// <summary>
 		/// Stores a high score of the current user on the AirConsole servers. 
-		/// May be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
+		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
 		/// Calls onHighScoreStored when the request is done.
 		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
 		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
@@ -706,9 +707,16 @@ namespace NDream.AirConsole {
 			msg.Add ("level_name", level_name);
 			msg.Add ("level_version", level_version);
 			msg.Add ("score", score);
-			msg.Add ("uid", uid);
-			msg.Add ("data", data);
-			msg.Add ("score_string", score_string);
+
+			if (uid != null) {
+				msg.Add ("uid", uid);
+			}
+			if (data != null) {
+				msg.Add ("data", data);
+			}
+			if (score_string != null) {
+				msg.Add ("score_string", score_string);
+			}
 			
 			wsListener.Message (msg);
 		}
