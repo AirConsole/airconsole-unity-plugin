@@ -24,11 +24,15 @@ namespace NDream.AirConsole.Editor {
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);
 
 				// modify Unity Loader
-				string jsFile = File.ReadAllText (pathToBuiltProject + "/Release/UnityLoader.js");
-				jsFile = "if (typeof Unity == 'undefined') {" + jsFile + "}";
-				File.WriteAllText (pathToBuiltProject + "/Release/UnityLoader.js", jsFile);
-
-
+				if (Debug.isDebugBuild){
+					string jsFile = File.ReadAllText (pathToBuiltProject + "/Development/UnityLoader.js"); 
+					jsFile = "if (typeof Unity == 'undefined') {" + jsFile + "}";
+					File.WriteAllText (pathToBuiltProject + "/Development/UnityLoader.js", jsFile);
+				} else {
+					string jsFile = File.ReadAllText (pathToBuiltProject + "/Release/UnityLoader.js");
+					jsFile = "if (typeof Unity == 'undefined') {" + jsFile + "}";
+					File.WriteAllText (pathToBuiltProject + "/Release/UnityLoader.js", jsFile);
+				}
 			}
 		}
 	}
