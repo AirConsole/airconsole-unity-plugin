@@ -690,11 +690,28 @@ namespace NDream.AirConsole {
 		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
 		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
 		/// <param name="score">The score the user has achieved</param>
-		/// <param name="uid">The UID of the user that achieved the high score. Default is null.</param>
+		/// <param name="uid">The UID of the user that achieved the high score.</param>
 		/// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
 		/// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
 		/// </summary>
-		public void StoreHighScore (string level_name, string level_version, float score, string uid = null, JObject data = null, string score_string = null) {
+		public void StoreHighScore (string level_name, string level_version, float score, string uid, JObject data = null, string score_string = null) {
+			List<String> uids = new List<String> ();
+			uids.Add (uid);
+			StoreHighScore (level_name, level_version, score, uids, data, score_string);
+		}
+
+		/// <summary>
+		/// Stores a high score of the current user on the AirConsole servers. 
+		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
+		/// Calls onHighScoreStored when the request is done.
+		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
+		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
+		/// <param name="score">The score the user has achieved</param>
+		/// <param name="uids">The UIDs of the users that achieved the high score.</param>
+		/// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
+		/// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
+		/// </summary>
+		public void StoreHighScore (string level_name, string level_version, float score, List<string> uids, JObject data = null, string score_string = null) {
 
 			if (!IsAirConsoleUnityPluginReady ()) {
 				
@@ -708,9 +725,13 @@ namespace NDream.AirConsole {
 			msg.Add ("level_version", level_version);
 			msg.Add ("score", score);
 
-			if (uid != null) {
-				msg.Add ("uid", uid);
+
+			JArray uidJArray = new JArray();
+			foreach (string uid in uids){
+				uidJArray.Add(uid);
 			}
+			msg.Add ("uid", uidJArray);
+
 			if (data != null) {
 				msg.Add ("data", data);
 			}
@@ -1243,8 +1264,9 @@ namespace NDream.AirConsole {
                     webViewObject.LoadURL(url);
 
 					//Display loading Screen
-
 					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
+					
+					
 #if !UNITY_EDITOR
 					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
 					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();

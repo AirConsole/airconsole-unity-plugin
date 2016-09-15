@@ -378,7 +378,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	}
 
 	public void ResetScore () {
-		//increase current score and show on ui
+		//reset current score and show on ui
 		highScore = 0;
 		highScoreDisplay.text = "Current Score: " + highScore;
 	}
@@ -391,6 +391,16 @@ public class ExampleBasicLogic : MonoBehaviour {
 		JObject testData = new JObject();
 		testData.Add ("test", "data");
 		AirConsole.instance.StoreHighScore ("Basic Example", "v1.0", highScore, AirConsole.instance.GetUID(AirConsole.instance.GetMasterControllerDeviceId()), testData);
+	}
+
+	public void StoreTeamHighScore () {
+		List<string> connectedUids = new List<string> ();
+		List<int> deviceIds = AirConsole.instance.GetControllerDeviceIds();
+
+		for (int i = 0; i < deviceIds.Count; i++) {
+			connectedUids.Add (AirConsole.instance.GetUID(deviceIds[i]));
+		}
+		AirConsole.instance.StoreHighScore ("Basic Example", "v1.0", highScore, connectedUids);
 	}
 
 	void OnDestroy () {
