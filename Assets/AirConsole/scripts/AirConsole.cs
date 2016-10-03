@@ -654,16 +654,16 @@ namespace NDream.AirConsole {
 		/// Will call onHighScores when data was received.
 		/// <param name="level_name">The name of the level.</param>
 		/// <param name="level_version">The version of the level.</param>
+		/// <param name="uids">An array of UIDs of the users should be included in the result. Default is all connected controllers.</param>
+		/// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends". Default is ["world"].</param>
 		/// </summary>
-		public void RequestHighScores (string level_name, string level_version, List<string> uids = null) {
+		public void RequestHighScores (string level_name, string level_version, List<string> uids = null, List<string> ranks = null) {
 			
 			if (!IsAirConsoleUnityPluginReady ()) {
 				
 				throw new NotReadyException ();
 				
 			}
-
-
 			
 			JObject msg = new JObject ();
 			msg.Add ("action", "requestHighScores");
@@ -678,6 +678,16 @@ namespace NDream.AirConsole {
 					uidsJArray.Add(uid);
 				}
 				msg.Add ("uids", uidsJArray);
+			}
+
+			JArray ranksJArray = null;
+
+			if (ranks != null) {
+				ranksJArray = new JArray();
+				foreach (string rank in ranks){
+					ranksJArray.Add(rank);
+				}
+				msg.Add ("ranks", ranksJArray);
 			}
 			
 			wsListener.Message (msg);

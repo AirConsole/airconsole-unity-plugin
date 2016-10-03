@@ -269,7 +269,7 @@ App.prototype.processUnityData = function (data) {
     } else if (data.action == "showAd") {
         this.airconsole.showAd();
     } else if (data.action == "requestHighScores") {
-        this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids);
+        this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids, data.ranks);
     } else if (data.action == "storeHighScore") {
         this.airconsole.storeHighScore(data.level_name, data.level_version, data.score, data.uid, data.data, data.score_string);
     } else if (data.action == "debug") {
