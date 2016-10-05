@@ -386,7 +386,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	public void RequestHighScores () {
 		List <string> ranks = new List<string> ();
 		ranks.Add ("world");
-		AirConsole.instance.RequestHighScores ("Basic Example", "v1.0", null, ranks);
+		AirConsole.instance.RequestHighScores ("Basic Example", "v1.0", null, ranks, 5, 3);
 	}
 
 	public void StoreHighScore () {

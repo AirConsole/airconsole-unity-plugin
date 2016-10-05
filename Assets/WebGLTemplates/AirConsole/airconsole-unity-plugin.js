@@ -269,7 +269,7 @@ App.prototype.processUnityData = function (data) {
     } else if (data.action == "showAd") {
         this.airconsole.showAd();
     } else if (data.action == "requestHighScores") {
-        this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids, data.ranks);
+        this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids, data.ranks, data.total, data.top);
     } else if (data.action == "storeHighScore") {
         this.airconsole.storeHighScore(data.level_name, data.level_version, data.score, data.uid, data.data, data.score_string);
     } else if (data.action == "debug") {
@@ -299,7 +299,7 @@ function onGameReady(autoScale) {
         unityCanvas.style.right = '0';
     }
 
-    // send cached onRadyData
+    // send cached onReadyData
     window.app.postQueue();
 
     if (autoScale) {
