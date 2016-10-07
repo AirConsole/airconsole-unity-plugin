@@ -207,6 +207,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
 	
 		string urlOfProfilePic = AirConsole.instance.GetProfilePicture (idOfFirstController, 512);
+
 		//Log url to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "URL of Profile Picture of first Controller: " + urlOfProfilePic + "\n \n");
 		StartCoroutine (DisplayUrlPicture (urlOfProfilePic));
@@ -301,8 +302,13 @@ public class ExampleBasicLogic : MonoBehaviour {
 		//Set the currently connected devices as the active players (assigning them a player number)
 		AirConsole.instance.SetActivePlayers ();
 
+		string activePlayerIds = "";
+		foreach (int id in AirConsole.instance.GetActivePlayerDeviceIds) {
+			activePlayerIds += id + "\n";
+		}
+
 		//Log to on-screen Console
-		logWindow.text = logWindow.text.Insert (0, "Active Players were set \n \n");
+		logWindow.text = logWindow.text.Insert (0, "Active Players were set to:\n" + activePlayerIds + " \n \n");
 	}
 
 	public void DisplayDeviceIDOfPlayerOne () {

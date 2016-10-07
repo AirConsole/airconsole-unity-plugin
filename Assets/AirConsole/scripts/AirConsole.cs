@@ -395,7 +395,16 @@ namespace NDream.AirConsole {
 			}
 			
 		}
-		
+
+		/// <summary>
+		/// Returns the url to a profile picture of a user.
+		/// </summary>
+		/// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
+		/// <param name="size">The size of in pixels of the picture. Default is 64.</param>
+		public string GetProfilePicture (String uid, int size = 64) {
+			return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + uid + "&size=" + size;
+		}
+
 		/// <summary>
 		/// Returns the url to a profile picture of a user.
 		/// </summary>
@@ -652,13 +661,13 @@ namespace NDream.AirConsole {
 		/// <summary>
 		/// Requests high score data of players (including global high scores and friends). 
 		/// Will call onHighScores when data was received.
+		/// </summary>
 		/// <param name="level_name">The name of the level.</param>
 		/// <param name="level_version">The version of the level.</param>
 		/// <param name="uids">An array of UIDs of the users should be included in the result. Default is all connected controllers.</param>
 		/// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends". Default is ["world"].</param>
 		/// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
 		/// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
-		/// </summary>
 		public void RequestHighScores (string level_name, string level_version, List<string> uids = null, List<string> ranks = null, int total = -1, int top = -1) {
 			
 			if (!IsAirConsoleUnityPluginReady ()) {
