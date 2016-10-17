@@ -186,6 +186,20 @@ function App() {
                 "highscore": highscore
             });
         };
+
+        me.airconsole.onPersistentDataStored = function(uid) {
+            me.postToUnity({
+                "action": "onPersistentDataStored",
+                "uid": uid
+            });
+        };
+
+         me.airconsole.onPersistentDataLoaded = function(data) {
+            me.postToUnity({
+                "action": "onPersistentDataLoaded",
+                "data": data
+            });
+        };
     }
 
     if (is_editor) {
@@ -272,6 +286,10 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.requestHighScores(data.level_name, data.level_version, data.uids, data.ranks, data.total, data.top);
     } else if (data.action == "storeHighScore") {
         this.airconsole.storeHighScore(data.level_name, data.level_version, data.score, data.uid, data.data, data.score_string);
+    } else if (data.action == "requestPersistentData") {
+        this.airconsole.requestPersistentData(data.uids);
+    } else if (data.action == "storePersistentData") {
+        this.airconsole.storePersistentData(data.key, data.value, data.uid);
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }

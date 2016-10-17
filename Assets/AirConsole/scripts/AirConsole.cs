@@ -45,6 +45,10 @@ namespace NDream.AirConsole {
 	public delegate void OnHighScores (JToken highscores);
 	
 	public delegate void OnHighScoreStored (JToken highscore);
+
+	public delegate void OnPersistentDataStored (string uid);
+	
+	public delegate void OnPersistentDataLoaded (JToken data);
    
 	public class AirConsole : MonoBehaviour {
 		#if !DISABLE_AIRCONSOLE
@@ -129,8 +133,8 @@ namespace NDream.AirConsole {
 
 		/// <summary>
 		/// Gets called when an advertisement is finished or no advertisement was shown.
-		/// <param name="ad_was_shown">True if an ad was shown and onAdShow was called.</param>
 		/// </summary>
+		/// <param name="ad_was_shown">True if an ad was shown and onAdShow was called.</param>
 		public event OnAdComplete onAdComplete;
 
 		/// <summary>
@@ -147,9 +151,21 @@ namespace NDream.AirConsole {
 
 		/// <summary>
 		/// Gets called when a high score was successfully stored.
-		/// <param name="highscore">The stored high score if it is a new best for the user or else null.</param>
 		/// </summary>
+		/// <param name="highscore">The stored high score if it is a new best for the user or else null.</param>
 		public event OnHighScoreStored onHighScoreStored;
+
+		/// <summary>
+		/// Gets called when persistent data was stored from StorePersistentData().
+		/// </summary>
+		/// <param name="uid">The uid for which the data was stored.</param>
+		public event OnPersistentDataStored onPersistentDataStored;
+
+		/// <summary>
+		/// Gets called when persistent data was loaded from RequestPersistentData().
+		/// </summary>
+		/// <param name="data">An object mapping uids to all key value pairs.</param>
+		public event OnPersistentDataLoaded onPersistentDataLoaded;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -779,6 +795,62 @@ namespace NDream.AirConsole {
 			}
 		}
 
+		/// <summary>
+		/// Requests persistent data from the servers.
+		/// Will call onPersistentDataLoaded when data was received.
+		/// </summary>
+		/// <param name="uids">The uids for which you would like to request the persistent data. Default is this device.</param>
+		public void RequestPersistentData (List<string> uids = null) { 
+			
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+
+			JObject msg = new JObject ();
+			msg.Add ("action", "requestPersistentData");
+
+			if (uids != null) {
+				JArray uidJArray = new JArray();
+				foreach (string uid in uids){
+					uidJArray.Add(uid);
+				}
+				
+				msg.Add ("uids", uidJArray);
+			}
+
+			
+			wsListener.Message (msg);
+		}
+
+		/// <summary>
+		/// Stores a key-value pair persistently on the AirConsole servers.
+		/// Storage is per game. Total storage can not exceed 1 MB per game and uid.
+		/// Will call onPersistentDataStored when the request is done.
+		/// </summary>
+		/// <param name="key">The key of the data entry.</param>
+		/// <param name="value">The value of the data entry.</param>
+		/// <param name="uid">The uid for which the data should be stored. Default is this device.</param>
+		public void StorePersistentData (string key, JToken value, string uid = null) {
+			
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+			
+			JObject msg = new JObject ();
+			msg.Add ("action", "storePersistentData");
+			msg.Add ("key", key);
+			msg.Add ("value", value);
+
+			if (uid != null) {
+				msg.Add ("uid", uid);
+			}
+			
+			wsListener.Message (msg);
+		}
 
 		#endregion
 		#endif
@@ -844,6 +916,8 @@ namespace NDream.AirConsole {
 			wsListener.onGameEnd += OnGameEnd;
 			wsListener.onHighScores += OnHighScores;
 			wsListener.onHighScoreStored += OnHighScoreStored;
+			wsListener.onPersistentDataStored += OnPersistentDataStored;
+			wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
 
 
 			// check if game is running in webgl build
@@ -1165,6 +1239,48 @@ namespace NDream.AirConsole {
 				
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onHighScoreStored");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnPersistentDataStored (JObject msg) {
+			try {
+				
+				string uid = (string)msg ["uid"];
+
+				if (this.onPersistentDataStored != null) {
+					eventQueue.Enqueue (() => this.onPersistentDataStored (uid));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: OnPersistentDataStored");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnPersistentDataLoaded (JObject msg) {
+			try {
+				
+				JToken data = msg ["data"];
+				
+				if (this.onPersistentDataLoaded != null) {
+					eventQueue.Enqueue (() => this.onPersistentDataLoaded (data));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: OnPersistentDataLoaded");
 				}
 				
 			} catch (Exception e) {

@@ -31,6 +31,8 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.onGameEnd += OnGameEnd;
 		AirConsole.instance.onHighScores += OnHighScores;
 		AirConsole.instance.onHighScoreStored += OnHighScoreStored;
+		AirConsole.instance.onPersistentDataStored += OnPersistentDataStored;
+		AirConsole.instance.onPersistentDataLoaded += OnPersistentDataLoaded;
 		logWindow.text = "Connecting... \n \n";
 	}
 
@@ -127,6 +129,16 @@ public class ExampleBasicLogic : MonoBehaviour {
 		} else {
 			logWindow.text = logWindow.text.Insert (0, "On High Scores Stored " + highscore + "\n \n");
 		}		
+	}
+
+	void OnPersistentDataStored (string uid) {
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "Stored persistentData for uid " + uid + " \n \n");
+	}
+
+	void OnPersistentDataLoaded (JToken data) {
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "Loaded persistentData: " + data + " \n \n");
 	}
 
 	void Update () {
@@ -411,6 +423,23 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.StoreHighScore ("Basic Example", "v1.0", highScore, connectedUids);
 	}
 
+	public void StorePersistentData () {
+		//Store test data for the master controller
+		JObject testData = new JObject();
+		testData.Add ("test", "data");
+		AirConsole.instance.StorePersistentData("custom_data", testData, AirConsole.instance.GetUID(AirConsole.instance.GetMasterControllerDeviceId()));
+	}
+
+	public void RequestPersistentData () {
+		List<string> connectedUids = new List<string> ();
+		List<int> deviceIds = AirConsole.instance.GetControllerDeviceIds();
+		
+		for (int i = 0; i < deviceIds.Count; i++) {
+			connectedUids.Add (AirConsole.instance.GetUID(deviceIds[i]));
+		}
+		AirConsole.instance.RequestPersistentData (connectedUids);
+	}
+
 	void OnDestroy () {
 
 		// unregister events
@@ -426,6 +455,8 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onGameEnd -= OnGameEnd;
 			AirConsole.instance.onHighScores += OnHighScores;
 			AirConsole.instance.onHighScoreStored += OnHighScoreStored;
+			AirConsole.instance.onPersistentDataStored += OnPersistentDataStored;
+			AirConsole.instance.onPersistentDataLoaded += OnPersistentDataLoaded;
 		}
 	}
 #endif
