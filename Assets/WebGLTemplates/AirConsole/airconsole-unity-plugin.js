@@ -233,10 +233,12 @@ function App() {
 };
 
 App.prototype.postQueue = function () {
-    for (var i = 0; i < this.queue.length; ++i) {
-      this.postToUnity(this.queue[i]);
-	}
-	this.queue = false;
+    if (this.queue !== false) {
+        for (var i = 0; i < this.queue.length; ++i) {
+        this.postToUnity(this.queue[i]);
+        }
+        this.queue = false;
+    }
 }
 
 App.prototype.postToUnity = function (data) {
@@ -318,7 +320,9 @@ function onGameReady(autoScale) {
     }
 
     // send cached onReadyData
-    window.app.postQueue();
+    if (window.app) {
+      window.app.postQueue();
+    }
 
     if (autoScale) {
         resizeCanvas();
