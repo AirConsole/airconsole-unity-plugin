@@ -336,7 +336,11 @@ namespace NDream.AirConsole {
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
-			return (string)GetDevice (device_id) ["uid"];
+			JToken device = GetDevice (device_id);
+			if (device == null) {
+				return null;
+			}
+			return (string)device["uid"];
 		}
 		
 		/// <summary>
