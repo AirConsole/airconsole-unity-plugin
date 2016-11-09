@@ -120,6 +120,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	void OnHighScores (JToken highscores) {
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "On High Scores " + highscores + " \n \n");
+		//logWindow.text = logWindow.text.Insert (0, "Converted Highscores: " + HighScoreHelper.ConvertHighScoresToTables(highscores).ToString() + " \n \n");
 	}
 
 	void OnHighScoreStored (JToken highscore) {
