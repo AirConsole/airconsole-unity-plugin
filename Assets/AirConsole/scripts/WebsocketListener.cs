@@ -40,6 +40,8 @@ namespace NDream.AirConsole {
 	
 	public delegate void OnPersistentDataLoadedInternal (JObject data);
 	
+	public delegate void OnPremiumInternal (JObject data);
+
 	public delegate void OnLaunchAppInternal (JObject data);
 
 	public delegate void OnUnityWebviewResizeInternal (JObject data);
@@ -66,6 +68,7 @@ namespace NDream.AirConsole {
 		public event OnHighScoreStoredInternal onHighScoreStored;
 		public event OnPersistentDataStoredInternal onPersistentDataStored;
 		public event OnPersistentDataLoadedInternal onPersistentDataLoaded;
+		public event OnPremiumInternal onPremium;
 		public event OnLaunchAppInternal onLaunchApp;
 		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
 		public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
@@ -206,6 +209,11 @@ namespace NDream.AirConsole {
 					
 					if (this.onPersistentDataLoaded != null) {
 						this.onPersistentDataLoaded (msg);
+					}
+				} else if ((string)msg ["action"] == "onPremium") {
+					
+					if (this.onPremium != null) {
+						this.onPremium (msg);
 					}
 				} else if ((string)msg ["action"] == "onLaunchApp") {
 

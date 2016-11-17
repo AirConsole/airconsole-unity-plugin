@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.4.0.js"></script>
+  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.6.0.js"></script>
   
   <style type=text/css>
   
@@ -171,6 +171,10 @@
     App.prototype.tellScreenToShowAd = function() {
        this.airconsole.message(AirConsole.SCREEN, "show_ad");
     };
+
+     App.prototype.becomePremium = function() {
+       this.airconsole.getPremium();
+    };
     
   </script>
  
@@ -195,7 +199,8 @@
          <button class="button button-right" ontouchstart="window.app.showDefaultUI()">Show Default UI</button>
          <button class="button button-left" ontouchstart="window.app.navigateHome()">Navigate Home </button>
          <button class="button button-right" ontouchstart="window.app.navigateToPong()">Navigate to Pong</button>
-         <button class="button" ontouchstart="window.app.tellScreenToShowAd()">Tell Screen to show an ad</button>
+         <button class="button button-left" ontouchstart="window.app.tellScreenToShowAd()">Show ad (Screen)</button>
+         <button class="button button-right" ontouchstart="window.app.becomePremium()">Become Premium</button>
         </div>
         
     </div>

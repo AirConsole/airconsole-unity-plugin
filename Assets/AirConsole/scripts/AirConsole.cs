@@ -50,6 +50,8 @@ namespace NDream.AirConsole {
 	
 	public delegate void OnPersistentDataLoaded (JToken data);
    
+	public delegate void OnPremium (int device_id);
+
 	public class AirConsole : MonoBehaviour {
 		#if !DISABLE_AIRCONSOLE
 		#region airconsole api
@@ -166,6 +168,12 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="data">An object mapping uids to all key value pairs.</param>
 		public event OnPersistentDataLoaded onPersistentDataLoaded;
+
+		/// <summary> 
+		/// Gets called when a device becomes premium or when a premium device connects.
+		/// <param name="device_id">The device id of the premium device.</param>
+		/// </summary>
+		public event OnPremium onPremium;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -856,6 +864,60 @@ namespace NDream.AirConsole {
 			wsListener.Message (msg);
 		}
 
+		/// <summary>
+		/// Returns true if the device is premium
+		/// </summary>
+		/// <param name="device_id">The device_id that should be checked. Only controllers can be premium. Default is this device.</param>
+		public bool IsPremium(int device_id = -1) {
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+			
+			if (device_id == -1) {
+				device_id = GetDeviceId ();
+			}
+			
+			if (GetDevice (device_id) != null) {
+				
+				try {
+					return (bool)GetDevice (device_id) ["premium"];
+				} catch (Exception) { 
+					return false;
+				}
+				
+			} else {
+				
+				if (Settings.debug.warning) {
+					Debug.LogWarning ("AirConsole: IsPremium: device_id " + device_id + " not found");
+				}
+				return false;
+			}
+		}
+
+		/// <summary>
+		/// Returns all device Ids that are premium.
+		/// </summary>
+		public List<int> GetPremiumDeviceIds(){
+			if (!IsAirConsoleUnityPluginReady ()) {
+				
+				throw new NotReadyException ();
+				
+			}
+
+			List<int> result = new List<int>();
+
+			List<int> allControllers = GetControllerDeviceIds ();
+			for (int i = 0; i < allControllers.Count; ++i) {
+				if (IsPremium(allControllers[i])){
+					result.Add(allControllers[i]);
+				}
+			}
+
+			return result;
+		}
+
 		#endregion
 		#endif
 		
@@ -922,6 +984,7 @@ namespace NDream.AirConsole {
 			wsListener.onHighScoreStored += OnHighScoreStored;
 			wsListener.onPersistentDataStored += OnPersistentDataStored;
 			wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
+			wsListener.onPremium += OnPremium;
 
 
 			// check if game is running in webgl build
@@ -1285,6 +1348,27 @@ namespace NDream.AirConsole {
 				
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: OnPersistentDataLoaded");
+				}
+				
+			} catch (Exception e) {
+				
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnPremium (JObject msg) {
+			try {
+				
+				int device_id = (int)msg ["device_id"];
+				
+				if (this.onPremium != null) {
+					eventQueue.Enqueue (() => this.onPremium (device_id));
+				}
+				
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onPremium");
 				}
 				
 			} catch (Exception e) {

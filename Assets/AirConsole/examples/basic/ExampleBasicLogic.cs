@@ -33,6 +33,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.onHighScoreStored += OnHighScoreStored;
 		AirConsole.instance.onPersistentDataStored += OnPersistentDataStored;
 		AirConsole.instance.onPersistentDataLoaded += OnPersistentDataLoaded;
+		AirConsole.instance.onPremium += OnPremium;
 		logWindow.text = "Connecting... \n \n";
 	}
 
@@ -140,6 +141,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 	void OnPersistentDataLoaded (JToken data) {
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "Loaded persistentData: " + data + " \n \n");
+	}
+
+	void OnPremium(int device_id){
+		//Log to on-screen Console
+		logWindow.text = logWindow.text.Insert (0, "On Premium (device " + device_id + ") \n \n");
 	}
 
 	void Update () {
@@ -441,6 +447,27 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.RequestPersistentData (connectedUids);
 	}
 
+	public void IsMasterPremium(){
+		bool masterIsPremium = AirConsole.instance.IsPremium (AirConsole.instance.GetMasterControllerDeviceId ());
+
+		logWindow.text = logWindow.text.Insert (0, "Master device is Premium: " + masterIsPremium + "\n \n");
+	}
+
+	public void ShowPremiumDeviceIDs () {
+
+		List<int> premiumDevices = AirConsole.instance.GetPremiumDeviceIds ();
+
+		if (premiumDevices.Count > 0) {
+			foreach (int deviceId in premiumDevices){
+				logWindow.text = logWindow.text.Insert (0, "Device " + deviceId + " is Premium" + "\n \n");
+			}
+		} else {
+			//Log to on-screen Console
+			logWindow.text = logWindow.text.Insert (0, "No premium controllers are connected" + "\n \n");
+		}
+
+	}
+
 	void OnDestroy () {
 
 		// unregister events
@@ -454,10 +481,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 			AirConsole.instance.onAdShow -= OnAdShow;
 			AirConsole.instance.onAdComplete -= OnAdComplete;
 			AirConsole.instance.onGameEnd -= OnGameEnd;
-			AirConsole.instance.onHighScores += OnHighScores;
-			AirConsole.instance.onHighScoreStored += OnHighScoreStored;
-			AirConsole.instance.onPersistentDataStored += OnPersistentDataStored;
-			AirConsole.instance.onPersistentDataLoaded += OnPersistentDataLoaded;
+			AirConsole.instance.onHighScores -= OnHighScores;
+			AirConsole.instance.onHighScoreStored -= OnHighScoreStored;
+			AirConsole.instance.onPersistentDataStored -= OnPersistentDataStored;
+			AirConsole.instance.onPersistentDataLoaded -= OnPersistentDataLoaded;
+			AirConsole.instance.onPremium -= OnPremium;
 		}
 	}
 #endif
