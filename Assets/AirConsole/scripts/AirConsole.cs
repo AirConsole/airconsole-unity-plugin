@@ -882,7 +882,11 @@ namespace NDream.AirConsole {
 			if (GetDevice (device_id) != null) {
 				
 				try {
-					return (bool)GetDevice (device_id) ["premium"];
+					if (GetDevice(device_id)["premium"] != null){
+						return (bool)GetDevice (device_id) ["premium"];
+					} else {
+						return false;
+					}
 				} catch (Exception) { 
 					return false;
 				}
@@ -1203,7 +1207,7 @@ namespace NDream.AirConsole {
 		}
 
 		void OnAdShow (JObject msg) {
-#if UNITY_ANDROID
+#if UNITY_ANDROID && !UNITY_EDITOR
             webViewObject.SetMargins(0, 0, 0, 0);
 #endif
 			try {
@@ -1225,7 +1229,7 @@ namespace NDream.AirConsole {
 		}
 
 		void OnAdComplete (JObject msg) {
-#if UNITY_ANDROID
+#if UNITY_ANDROID && !UNITY_EDITOR
             webViewObject.SetMargins(0, 0, 0, Screen.height - webViewHeight);
 #endif
 			try {
