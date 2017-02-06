@@ -43,13 +43,13 @@ namespace NDream.AirConsole {
 	public delegate void OnGameEnd ();
 
 	public delegate void OnHighScores (JToken highscores);
-	
+
 	public delegate void OnHighScoreStored (JToken highscore);
 
 	public delegate void OnPersistentDataStored (string uid);
-	
+
 	public delegate void OnPersistentDataLoaded (JToken data);
-   
+
 	public delegate void OnPremium (int device_id);
 
 	public class AirConsole : MonoBehaviour {
@@ -63,18 +63,18 @@ namespace NDream.AirConsole {
 		/// <value>AirConsole Singleton Instance</value>
 		public static AirConsole instance {
 			get {
-				
+
 				if (_instance == null) {
 					_instance = GameObject.FindObjectOfType<AirConsole> ();
 					if (_instance != null) {
 						DontDestroyOnLoad (_instance.gameObject);
 					}
 				}
-				
+
 				return _instance;
 			}
 		}
-		
+
 		/// <summary>
 		/// Gets called when the game console is ready.
 		/// This event also also fires onConnect for all devices that already are
@@ -82,19 +82,19 @@ namespace NDream.AirConsole {
 		/// This event also fires OnCustomDeviceStateChange for all devices that are
 		/// connected, have loaded your game and have set a custom Device State.
 		/// </summary>
-		/// <param name="code">The AirConsole join code.</param> 
+		/// <param name="code">The AirConsole join code.</param>
 		public event OnReady onReady;
 
 		/// <summary>
 		/// Gets called when a message is received from another device
 		/// that called message() or broadcast().
 		/// </summary>
-		/// <param name="from">The device ID that sent the message.</param> 
+		/// <param name="from">The device ID that sent the message.</param>
 		/// <param name="data">The data that was sent.</param>
 		public event OnMessage onMessage;
 
 		/// <summary>
-		/// Gets called when a device joins/leaves a game session or updates its DeviceState (custom DeviceState, profile pic, nickname). 
+		/// Gets called when a device joins/leaves a game session or updates its DeviceState (custom DeviceState, profile pic, nickname).
 		/// This is function is also called every time OnConnect, OnDisconnect or OnCustomDeviceStateChange is called. It's like their root function.
 		/// </summary>
 		/// <param name="device_id">the device ID that changed its DeviceState.</param>
@@ -114,10 +114,10 @@ namespace NDream.AirConsole {
 		public event OnDisconnect onDisconnect;
 
 		/// <summary>
-		/// Gets called when a device updates it's custom DeviceState by calling SetCustomDeviceState or SetCustomDeviceStateProperty. 
+		/// Gets called when a device updates it's custom DeviceState by calling SetCustomDeviceState or SetCustomDeviceStateProperty.
 		/// Make sure you understand the power of device states: http://developers.airconsole.com/#/guides/device_ids_and_states
 		/// </summary>
-		/// <param name="device_id">the device ID that changed its customDeviceState.</param> 
+		/// <param name="device_id">the device ID that changed its customDeviceState.</param>
 		/// <param name="cutsom_data">The custom DeviceState data value.</param>
 		public event OnCustomDeviceStateChange onCustomDeviceStateChange;
 
@@ -140,12 +140,12 @@ namespace NDream.AirConsole {
 		public event OnAdComplete onAdComplete;
 
 		/// <summary>
-		/// Gets called when the game should be terminated. 
+		/// Gets called when the game should be terminated.
 		/// In case this event gets called, please mute all sounds and stop all animations.
 		/// </summary>
 		public event OnGameEnd onGameEnd;
 
-		/// <summary> 
+		/// <summary>
 		/// Gets called when high scores are returned after calling requestHighScores.
 		/// <param name="highscores">The high scores.</param>
 		/// </summary>
@@ -169,7 +169,7 @@ namespace NDream.AirConsole {
 		/// <param name="data">An object mapping uids to all key value pairs.</param>
 		public event OnPersistentDataLoaded onPersistentDataLoaded;
 
-		/// <summary> 
+		/// <summary>
 		/// Gets called when a device becomes premium or when a premium device connects.
 		/// <param name="device_id">The device id of the premium device.</param>
 		/// </summary>
@@ -189,18 +189,18 @@ namespace NDream.AirConsole {
 		/// <param name="to">The device ID to send the message to.</param>
 		/// <param name="data">The data to send.</param>
 		public void Message (int to, object data) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "message");
 			msg.Add ("from", to);
 			msg.Add ("data", JToken.FromObject (data));
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -209,17 +209,17 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="data">The message to send.</param>
 		public void Broadcast (object data) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "broadcast");
 			msg.Add ("data", JToken.FromObject (data));
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -248,9 +248,9 @@ namespace NDream.AirConsole {
 		/// <returns>The device identifier.</returns>
 		public int GetDeviceId () {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			return _device_id;
 		}
@@ -270,13 +270,13 @@ namespace NDream.AirConsole {
 		/// are active players by calling getActivePlayerDeviceIds().
 		/// The screen can call this function every time a game round starts.
 		/// </summary>
-		/// <param name="data">The maximum number of controllers that should 
+		/// <param name="data">The maximum number of controllers that should
 		/// get a player number assigned.</param>
 		public void SetActivePlayers (int max_players=-1) {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 
 			List<int> device_ids = GetControllerDeviceIds ();
@@ -290,7 +290,7 @@ namespace NDream.AirConsole {
 			JObject msg = new JObject ();
 			msg.Add ("action", "setActivePlayers");
 			msg.Add ("max_players", max_players);
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -327,7 +327,7 @@ namespace NDream.AirConsole {
 		public int ConvertDeviceIdToPlayerNumber (int device_id) {
 			return _players.IndexOf (device_id);
 		}
-		
+
 
 
 		/// <summary>
@@ -337,9 +337,9 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device id for which you want the uid. Default is this device.</param>
 		public string GetUID (int device_id = -1) {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
@@ -350,7 +350,7 @@ namespace NDream.AirConsole {
 			}
 			return (string)device["uid"];
 		}
-		
+
 		/// <summary>
 		/// Gets the custom DeviceState of a device.
 		/// </summary>
@@ -358,44 +358,44 @@ namespace NDream.AirConsole {
 		/// <returns> The custom data previously set by the device.</returns>
 		public JToken GetCustomDeviceState (int device_id = -1) {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
 			if (GetDevice (device_id) != null) {
-				
+
 				try {
 					return GetDevice (device_id) ["custom"];
 				} catch (Exception e) {
-					
+
 					if (Settings.debug.error) {
 						Debug.LogError ("AirConsole: " + e.Message);
 					}
 					return null;
 				}
-				
+
 			} else {
-				
+
 				if (Settings.debug.warning) {
 					Debug.LogWarning ("AirConsole: GetCustomDeviceState: device_id " + device_id + " not found");
 				}
 				return null;
 			}
 		}
-		
+
 		/// <summary>
 		/// Returns the nickname of a user.
 		/// </summary>
 		/// <param name="device_id">The device id for which you want the nickname. Default is this device. Screens don't have nicknames.</param>
 		public string GetNickname (int device_id = -1) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 
 			if (device_id == -1) {
@@ -403,25 +403,25 @@ namespace NDream.AirConsole {
 			}
 
 			if (GetDevice (device_id) != null) {
-				
+
 				try {
 					if (GetDevice (device_id) ["nickname"] != null) {
 						return (string)GetDevice (device_id) ["nickname"];
 					} else {
 						return "Guest " + device_id;
 					}
-				} catch (Exception) { 
-					return "Guest " + device_id; 
+				} catch (Exception) {
+					return "Guest " + device_id;
 				}
-				
+
 			} else {
-				
+
 				if (Settings.debug.warning) {
 					Debug.LogWarning ("AirConsole: GetNickname: device_id " + device_id + " not found");
 				}
 				return null;
 			}
-			
+
 		}
 
 		/// <summary>
@@ -440,97 +440,97 @@ namespace NDream.AirConsole {
 		/// <param name="size">The size of in pixels of the picture. Default is 64.</param>
 		public string GetProfilePicture (int device_id = -1, int size = 64) {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
 			if (GetDevice (GetDeviceId ()) != null) {
-				
+
 				try {
 					return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice (device_id) ["uid"] + "&size=" + size;
 				} catch (Exception) {
-					
+
 					if (Settings.debug.warning) {
 						Debug.LogWarning ("AirConsole: GetProfilePicture: can't find profile picture of device_id:" + device_id);
 					}
 					return null;
 				}
-				
+
 			} else {
-				
+
 				if (Settings.debug.warning) {
 					Debug.LogWarning ("AirConsole: GetProfilePicture: " + device_id + " not found");
 				}
 				return null;
 			}
-			
+
 		}
-		
+
 		/// <summary>
-		/// Returns the current time on the game server. 
-		/// This allows you to have a synchronized clock: You can send the servertime in a message to know exactly at what point something happened on a device. 
+		/// Returns the current time on the game server.
+		/// This allows you to have a synchronized clock: You can send the servertime in a message to know exactly at what point something happened on a device.
 		/// </summary>
 		/// <returns> Timestamp in milliseconds.</returns>
 		public long GetServerTime () {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			return (long)(DateTime.UtcNow.Subtract (new DateTime (1970, 1, 1))).TotalMilliseconds + _server_time_offset;
 		}
-		
+
 		/// <summary>
 		/// Request that all devices return to the AirConsole store.
 		/// </summary>
 		public void NavigateHome () {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "navigateHome");
-			
+
 			wsListener.Message (msg);
 		}
 
 		/// <summary>
-		/// Request that all devices load a game by url. Note that the custom DeviceStates are preserved. 
+		/// Request that all devices load a game by url. Note that the custom DeviceStates are preserved.
 		/// If you don't want that, override SetCustomDeviceState(null) on every device before calling this function.
 		/// </summary>
 		public void NavigateTo (string url) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "navigateTo");
 			msg.Add ("data", url);
-			
+
 			wsListener.Message (msg);
 		}
-		
+
 		/// <summary>
 		/// Sets the custom DeviceState of this device.
 		/// </summary>
 		/// <param name="data">The custom data to set.</param>
 		public void SetCustomDeviceState (object data) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			JObject msg = new JObject ();
 			msg.Add ("action", "setCustomDeviceState");
@@ -541,23 +541,23 @@ namespace NDream.AirConsole {
 				_devices [0] = new JObject ();
 			}
 			_devices [0] ["custom"] = msg ["data"];
-			
+
 			wsListener.Message (msg);
 		}
-		
+
 		/// <summary>
 		/// Sets a property in the custom DeviceState of this device.
 		/// </summary>
 		/// <param name="data">The property name.</param>
 		/// <param name="data">The property value.</param>
 		public void SetCustomDeviceStateProperty (string key, object value) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "setCustomDeviceStateProperty");
 			msg.Add ("key", JToken.FromObject (key));
@@ -567,16 +567,16 @@ namespace NDream.AirConsole {
 			if (GetDevice (0) == null) {
 				_devices [0] = new JObject ();
 			}
-			
+
 			JToken custom = _devices [0] ["custom"];
 			if (custom == null) {
 				JObject new_custom = new JObject ();
 				_devices [0] ["custom"] = JToken.FromObject (new_custom);
 			}
-			
-			
+
+
 			_devices [0] ["custom"] [key] = msg ["value"];
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -589,14 +589,14 @@ namespace NDream.AirConsole {
 		/// </summary>
 		public void ShowAd () {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "showAd");
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -605,44 +605,50 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="visible">Whether to show or hide the default UI.</param>
 		public void ShowDefaultUI (bool visible) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "showDefaultUI");
 			msg.Add ("data", visible);
-			
+
 			wsListener.Message (msg);
 		}
 
 		/// <summary>
-		/// Returns the device ID of the master controller.
+		/// Returns the device ID of the master controller. Premium devices are prioritized
 		/// </summary>
 		public int GetMasterControllerDeviceId () {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			List<int> result = GetControllerDeviceIds ();
-			if (result.Count > 0) {
-				return result [0];
+
+			List<int> result_premium = GetPremiumDeviceIds();
+			if (result_premium.Count > 0) {
+				return result_premium [0];
+			} else {
+				List<int> result = GetControllerDeviceIds ();
+				if (result.Count > 0) {
+					return result [0];
+				}
 			}
 			return 0;
 		}
-		
+
 		/// <summary>
 		/// Returns all controller device ids that have loaded your game.
 		/// </summary>
 		public List<int> GetControllerDeviceIds () {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 			List<int> result = new List<int> ();
 			string game_url = GetGameUrl (_location);
@@ -650,7 +656,7 @@ namespace NDream.AirConsole {
 				JToken device = GetDevice (i);
 				if (device != null && GetGameUrl ((string)device ["location"]) == game_url) {
 					result.Add (i);
-				} 
+				}
 			}
 			return result;
 		}
@@ -660,24 +666,24 @@ namespace NDream.AirConsole {
 		/// Returns true if a user is logged in.
 		/// </summary>
 		public bool IsUserLoggedIn (int device_id = -1) {
-				
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-						
+
 				throw new NotReadyException ();
-						
+
 			}
-					
+
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
-					
+
 			if (GetDevice (device_id) != null) {
-						
+
 				try {
 					if (GetDevice (device_id) ["auth"] != null) {
 						return (bool)GetDevice (device_id) ["auth"];
 					}
-				} catch (Exception) { 
+				} catch (Exception) {
 					return false;
 				}
 				return false;
@@ -687,7 +693,7 @@ namespace NDream.AirConsole {
 		}
 
 		/// <summary>
-		/// Requests high score data of players (including global high scores and friends). 
+		/// Requests high score data of players (including global high scores and friends).
 		/// Will call onHighScores when data was received.
 		/// </summary>
 		/// <param name="level_name">The name of the level.</param>
@@ -697,20 +703,20 @@ namespace NDream.AirConsole {
 		/// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
 		/// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
 		public void RequestHighScores (string level_name, string level_version, List<string> uids = null, List<string> ranks = null, int total = -1, int top = -1) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "requestHighScores");
 			msg.Add ("level_name", level_name);
 			msg.Add ("level_version", level_version);
 
 			JArray uidsJArray = null;
-			
+
 			if (uids != null) {
 				uidsJArray = new JArray();
 				foreach (string uid in uids){
@@ -736,13 +742,13 @@ namespace NDream.AirConsole {
 			if (top != -1) {
 				msg.Add ("top", top);
 			}
-			
+
 			wsListener.Message (msg);
 		}
 
 		/// <summary>
-		/// Stores a high score of the current user on the AirConsole servers. 
-		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
+		/// Stores a high score of the current user on the AirConsole servers.
+		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score.
 		/// Calls onHighScoreStored when the request is done.
 		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
 		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
@@ -758,8 +764,8 @@ namespace NDream.AirConsole {
 		}
 
 		/// <summary>
-		/// Stores a high score of the current user on the AirConsole servers. 
-		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score. 
+		/// Stores a high score of the current user on the AirConsole servers.
+		/// High scores may be returned to anyone. Do not include sensitive data. Only updates the high score if it was a higher or same score.
 		/// Calls onHighScoreStored when the request is done.
 		/// <param name="level_name">The name of the level the user was playing. This should be a human readable string because it appears in the high score sharing image. You can also just pass an empty string.</param>
 		/// <param name="level_version">The version of the level the user was playing. This is for your internal use.</param>
@@ -771,11 +777,11 @@ namespace NDream.AirConsole {
 		public void StoreHighScore (string level_name, string level_version, float score, List<string> uids, JObject data = null, string score_string = null) {
 
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "storeHighScore");
 			msg.Add ("level_name", level_name);
@@ -795,7 +801,7 @@ namespace NDream.AirConsole {
 			if (score_string != null) {
 				msg.Add ("score_string", score_string);
 			}
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -812,12 +818,12 @@ namespace NDream.AirConsole {
 		/// Will call onPersistentDataLoaded when data was received.
 		/// </summary>
 		/// <param name="uids">The uids for which you would like to request the persistent data. Default is this device.</param>
-		public void RequestPersistentData (List<string> uids = null) { 
-			
+		public void RequestPersistentData (List<string> uids = null) {
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 
 			JObject msg = new JObject ();
@@ -828,11 +834,11 @@ namespace NDream.AirConsole {
 				foreach (string uid in uids){
 					uidJArray.Add(uid);
 				}
-				
+
 				msg.Add ("uids", uidJArray);
 			}
 
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -845,13 +851,13 @@ namespace NDream.AirConsole {
 		/// <param name="value">The value of the data entry.</param>
 		/// <param name="uid">The uid for which the data should be stored. Default is this device.</param>
 		public void StorePersistentData (string key, JToken value, string uid = null) {
-			
+
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			JObject msg = new JObject ();
 			msg.Add ("action", "storePersistentData");
 			msg.Add ("key", key);
@@ -860,7 +866,7 @@ namespace NDream.AirConsole {
 			if (uid != null) {
 				msg.Add ("uid", uid);
 			}
-			
+
 			wsListener.Message (msg);
 		}
 
@@ -870,29 +876,29 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device_id that should be checked. Only controllers can be premium. Default is this device.</param>
 		public bool IsPremium(int device_id = -1) {
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
-			
+
 			if (device_id == -1) {
 				device_id = GetDeviceId ();
 			}
-			
+
 			if (GetDevice (device_id) != null) {
-				
+
 				try {
 					if (GetDevice(device_id)["premium"] != null){
 						return (bool)GetDevice (device_id) ["premium"];
 					} else {
 						return false;
 					}
-				} catch (Exception) { 
+				} catch (Exception) {
 					return false;
 				}
-				
+
 			} else {
-				
+
 				if (Settings.debug.warning) {
 					Debug.LogWarning ("AirConsole: IsPremium: device_id " + device_id + " not found");
 				}
@@ -905,9 +911,9 @@ namespace NDream.AirConsole {
 		/// </summary>
 		public List<int> GetPremiumDeviceIds(){
 			if (!IsAirConsoleUnityPluginReady ()) {
-				
+
 				throw new NotReadyException ();
-				
+
 			}
 
 			List<int> result = new List<int>();
@@ -924,9 +930,9 @@ namespace NDream.AirConsole {
 
 		#endregion
 		#endif
-		
+
 		#region airconsole unity config
-		
+
 		public StartMode browserStartMode;
 		public UnityEngine.Object controllerHtml;
 		public bool autoScaleCanvas = true;
@@ -935,10 +941,10 @@ namespace NDream.AirConsole {
 		public AndroidUIResizeMode androidUIResizeMode;
 		public Sprite webViewLoadingSprite;
 #endif
-		
+
 #endregion
 #if !DISABLE_AIRCONSOLE
-		
+
 #region unity functions
 
 		void Awake () {
@@ -946,13 +952,13 @@ namespace NDream.AirConsole {
 				Destroy (this.gameObject);
 			}
 
-			// always set default object name 
+			// always set default object name
 			// important for unity webgl communication
 			gameObject.name = "AirConsole";
 		}
 
 		void Start () {
-						
+
 			// application has to run in background
 #if UNITY_ANDROID && !UNITY_EDITOR
             Application.runInBackground = false;
@@ -1010,7 +1016,7 @@ namespace NDream.AirConsole {
 					Application.ExternalCall ("onGameReady", this.autoScaleCanvas);
 				}
 			}
-            
+
 		}
 
 		void Update () {
@@ -1034,13 +1040,13 @@ namespace NDream.AirConsole {
             #region internal functions
 
 		void OnDeviceStateChange (JObject msg) {
-			
+
 			if (msg ["device_id"] == null) {
 				return;
 			}
-			
+
 			try {
-				
+
 				int deviceId = (int)msg ["device_id"];
 				AllocateDeviceSlots (deviceId);
 				JToken deviceData = (JToken)msg ["device_data"];
@@ -1049,122 +1055,122 @@ namespace NDream.AirConsole {
 				} else {
 					_devices [deviceId] = null;
 				}
-				
+
 				if (this.onDeviceStateChange != null) {
 					eventQueue.Enqueue (() => this.onDeviceStateChange (deviceId, GetDevice (_device_id)));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: saved devicestate of " + deviceId);
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
 			}
-			
+
 		}
-		
+
 		void OnConnect (JObject msg) {
-			
+
 			if (msg ["device_id"] == null) {
 				return;
 			}
-			
+
 			try {
-				
+
 				int deviceId = (int)msg ["device_id"];
-				
+
 				if (this.onConnect != null) {
 					eventQueue.Enqueue (() => this.onConnect (deviceId));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onConnect " + deviceId);
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
 			}
-			
+
 		}
-		
+
 		void OnDisconnect (JObject msg) {
-			
+
 			if (msg ["device_id"] == null) {
 				return;
 			}
-			
+
 			try {
-				
+
 				int deviceId = (int)msg ["device_id"];
-				
+
 				if (this.onDisconnect != null) {
 					eventQueue.Enqueue (() => this.onDisconnect (deviceId));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onDisconnect " + deviceId);
 				}
-				
+
 			} catch (Exception e) {
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
 			}
-			
+
 		}
-		
+
 		void OnCustomDeviceStateChange (JObject msg) {
-			
+
 			if (msg ["device_id"] == null) {
 				return;
 			}
-			
+
 			try {
-				
+
 				int deviceId = (int)msg ["device_id"];
-				
+
 				if (this.onCustomDeviceStateChange != null) {
 					eventQueue.Enqueue (() => this.onCustomDeviceStateChange (deviceId, GetCustomDeviceState (deviceId)));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onCustomDeviceStateChange " + deviceId);
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
 			}
-			
+
 		}
-		
+
 		void OnMessage (JObject msg) {
-			
+
 			if (this.onMessage != null) {
 				eventQueue.Enqueue (() => this.onMessage ((int)msg ["from"], (JToken)msg ["data"]));
 			}
 		}
-		
+
 		void OnReady (JObject msg) {
-			
+
 			// parse server_time_offset
 			_server_time_offset = (int)msg ["server_time_offset"];
-			
+
 			// parse device_id
 			_device_id = (int)msg ["device_id"];
-			
+
 			// parse location
 			_location = (string)msg ["location"];
-			
+
 			// load devices
 			_devices.Clear ();
 			foreach (JToken data in (JToken)msg["devices"]) {
@@ -1174,32 +1180,32 @@ namespace NDream.AirConsole {
 				}
 				_devices.Add (assign);
 			}
-			
+
 			if (this.onReady != null) {
 				eventQueue.Enqueue (() => this.onReady ((string)msg ["code"]));
 			}
 		}
 
 		void OnDeviceProfileChange (JObject msg) {
-			
+
 			if (msg ["device_id"] == null) {
 				return;
 			}
-			
+
 			try {
-				
+
 				int deviceId = (int)msg ["device_id"];
-				
+
 				if (this.onDeviceProfileChange != null) {
 					eventQueue.Enqueue (() => this.onDeviceProfileChange (deviceId));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onDeviceProfileChange " + deviceId);
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1211,17 +1217,17 @@ namespace NDream.AirConsole {
             webViewObject.SetMargins(0, 0, 0, 0);
 #endif
 			try {
-				
+
 				if (this.onAdShow != null) {
 					eventQueue.Enqueue (() => this.onAdShow ());
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onAdShow");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1233,19 +1239,19 @@ namespace NDream.AirConsole {
             webViewObject.SetMargins(0, 0, 0, Screen.height - webViewHeight);
 #endif
 			try {
-				
+
 				bool adWasShown = (bool)msg ["ad_was_shown"];
-				
+
 				if (this.onAdComplete != null) {
 					eventQueue.Enqueue (() => this.onAdComplete (adWasShown));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onAdComplete");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1257,17 +1263,17 @@ namespace NDream.AirConsole {
 			webViewObject.SetMargins(0, 0, 0, 0);
 #endif
 			try {
-				
+
 				if (this.onGameEnd != null) {
 					eventQueue.Enqueue (() => this.onGameEnd ());
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onGameEnd");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1278,17 +1284,17 @@ namespace NDream.AirConsole {
 			try {
 
 				JToken highscores = msg ["highscores"];
-				
+
 				if (this.onHighScores != null) {
 					eventQueue.Enqueue (() => this.onHighScores (highscores));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onHighScores");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1302,18 +1308,18 @@ namespace NDream.AirConsole {
 
 				if (highscore != null && !highscore.HasValues) {
 					highscore = null;
-				} 
+				}
 
 				if (this.onHighScoreStored != null) {
 					eventQueue.Enqueue (() => this.onHighScoreStored (highscore));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onHighScoreStored");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1322,19 +1328,19 @@ namespace NDream.AirConsole {
 
 		void OnPersistentDataStored (JObject msg) {
 			try {
-				
+
 				string uid = (string)msg ["uid"];
 
 				if (this.onPersistentDataStored != null) {
 					eventQueue.Enqueue (() => this.onPersistentDataStored (uid));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: OnPersistentDataStored");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1343,19 +1349,19 @@ namespace NDream.AirConsole {
 
 		void OnPersistentDataLoaded (JObject msg) {
 			try {
-				
+
 				JToken data = msg ["data"];
-				
+
 				if (this.onPersistentDataLoaded != null) {
 					eventQueue.Enqueue (() => this.onPersistentDataLoaded (data));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: OnPersistentDataLoaded");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1364,19 +1370,19 @@ namespace NDream.AirConsole {
 
 		void OnPremium (JObject msg) {
 			try {
-				
+
 				int device_id = (int)msg ["device_id"];
-				
+
 				if (this.onPremium != null) {
 					eventQueue.Enqueue (() => this.onPremium (device_id));
 				}
-				
+
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onPremium");
 				}
-				
+
 			} catch (Exception e) {
-				
+
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}
@@ -1387,22 +1393,22 @@ namespace NDream.AirConsole {
 		public int server_time_offset {
 			get { return _server_time_offset; }
 		}
-		
+
 		[Obsolete("device_id is deprecated, please use GetDeviceId instead. This method will be " +
 		          "removed in the next version.")]
 		public int device_id {
 			get { return GetDeviceId (); }
 		}
-		
+
 		[Obsolete("Do not use .devices directly. Use the getter and setter functions. Devices in " +
 		          "this collection may not have loaded your game yet. This method will be removed in" +
 		          "the next version.")]
 		public ReadOnlyCollection<JToken> devices {
-			get { 
-				return _devices.AsReadOnly (); 
+			get {
+				return _devices.AsReadOnly ();
 			}
 		}
-		
+
 		// private vars
 		private WebSocketServer wsServer;
 		private WebsocketListener wsListener;
@@ -1419,7 +1425,7 @@ namespace NDream.AirConsole {
 		private string _location;
 		private List<int> _players = new List<int> ();
 		private readonly Queue<Action> eventQueue = new Queue<Action> ();
-		
+
 		// unity singleton handling
 		private static AirConsole _instance;
 
@@ -1502,8 +1508,8 @@ namespace NDream.AirConsole {
 
 					//Display loading Screen
 					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
-					
-					
+
+
 #if !UNITY_EDITOR
 					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
 					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
@@ -1536,7 +1542,7 @@ namespace NDream.AirConsole {
 			string gameId = (string)msg ["game_id"];
 			string gameVersion = (string)msg ["game_version"];
 			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
-				
+
 				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
 				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -1571,7 +1577,7 @@ namespace NDream.AirConsole {
 			if (_devices.Count > 0) {
 				Debug.Log("screen device data: " + _devices[0].ToString());
 			}
-			
+
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
@@ -1601,7 +1607,7 @@ namespace NDream.AirConsole {
 
 			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
 				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
-				
+
 				for (int i = 0; i < allCanvasScalers.Length; ++i) {
 					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - webViewHeight) * allCanvasScalers[i].referenceResolution.y);
 				}
