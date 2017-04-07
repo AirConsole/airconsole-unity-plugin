@@ -7,3 +7,7 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/AirConsole/examples/basic/basic.unity
+    guid: be2892f0848650f4fa6714ec6d9100bf
+  - enabled: 1
+    path: Assets/AirConsole/examples/basic/basic2.unity
+    guid: faa0bdc612b6247cdb526d254736957c
