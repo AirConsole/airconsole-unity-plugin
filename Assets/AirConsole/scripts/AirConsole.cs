@@ -1493,7 +1493,7 @@ namespace NDream.AirConsole {
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
-                    url += "&game-id=" + Application.bundleIdentifier;
+                    url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + this.androidTvGameVersion;
 
                     webViewObject.SetMargins(0, Screen.height, 0, -Screen.height);
@@ -1535,7 +1535,7 @@ namespace NDream.AirConsole {
             Debug.Log("onLaunchApp");
 			string gameId = (string)msg ["game_id"];
 			string gameVersion = (string)msg ["game_version"];
-			if (gameId != Application.bundleIdentifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
+			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
 				
 				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
@@ -1553,7 +1553,7 @@ namespace NDream.AirConsole {
 						Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
 					}
 				}
-				if (launchIntent != null && gameId != Application.bundleIdentifier) {
+				if (launchIntent != null && gameId != Application.identifier) {
 					ca.Call("startActivity", launchIntent);
 				} else {
 					Application.OpenURL("market://details?id=" + gameId);
