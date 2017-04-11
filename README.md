@@ -5,10 +5,6 @@ their own local multiplayer realtime browser games controlled by smartphones.
 
 The AirConsole-Unity-Plugin is a C# wrapper for the AirConsole Javascript API version 1.4.
 
-## Unity 5.6 Compatibility
-
-Please note that we are still working on this plugin's compatibility with Unity 5.6 and cannot guarantee its full functionality yet.
-
 ## Webserver
 The plugin comes with an embedded webserver / websocket-server for 
 the communication between the AirConsole backend and the Unity-Editor. 
