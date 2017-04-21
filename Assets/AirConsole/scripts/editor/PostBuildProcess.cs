@@ -29,7 +29,7 @@ namespace NDream.AirConsole.Editor {
 				}
 				
 				// rename json configuration to game.json
-				File.Move (pathToBuiltProject + "/Build/" + pathDirectories [pathDirectories.Length - 1] + ".json", pathToBuiltProject + "/Build/game.json");
+				File.Move (pathToBuiltProject + "/Build/" + Path.GetFileName(pathToBuiltProject) + ".json", pathToBuiltProject + "/Build/game.json");
 
 
 				// save last port path
