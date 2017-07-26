@@ -620,7 +620,7 @@ namespace NDream.AirConsole {
 		}
 
 		/// <summary>
-		/// Returns the device ID of the master controller.
+		/// Returns the device ID of the master controller. Premium devices are prioritized.
 		/// </summary>
 		public int GetMasterControllerDeviceId () {
 			if (!IsAirConsoleUnityPluginReady ()) {
@@ -628,9 +628,14 @@ namespace NDream.AirConsole {
 				throw new NotReadyException ();
 				
 			}
-			List<int> result = GetControllerDeviceIds ();
-			if (result.Count > 0) {
-				return result [0];
+			List<int> result_premium = GetPremiumDeviceIds();
+			if (result_premium.Count > 0) {
+				return result_premium [0];
+			} else {
+				List<int> result = GetControllerDeviceIds ();
+				if (result.Count > 0) {
+					return result [0];
+				}
 			}
 			return 0;
 		}

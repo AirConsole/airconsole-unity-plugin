@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.6.0.js"></script>
+  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
   
   <style type=text/css>
   
@@ -175,6 +175,11 @@
      App.prototype.becomePremium = function() {
        this.airconsole.getPremium();
     };
+
+     App.prototype.showMaster = function() {
+       var master_id = this.airconsole.getMasterControllerDeviceId();
+       document.getElementById("content").innerHTML = "Master is: " + master_id;
+    };
     
   </script>
  
@@ -201,6 +206,7 @@
          <button class="button button-right" ontouchstart="window.app.navigateToPong()">Navigate to Pong</button>
          <button class="button button-left" ontouchstart="window.app.tellScreenToShowAd()">Show ad (Screen)</button>
          <button class="button button-right" ontouchstart="window.app.becomePremium()">Become Premium</button>
+         <button class="button button-left" ontouchstart="window.app.showMaster()">Show Master Id</button>
         </div>
         
     </div>

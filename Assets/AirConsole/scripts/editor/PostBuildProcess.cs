@@ -21,16 +21,13 @@ namespace NDream.AirConsole.Editor {
 				// rename index.html to screen.html
 				File.Move (pathToBuiltProject + "/index.html", pathToBuiltProject + "/screen.html");
 
-				string[] pathDirectories = pathToBuiltProject.Split (Path.DirectorySeparatorChar);
-
 				// check if game.json already exists
 				if (File.Exists (pathToBuiltProject + "/Build/game.json")) {
 					File.Delete (pathToBuiltProject + "/Build/game.json");
 				}
 				
 				// rename json configuration to game.json
-				File.Move (pathToBuiltProject + "/Build/" + pathDirectories [pathDirectories.Length - 1] + ".json", pathToBuiltProject + "/Build/game.json");
-
+				File.Move (pathToBuiltProject + "/Build/" + Path.GetFileName(pathToBuiltProject) + ".json", pathToBuiltProject + "/Build/game.json");
 
 				// save last port path
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);

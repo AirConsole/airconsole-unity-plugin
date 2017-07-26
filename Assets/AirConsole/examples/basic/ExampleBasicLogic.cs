@@ -447,10 +447,10 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.RequestPersistentData (connectedUids);
 	}
 
-	public void IsMasterPremium(){
-		bool masterIsPremium = AirConsole.instance.IsPremium (AirConsole.instance.GetMasterControllerDeviceId ());
+	public void ShowMasterControllerId(){
+		int masterControllerId = AirConsole.instance.GetMasterControllerDeviceId ();
 
-		logWindow.text = logWindow.text.Insert (0, "Master device is Premium: " + masterIsPremium + "\n \n");
+		logWindow.text = logWindow.text.Insert (0, "Device " + masterControllerId + " is Master Controller\n \n");
 	}
 
 	public void ShowPremiumDeviceIDs () {
