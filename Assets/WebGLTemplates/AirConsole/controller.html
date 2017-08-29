@@ -1,216 +1,105 @@
 
 <html>
 <head>
-  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
-  
-  <style type=text/css>
-  
-  .button{
-   background: #3B3B3B;
-   color: white;
-   font-family: Arial;
-   font-size: 14px;
-   padding: 5px 10px 5px 10px;
-   border: solid #1f1f1f 2px;
-   -webkit-border-radius: 11;
-   -moz-border-radius: 11;
-   border-radius: 6px;
-   width: 100%;
-   text-align: left;
-  }
-  
-  .button-left{
-   width: 50%;
-   left: 0px;   
-  }
-  
-  .button-right{
-   width: 50%;
-   float: right;
-   right: 0px;   
-  }
-  
-  #content{
-   position:absolute;
-   font-family: Arial;
-   color: white;
-   bottom: 5%;
-  }
-  
-  #profile-pic{
-   position:absolute;
-   background-size: cover;
-   width: 50px;
-   height: 50px;
-   right: 5%;
-   bottom: 5%;
-  }
-  
-  </style>
-  
-  <script type="text/javascript">
+    <script type="text/javascript"
+            src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
+    <script type="text/javascript">
+    navigator.vibrate = (navigator.vibrate ||
+                         navigator.webkitVibrate ||
+                         navigator.mozVibrate ||
+                         navigator.msVibrate);
 
     var airconsole;
     /**
      * Sets up the communication to the screen.
      */
-    function App() {
-      var me = this;
-      me.airconsole = new AirConsole({"orientation": "portrait", "synchronize_time" : "true"});
-      me.airconsole.onMessage = function(from, data) {
-        console.log("onMessage", from, data);
-        document.getElementById("content").innerHTML = "device " + from + " says: " + data;
-      };
-      
-      me.airconsole.onReady = function(code) {
-        console.log("onReady", code);
-      };
-      
-      me.airconsole.onDeviceStateChange = function(device_id, device_data) {
-        console.log("onDeviceStateChange", device_id, device_data);
-      };
-      
-      /**
-       * Here we are adding support for mouse events manually.
-       * WE STRONGLY ENCOURAGE YOU TO USE THE AIRCONSOLE CONTROLS LIBRARY
-       * WHICH IS EVEN BETTER (BUT WE DONT WANT TO BLOAT THE CODE HERE).
-       * https://github.com/AirConsole/airconsole-controls/
-       * 
-       * NO MATTER WHAT YOU DECIDE, DO NOT USE ONCLICK HANDLERS.
-       * THEY HAVE A 200MS DELAY!
-       */
-      if (!("ontouchstart" in document.createElement("div"))) {
-        var elements = document.getElementsByTagName("*");
-        for (var i = 0; i < elements.length; ++i) {
-          var element = elements[i];
-          var ontouchstart = element.getAttribute("ontouchstart");
-          if (ontouchstart) {
-            element.setAttribute("onmousedown", ontouchstart);
-          }
-          var ontouchend = element.getAttribute("ontouchend");
-          if (ontouchend) {
-            element.setAttribute("onmouseup", ontouchend);
-          }
+    function init() {
+      airconsole = new AirConsole({"orientation": "portrait"});
+      airconsole.onMessage = function(from, data) {
+        if (from == AirConsole.SCREEN && data.vibrate) {
+          navigator.vibrate(data.vibrate);
+          console.log("Vibrating: " + data.vibrate);
         }
       }
+      airconsole.onActivePlayersChange = function(player_number) {
+        updateText(player_number);
+      }
+      airconsole.onReady = function() {
+        updateText();
+      }
     }
-    
-    App.prototype.sendMessageToScreen = function(msg) {
-       this.airconsole.message(AirConsole.SCREEN, msg);
-    };
-    
-    App.prototype.broadcastMessage = function(msg) {
-       this.airconsole.broadcast(msg);
-    };
-    
-    App.prototype.setSomeCustomData = function() {
-  	  var custom_data = {
- 	    'style': 'green',
-		'health': 98
-  	  };
-       this.airconsole.setCustomDeviceState(custom_data);
-    };
-    
-    App.prototype.setCustomDeviceStateProperty = function(key, value) {
-       this.airconsole.setCustomDeviceStateProperty(key, value);
-    };
-    
-    App.prototype.displayDeviceId = function() {
-       var id = this.airconsole.getDeviceId();
-       document.getElementById("content").innerHTML = "My ID is: " + id;
-    };
-    
-    App.prototype.displayNickname = function() {
-       var name = this.airconsole.getNickname();
-       document.getElementById("content").innerHTML = "My name is: " + name;
-    };
-  
-    App.prototype.displayProfilePicture = function() {
-       var picUrl = this.airconsole.getProfilePicture();
-       console.log(picUrl);
-       document.getElementById("profile-pic").style.backgroundImage = "url(" + picUrl + ")";
-    };
-    
-    App.prototype.displayNumberOfControllers = function() {
-       var number = this.airconsole.getControllerDeviceIds().length;
-       document.getElementById("content").innerHTML = "Number of connected Controllers: " + number;
-    };
-    
-    App.prototype.showPlayerNumber = function() {
-       var my_player_number = this.airconsole.convertDeviceIdToPlayerNumber(this.airconsole.getDeviceId());
-       document.getElementById("content").innerHTML = "I am Player # " + my_player_number;
-    };
-    
-    App.prototype.showLoginStatus = function() {
-       var my_login_status = this.airconsole.isUserLoggedIn();
-       document.getElementById("content").innerHTML = "I am logged in: " + my_login_status;
-    };
-    
-    App.prototype.showServerTime = function() {
-    	var time = this.airconsole.getServerTime();
-        document.getElementById("content").innerHTML = "Server time: " +time;
-    };
-    
-    App.prototype.hideDefaultUI = function() {
-       this.airconsole.showDefaultUI(false);
-    };
-    
-    App.prototype.showDefaultUI = function() {
-       this.airconsole.showDefaultUI(true);
-    };
-    
-    App.prototype.navigateHome = function() {
-       this.airconsole.navigateHome();
-    };
-    
-    App.prototype.navigateToPong = function() {
-       this.airconsole.navigateTo("http://games.airconsole.com/pong/");
-    };
-    
-    App.prototype.tellScreenToShowAd = function() {
-       this.airconsole.message(AirConsole.SCREEN, "show_ad");
-    };
 
-     App.prototype.becomePremium = function() {
-       this.airconsole.getPremium();
-    };
+	function updateText(player_number) {
+	  var div = document.getElementById("player_id");
+      if (airconsole.getActivePlayerDeviceIds().length == 0) {
+        div.innerHTML = "Waiting for more players.";
+      } else if (player_number == undefined) {
+        div.innerHTML = "This is a 2 player game";
+      } else if (player_number == 0) {
+        div.innerHTML = "You are the player on the left";
+      } else if (player_number == 1) {
+        div.innerHTML = "You are the player on the right";
+      };
+	}
 
-     App.prototype.showMaster = function() {
-       var master_id = this.airconsole.getMasterControllerDeviceId();
-       document.getElementById("content").innerHTML = "Master is: " + master_id;
-    };
-    
-  </script>
- 
+    /**
+     * Tells the screen to move the paddle of this player.
+     * @param amount
+     */
+    function move(amount) {
+      airconsole.message(AirConsole.SCREEN, {move: amount})
+    }
+
+    </script>
+    <style type="text/css">
+        @font-face {
+            font-family: 'Arial';
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0px;
+            font-family: 'PressStart2P', sans-serif;
+            color: white;
+            text-align: center;
+            background-color: black;
+        }
+
+        .button {
+            display: inline-block;
+            height: 45%;
+            width: 98%;
+            background-color: #222;
+            position: relative;
+        }
+
+        .button_label {
+            position: absolute;
+            left: 0px;
+            width: 100%;
+            top: 50%;
+            margin-top: -6px;
+        }
+
+        #player_id {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            width: 100%;
+            margin-top: -8px;
+            color: #777;
+        }
+    </style>
 </head>
-<body onload="window.app = new App()">
-
-    <div style="margin-top:50px">
-        <div style="float:left">
-         <button class="button" ontouchstart="window.app.sendMessageToScreen('left')" ontouchend="window.app.sendMessageToScreen('stop')">Send Message to Screen: Rotate Logo Left</button>
-         <button class="button" ontouchstart="window.app.sendMessageToScreen('right')" ontouchend="window.app.sendMessageToScreen('stop')">Send Message to Screen: Rotate Logo Right</button>
-         <button class="button button-left" ontouchstart="window.app.broadcastMessage('Hey everyone!')" >Broadcast Message</button>
-         <button class="button button-right" ontouchstart="window.app.displayDeviceId()">Show my Device Id</button>
-         <button class="button button-left" ontouchstart="window.app.displayNickname()">Show my Nickname</button>
-         <button class="button button-right" ontouchstart="window.app.displayProfilePicture()">Show Profile Picture</button>
-         <button class="button" ontouchstart="window.app.setSomeCustomData()">Set Custom Data on this Device</button>
-         <button class="button" ontouchstart="window.app.setCustomDeviceStateProperty('health', 50)">Set 'health' property on this Device</button>
-         <button class="button" ontouchstart="window.app.displayNumberOfControllers()">Show Number of connected Controllers</button>
-         <button class="button" ontouchstart="window.app.showPlayerNumber()">Show my Player Number</button>
-         <button class="button button-left" ontouchstart="window.app.showServerTime()">Show Server Time</button>
-         <button class="button button-right" ontouchstart="window.app.showLoginStatus()">Am I logged in?</button>
-         <button class="button button-left" ontouchstart="window.app.hideDefaultUI()">Hide Default UI</button>
-         <button class="button button-right" ontouchstart="window.app.showDefaultUI()">Show Default UI</button>
-         <button class="button button-left" ontouchstart="window.app.navigateHome()">Navigate Home </button>
-         <button class="button button-right" ontouchstart="window.app.navigateToPong()">Navigate to Pong</button>
-         <button class="button button-left" ontouchstart="window.app.tellScreenToShowAd()">Show ad (Screen)</button>
-         <button class="button button-right" ontouchstart="window.app.becomePremium()">Become Premium</button>
-         <button class="button button-left" ontouchstart="window.app.showMaster()">Show Master Id</button>
-        </div>
-        
+<body onload="init()">
+    <div style="height: 1%"></div>
+    <div class=button ontouchstart="move(5)" ontouchend="move(0)" onmousedown="move(5)" onmouseup="move(0)">
+        <div class="button_label">UP</div>
     </div>
-    <div id ="profile-pic"></div>
-    <div id="content"><!--Incoming messages get displayed in this container--></div>
+    <div style="height: 8%"></div>
+    <div class=button ontouchstart="move(-5)" ontouchend="move(0)" onmousedown="move(-5)" onmouseup="move(0)">
+        <div class="button_label">DOWN</div>
+    </div>
+    <div id="player_id"></div>
 </body>
 </html>
