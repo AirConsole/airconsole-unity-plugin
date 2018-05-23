@@ -26,7 +26,7 @@ namespace NDream.AirConsole.Editor {
 
 		[MenuItem("Assets/Create/AirConsole")]
 		[MenuItem("GameObject/Create Other/AirConsole")]
-		static void CreateAirController () {
+		static void CreateAirConsoleObject () {
 
 			AirConsole airConsole = GameObject.FindObjectOfType<AirConsole> ();
 
@@ -37,7 +37,7 @@ namespace NDream.AirConsole.Editor {
 
 			} else {
 
-				EditorUtility.DisplayDialog ("Already exists", "AirController object already exists in the current scene", "ok");
+				EditorUtility.DisplayDialog ("Already exists", "AirConsole object already exists in the current scene", "ok");
 				EditorGUIUtility.PingObject (airConsole.GetInstanceID ());
 			}
 		}
@@ -124,7 +124,7 @@ namespace NDream.AirConsole.Editor {
 
 				} else {
 
-					EditorUtility.DisplayDialog ("AirController", "Please link a controller file to the AirController object.", "ok");
+					EditorUtility.DisplayDialog ("AirConsole", "Please link a controller file to the AirConsole object.", "ok");
 					Debug.Break ();
 				}
 			}
