@@ -9,5 +9,9 @@ EditorBuildSettings:
     path: Assets/AirConsole/examples/basic/basic.unity
     guid: be2892f0848650f4fa6714ec6d9100bf
   - enabled: 0
-    path: 
-    guid: faa0bdc612b6247cdb526d254736957c
+    path: Assets/AirConsole/examples/pong/pong.unity
+    guid: 008d7c2791f9bf44cb399bc2ec4b3f84
+  - enabled: 0
+    path: Assets/AirConsole/examples/gamestates/gamestates.unity
+    guid: 0e5f4cea225b44e8290563cbebbb6a5c
+  m_configObjects: {}

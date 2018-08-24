@@ -12,6 +12,8 @@ using UnityEngine.SceneManagement;
 namespace NDream.AirConsole {
 	public enum StartMode {
 		VirtualControllers,
+		Debug,
+		DebugVirtualControllers,
 		Normal,
 		NoBrowserStart
 	}
@@ -1502,7 +1504,11 @@ namespace NDream.AirConsole {
 
 			switch (mode) {
 			case StartMode.VirtualControllers:
-				return Settings.AIRCONSOLE_NORMAL_URL;
+				return Settings.AIRCONSOLE_SIMULATOR_URL;
+			case StartMode.Debug:
+				return Settings.AIRCONSOLE_DEBUG_URL;
+			case StartMode.DebugVirtualControllers:
+				return Settings.AIRCONSOLE_DEBUG_SIMULATOR_URL;
 			case StartMode.Normal:
 				return Settings.AIRCONSOLE_URL;
 			default:
@@ -1584,7 +1590,7 @@ namespace NDream.AirConsole {
 					webViewLoadingImage.preserveAspect = true;
 
 					if (webViewLoadingSprite == null){
-						webViewLoadingImage.sprite = Resources.Load("AirConsoleLogoLoadingScreen", typeof(Sprite)) as Sprite;
+						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
 					}
 #endif
                 }

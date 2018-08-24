@@ -4,10 +4,12 @@ using System.Collections;
 namespace NDream.AirConsole {
 	public static class Settings {
 
-		public const string VERSION = "1.7";
+		public const string VERSION = "2.0"; 
 		public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
 		public const string AIRCONSOLE_URL = "http://airconsole.com/#";
-		public const string AIRCONSOLE_NORMAL_URL = "http://airconsole.com/simulator/#";
+		public const string AIRCONSOLE_SIMULATOR_URL = "http://airconsole.com/simulator/#";
+		public const string AIRCONSOLE_DEBUG_URL = "http://airconsole.com/#debug:";
+		public const string AIRCONSOLE_DEBUG_SIMULATOR_URL = "http://airconsole.com/simulator/#debug:";
 		public const string AIRCONSOLE_PROFILE_PICTURE_URL = "https://www.airconsole.com/api/profile-picture?uid=";
 		public const string WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole";
 		public const string WEBSOCKET_PATH = "/api";
@@ -18,6 +20,5 @@ namespace NDream.AirConsole {
 		public static DebugLevel debug = new DebugLevel ();
 
 	}
-
 }
 

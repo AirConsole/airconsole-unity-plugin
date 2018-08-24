@@ -32,9 +32,6 @@ namespace NDream.AirConsole.Editor {
 				// save last port path
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);
 
-
-			} else if (target == BuildTarget.Android) {
-				throw new BuildFailedException("Android Builds do not work with this plugin version! We depend on a WebView Plugin that is not supported in Unity 5.6+ yet. See https://github.com/gree/unity-webview/issues/154.");
 			}
 		}
 	}
