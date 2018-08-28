@@ -2976,7 +2976,7 @@ MonoBehaviour:
   browserStartMode: 0
   controllerHtml: {fileID: 4900000, guid: 24d0ea9f52a200b479f21be5710f94ac, type: 3}
   autoScaleCanvas: 1
-  androidTvGameVersion: 2018-08-23-08-39-29
+  androidTvGameVersion: 2018-08-27-07-35-35
   androidUIResizeMode: 0
   webViewLoadingSprite: {fileID: 0}
 --- !u!4 &841124342
@@ -4979,7 +4979,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.0000059045447, y: 0.000044055174}
+  m_AnchoredPosition: {x: -0.0000059045447, y: 0.000029345425}
   m_SizeDelta: {x: 0.000030517578, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1521427272

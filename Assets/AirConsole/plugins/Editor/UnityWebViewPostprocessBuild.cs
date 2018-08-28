@@ -160,6 +160,7 @@ internal class AndroidManifest : AndroidXmlDocument {
 
     public AndroidManifest(string path) : base(path) {
         ApplicationElement = SelectSingleNode("/manifest/application") as XmlElement;
+		Debug.Log ("ApplicationElement: " + ApplicationElement);
     }
 
     private XmlAttribute CreateAndroidAttribute(string key, string value) {

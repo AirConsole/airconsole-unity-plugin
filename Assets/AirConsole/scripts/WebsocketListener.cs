@@ -250,12 +250,14 @@ namespace NDream.AirConsole {
 
 			if (Application.platform == RuntimePlatform.WebGLPlayer) {
 
-				Application.ExternalCall ("window.app.processUnityData", data.ToString ());
+				Application.ExternalCall ("window.app.processUnityData", data.ToString ()); //TODO: External Call is obsolete? 
 
 			} else if (Application.platform == RuntimePlatform.Android) {
 
 #if UNITY_ANDROID
-                webViewObject.EvaluateJS("androidUnityPostMessage('" + data.ToString().Replace("'", "\\'") + "');");
+
+				string serialized = JsonConvert.ToString(data.ToString());
+				webViewObject.EvaluateJS("androidUnityPostMessage(" + serialized + ");");
 #endif
 
 			} else {
