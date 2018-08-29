@@ -4,10 +4,6 @@
     <script type="text/javascript"
             src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
     <script type="text/javascript">
-    navigator.vibrate = (navigator.vibrate ||
-                         navigator.webkitVibrate ||
-                         navigator.mozVibrate ||
-                         navigator.msVibrate);
 
     var airconsole;
     /**
@@ -15,12 +11,7 @@
      */
     function init() {
       airconsole = new AirConsole({"orientation": "portrait"});
-      airconsole.onMessage = function(from, data) {
-        if (from == AirConsole.SCREEN && data.vibrate) {
-          navigator.vibrate(data.vibrate);
-          console.log("Vibrating: " + data.vibrate);
-        }
-      }
+     
       airconsole.onActivePlayersChange = function(player_number) {
         updateText(player_number);
       }
