@@ -1026,6 +1026,13 @@ namespace NDream.AirConsole {
 			while (eventQueue.Count > 0) {
 				eventQueue.Dequeue ().Invoke ();
 			}
+
+		#if UNITY_ANDROID
+			//back button on TV remotes
+			if (Input.GetKeyDown(KeyCode.Escape)) {
+				Application.Quit(); 
+			}
+		#endif
 		}
 
 		void OnApplicationQuit () {
@@ -1182,6 +1189,12 @@ namespace NDream.AirConsole {
 		}
 		
 		void OnReady (JObject msg) {
+
+		#if UNITY_ANDROID
+			if (webViewLoadingCanvas != null){
+				GameObject.Destroy (webViewLoadingCanvas.gameObject);
+			}
+		#endif
 			
 			// parse server_time_offset
 			_server_time_offset = (int)msg ["server_time_offset"];
@@ -1657,7 +1670,6 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
-			GameObject.Destroy (webViewLoadingCanvas.gameObject);
 			webViewObject.SetMargins(0, 0, 0, 0);
 		}
 
