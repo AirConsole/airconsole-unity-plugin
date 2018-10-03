@@ -1190,7 +1190,7 @@ namespace NDream.AirConsole {
 		
 		void OnReady (JObject msg) {
 
-		#if UNITY_ANDROID
+		#if UNITY_ANDROID && !UNITY_EDITOR
 			if (webViewLoadingCanvas != null){
 				GameObject.Destroy (webViewLoadingCanvas.gameObject);
 			}
