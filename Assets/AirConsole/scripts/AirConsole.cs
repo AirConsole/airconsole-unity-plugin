@@ -956,6 +956,10 @@ namespace NDream.AirConsole {
 			// always set default object name 
 			// important for unity webgl communication
 			gameObject.name = "AirConsole";
+
+		#if UNITY_ANDROID 
+			defaultScreenHeight = Screen.height; 
+		#endif
 		}
 
 		void Start () {
@@ -1282,7 +1286,7 @@ namespace NDream.AirConsole {
 
 		void OnAdComplete (JObject msg) {
 #if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.SetMargins(0, 0, 0, Screen.height - webViewHeight);
+		webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
 #endif
 			try {
 				
@@ -1492,6 +1496,7 @@ namespace NDream.AirConsole {
 		private UnityEngine.UI.Image webViewLoadingImage;
 		private UnityEngine.UI.Image webViewLoadingBG;
 		private int webViewHeight;
+		private int defaultScreenHeight;
 #endif
 		private List<JToken> _devices = new List<JToken> ();
 		private int _device_id;
@@ -1565,6 +1570,11 @@ namespace NDream.AirConsole {
 
 
 #if UNITY_ANDROID
+
+		private int GetScaledWebViewHeight(){
+			return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
+		}
+
         private void InitWebView() {
 
             if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
@@ -1580,7 +1590,7 @@ namespace NDream.AirConsole {
                     url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + this.androidTvGameVersion;
 
-                    webViewObject.SetMargins(0, Screen.height, 0, -Screen.height);
+					webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
                     webViewObject.SetVisibility(true);
                     webViewObject.LoadURL(url);
 
@@ -1663,9 +1673,9 @@ namespace NDream.AirConsole {
 				webViewHeight = h;
 			}
 
-            webViewObject.SetMargins(0, 0, 0, Screen.height - h);
+			webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
 			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - h);
+				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
 			}
         }
 
@@ -1679,14 +1689,14 @@ namespace NDream.AirConsole {
 			}
 
 			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - webViewHeight);
+				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
 			}
 
 			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
 				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
 				
 				for (int i = 0; i < allCanvasScalers.Length; ++i) {
-					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - webViewHeight) * allCanvasScalers[i].referenceResolution.y);
+					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight()) * allCanvasScalers[i].referenceResolution.y);
 				}
 			}
 		}
