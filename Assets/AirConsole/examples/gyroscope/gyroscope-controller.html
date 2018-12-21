@@ -3,39 +3,35 @@
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
+  <script type="text/javascript" src="rate-limiter.js"></script>
   <script type="text/javascript">
-    //the view manager finds all div containers with the "view" class and lets me show one view while hiding all others
-    //see also: https://github.com/AirConsole/airconsole-view-manager
-    var ViewManager = {
-      views: {},
-      current_view_id: null,
+   function AirConsoleShakeDetector(opts) {
+    var opts = opts || {};
+    this.threshold = opts.threshold || 5;
+    this.timeout = opts.timeout == undefined ? 100 : opts.timeout;
+    this.callback = opts.callback || function() { console.log ("Shaking ...") };
+  };
 
-      init: function() {
-        var views = document.querySelectorAll('.view');
-        for (var i = 0; i < views.length; i++) {
-          this.views[views[i].id] = views[i];
-        }
-        return this;
-      },
+    AirConsoleShakeDetector.prototype.onDeviceMotion = function(data) {
+    if (this.last_x || this.last_y || this.last_z) {
+      var dx = Math.abs(this.last_x - data.x);
+      var dy = Math.abs(this.last_y - data.y);
+      var dz = Math.abs(this.last_z - data.z);
 
-      show: function(id) {
-        var view = this.views[id];
-        if (view) {
-          this.current_view_id = id;
-          this.hideAll();
-          view.style.display = "block";
-        } else {
-          console.warn("Could not find view with ID:", id);
-        }
-        return this;
-      },
-
-      hideAll: function() {
-        for (var key in this.views) {
-          this.views[key].style.display = "none";
+      if (((dx > this.threshold) && (dy > this.threshold)) ||
+          ((dx > this.threshold) && (dz > this.threshold)) ||
+          ((dy > this.threshold) && (dz > this.threshold))) {
+        var now = new Date().getTime();
+        if (now - this.timeout > (this.last_callback || 0)) {
+          this.last_callback = now;
+          this.callback();
         }
       }
-    };
+    }
+    this.last_x = data.x;
+    this.last_y = data.y;
+    this.last_z = data.z;
+  };
   </script>
   <style type=text/css>
   /* the style sheet dictates what our elements (buttons, backgrounds etc.) will look like. */
@@ -79,14 +75,16 @@
   <script type="text/javascript">
 
     var airconsole;
+    var rateLimiter;
+    var zDelta;
 
     function App() {
       var me = this;
-      me.airconsole = new AirConsole({"orientation": "landscape", "synchronize_time" : "true"});
+      me.airconsole = new AirConsole({"orientation": "portrait", "synchronize_time" : "true", "device_motion": 50});
+      me.rateLimiter = new RateLimiter(me.airconsole);
 
-      //initialize the view manager and set the first view
-      ViewManager.init();
-  	  ViewManager.show("Start");
+      me.alpha_calibration = 0;
+      me.last_motion_event = {alpha:0, beta: 0, gamma: 0};
 
       me.airconsole.onMessage = function(from, data) {
         console.log("onMessage", from, data);
@@ -119,6 +117,27 @@
         }
       };
 
+      var shake_detector = new AirConsoleShakeDetector({
+        "callback": function() {
+          me.airconsole.message(AirConsole.SCREEN, {"action": "shake"});
+      },
+        "timeout": 250,
+        "threshold": 5
+      });
+
+      me.airconsole.onDeviceMotion = function(motion_event) {
+          
+          me.last_motion_event = motion_event;
+          motion_event["alpha"] -= me.alpha_calibration;
+
+          shake_detector.onDeviceMotion(motion_event);
+
+          console.log("onDeviceMotion");
+
+          me.rateLimiter.message(AirConsole.SCREEN, { "action": "motion", "motion_data": motion_event });
+          //me.airconsole.message(AirConsole.SCREEN, { "action": "motion", "motion_data": motion_event });
+      };
+
       /*
        * Here we are adding support for mouse events manually.
        * --> WE STRONGLY ENCOURAGE YOU TO USE THE AIRCONSOLE CONTROLS LIBRARY
@@ -144,37 +163,17 @@
       }
     }
 
-    App.prototype.pressIngameScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "ingame-button"});
-    };
-
-    App.prototype.pressMenuScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "menu-button"});
-    };
-
-    App.prototype.pressPauseScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "pause-button"});
+    App.prototype.calibrateButton = function(msg) {
+      var me = this;
+      me.alpha_calibration = me.last_motion_event["alpha"];
     };
 
   </script>
  
 </head>
 <body onload="window.app = new App()">
-<div id="background"></div>
-<div class="view" id="Start">
-      <div style="color:white;">No Controller view has been set</div>
-  </div>
-  <div class="view" id="Ingame">
-      <div class="button" id="ingame-button" ontouchstart="window.app.pressIngameScreenButton()"></div>
-      <div class="button-text">Ingame Screen Button</div>
-  </div>
-  <div class="view" id="Menu">
-      <div class="button" id="menu-button" ontouchstart="window.app.pressMenuScreenButton()"></div>
-      <div class="button-text">Menu Screen Button</div>
-  </div>
-  <div class="view" id="Pause">
-      <div class="button" id="pause-button" ontouchstart="window.app.pressPauseScreenButton()"></div>
-      <div class="button-text">Pause Screen Button</div>
-  </div>
+  <div id="background"></div>
+  <div class="button" id="ingame-button" ontouchstart="window.app.calibrateButton()"></div>
+  <div class="button-text">Calibrate Gyroscope</div>
 </body>
 </html>

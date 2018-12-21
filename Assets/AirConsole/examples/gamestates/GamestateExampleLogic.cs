@@ -58,7 +58,7 @@ public class GamestateExampleLogic : MonoBehaviour {
 		for (int i = 0; i < controllerIDs.Count; ++i){
 			//ideally, you'd write all the data into the game state first and then set it only once. 
 			//I'm doing it this way for simplicity, but updating the device state too often can mean your updates get delayed because of rate limiting
-			//the more devices are connected, the worse this issue gets
+			//the more devices are connected, the more this becomes a problem
 			AirConsole.instance.SetCustomDeviceStateProperty("playerColors", UpdatePlayerColorData(AirConsole.instance.GetCustomDeviceState (0), controllerIDs[i], colorNames[colorIndex]));
 			//the controller listens for the onCustomDeviceStateChanged event. See the  controller-gamestates.html file for how this is handled there. 
 
