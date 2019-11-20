@@ -3,40 +3,6 @@
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
-  <script type="text/javascript">
-    //the view manager finds all div containers with the "view" class and lets me show one view while hiding all others
-    //see also: https://github.com/AirConsole/airconsole-view-manager
-    var ViewManager = {
-      views: {},
-      current_view_id: null,
-
-      init: function() {
-        var views = document.querySelectorAll('.view');
-        for (var i = 0; i < views.length; i++) {
-          this.views[views[i].id] = views[i];
-        }
-        return this;
-      },
-
-      show: function(id) {
-        var view = this.views[id];
-        if (view) {
-          this.current_view_id = id;
-          this.hideAll();
-          view.style.display = "block";
-        } else {
-          console.warn("Could not find view with ID:", id);
-        }
-        return this;
-      },
-
-      hideAll: function() {
-        for (var key in this.views) {
-          this.views[key].style.display = "none";
-        }
-      }
-    };
-  </script>
   <style type=text/css>
   /* the style sheet dictates what our elements (buttons, backgrounds etc.) will look like. */
   #background {
@@ -50,21 +16,39 @@
     font-size: 14px;
     padding: 5px 10px 5px 10px;
     border: solid #1f1f1f 2px;
-    width: 100%;
+    height: 100%;
     position: absolute;
-    width: 50%;
-    height: 50%;
-    left: 25%;
-    top: 25%;
   }
 
-  .button-active{
-    border: solid #727272 2px;
+  #left-button{
+  	left: 0;
+  	width: 25%;
+  	height: 100%;
+  }
+
+  #right-button{
+  	left: 25%;
+  	width: 25%;
+  	height: 100%;
+  }
+
+  #jump-button{
+	right: 0;
+  	bottom: 0;
+  	width: 50%;
+  	height: 50%;
+  }
+
+  #interact-button{
+  	right: 0;
+  	top: 0;
+  	width: 50%;
+  	height: 50%;
   }
 
   .button-text{
     position: absolute;
-    color: white;
+    color: white;”
     font-family: sans-serif;
     text-align: center;
     pointer-events: none;
@@ -73,7 +57,6 @@
     left: 25%;
     top: 40%;
   }
-  
   </style>
   
   <script type="text/javascript">
@@ -84,39 +67,8 @@
       var me = this;
       me.airconsole = new AirConsole({"orientation": "landscape", "synchronize_time" : "true"});
 
-      //initialize the view manager and set the first view
-      ViewManager.init();
-  	  ViewManager.show("Start");
-
       me.airconsole.onMessage = function(from, data) {
         console.log("onMessage", from, data);
-      };
-      
-      me.airconsole.onReady = function(code) {
-        console.log("onReady", code);
-      };
-      
-      me.airconsole.onCustomDeviceStateChange = function(device_id, device_data){
-        //to see logs from the controller, start your game in the "virtual controllers" browser start mode from Unity and open your browser's developer console. 
-        console.log("onCustomDeviceStateChange", device_id, device_data);
-
-        //check if the device that sent the custom device state change is the Screen (i.e. the Unity Game, in this case), and not one of the other controllers
-        if (device_id == AirConsole.SCREEN){
-          //check if the CustomDeviceStateChange data contains any view data
-          if (device_data["view"] != null && device_data["view"] != ""){
-            //set a new view accordingly
-            ViewManager.show(device_data["view"]);
-          }
-          
-          //check if there's any player color data
-          if (device_data["playerColors"] != null){
-            //check the CustomDeviceStateChange data contains any playerColorData for this particular device
-            if (device_data["playerColors"][me.airconsole.getDeviceId()]){
-              //this works for named colors. If you want to use colors that don't have a name, you could pass a hex code instead of a string/name
-              document.getElementById("background").style.backgroundColor = device_data["playerColors"][me.airconsole.getDeviceId()];
-            }
-          }
-        }
       };
 
       /*
@@ -144,37 +96,18 @@
       }
     }
 
-    App.prototype.pressIngameScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "ingame-button"});
-    };
-
-    App.prototype.pressMenuScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "menu-button"});
-    };
-
-    App.prototype.pressPauseScreenButton = function(msg) {
-      this.airconsole.message(AirConsole.SCREEN, {"action": "pause-button"});
+    App.prototype.sendMessageToScreen = function(msg) {
+    	this.airconsole.message(AirConsole.SCREEN, {"action": msg});
     };
 
   </script>
  
 </head>
 <body onload="window.app = new App()">
-<div id="background"></div>
-<div class="view" id="Start">
-      <div style="color:white;">No Controller view has been set</div>
-  </div>
-  <div class="view" id="Ingame">
-      <div class="button" id="ingame-button" ontouchstart="window.app.pressIngameScreenButton()"></div>
-      <div class="button-text">Ingame Screen Button</div>
-  </div>
-  <div class="view" id="Menu">
-      <div class="button" id="menu-button" ontouchstart="window.app.pressMenuScreenButton()"></div>
-      <div class="button-text">Menu Screen Button</div>
-  </div>
-  <div class="view" id="Pause">
-      <div class="button" id="pause-button" ontouchstart="window.app.pressPauseScreenButton()"></div>
-      <div class="button-text">Pause Screen Button</div>
-  </div>
+  <div id="background"></div>
+  <div class="button" id="left-button" ontouchstart="window.app.sendMessageToScreen('left')" ontouchend="window.app.sendMessageToScreen('left-up')"></div>
+  <div class="button" id="right-button" ontouchstart="window.app.sendMessageToScreen('right')" ontouchend="window.app.sendMessageToScreen('right-up')"></div>
+  <div class="button" id="jump-button" ontouchstart="window.app.sendMessageToScreen('jump')"></div>
+  <div class="button" id="interact-button" ontouchstart="window.app.sendMessageToScreen('interact')"></div>
 </body>
 </html>

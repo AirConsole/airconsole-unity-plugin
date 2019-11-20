@@ -32,11 +32,7 @@ namespace NDream.AirConsole.Editor {
 				// save last port path
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);
 
-			} else if (target == BuildTarget.Android) {
-				if (EditorUserBuildSettings.androidBuildSystem == AndroidBuildSystem.Internal) {
-					throw new BuildFailedException ("You need to use the Gradle Build system (see Build Settings) for AirConsole Games to work on Android.");
-				}
-			}
+			} 
 		}
 	}
 }
