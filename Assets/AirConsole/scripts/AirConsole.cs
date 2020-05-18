@@ -76,7 +76,7 @@ namespace NDream.AirConsole {
 				return _instance;
 			}
 		}
-		
+
 		/// <summary>
 		/// Gets called when the game console is ready.
 		/// This event also also fires onConnect for all devices that already are
@@ -423,15 +423,135 @@ namespace NDream.AirConsole {
 				}
 				return null;
 			}
-			
+
 		}
 
 		/// <summary>
-		/// Returns the url to a profile picture of a user.
+		/// Returns the current IETF language tag of a device e.g. "en" or "en-US"
 		/// </summary>
-		/// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
-		/// <param name="size">The size of in pixels of the picture. Default is 64.</param>
-		public string GetProfilePicture (String uid, int size = 64) {
+		/// <param name="device_id">The device id for which you want the language. Default is this device.</param>
+		public string GetLanguage(int device_id = -1)
+        {
+
+            if (!IsAirConsoleUnityPluginReady())
+            {
+
+                throw new NotReadyException();
+
+            }
+
+            if (device_id == -1)
+            {
+                device_id = GetDeviceId();
+            }
+
+            if (GetDevice(device_id) != null)
+            {
+                return (string)GetDevice(device_id)["language"];
+            }
+            else
+            {
+
+                if (Settings.debug.warning)
+                {
+                    Debug.LogWarning("AirConsole: GetLanguage: device_id " + device_id);
+                }
+                return null;
+            }
+
+        }
+
+
+		/// <summary>
+		/// Gets a translation for the users current language See http://developers.airconsole.com/#!/guides/translations
+		/// </summary>
+		/// <param name="id">The id of the translation string.</param>
+		/// <param name="id">Values that should be used for replacement in the translated string. E.g. if a translated string is "Hi %name%" and values is {"name": "Tom"} then this will be replaced to "Hi Tom".</param>
+		public string GetTranslation(string id, Dictionary<string, string> values = null) {
+
+            string result = null;
+
+            if (_translations != null) { 
+                if (_translations.ContainsKey(id)) {
+                    result = _translations[id];
+
+                    if (values != null) {
+                        string[] parts = result.Split('%');
+
+                        for (int i = 1; i < parts.Length; i+=2) { 
+                            if (parts[i].Length > 0) {
+                                if (values.ContainsKey(parts[i])) {
+                                    parts[i] = values[parts[i]];
+                                } else {
+                                    parts[i] = "";
+                                }
+                            } else {
+                                parts[i] = "%";
+                            }
+                        }
+
+                        result = string.Join("", parts);
+
+                    }
+                }
+            }
+            return result;
+        }
+
+		/// <summary>
+		/// Translates an array of UI Text or TextMesh Components. The existing text in the UI Text or Text Mesh has to contain a string ID within double curly brackets. {{example}}
+		/// </summary>
+		/// <param name="elements">The Array of elements that should be translated.</param>
+		public void TranslateUIElements(object[] elements)
+        {
+            for (int i = 0; i < elements.Length; ++i)
+            {
+                string id = null;
+                string translation = null;
+                if (elements[i].GetType() == typeof(UnityEngine.UI.Text))
+                {
+                    id = ((UnityEngine.UI.Text)elements[i]).text;
+                } else if (elements[i] is TextMesh)
+                {
+                    id = ((TextMesh)elements[i]).text;
+                } else {
+                    throw new Exception("Translate UI Elements only supports UI Text and TextMesh Components.");
+                }
+
+                if (id != null)
+                {
+                    if (id.StartsWith("{{", StringComparison.Ordinal) && id.EndsWith("}}", StringComparison.Ordinal))
+                    {
+
+                        id = id.Substring(2, id.Length - 4).Trim();
+
+                        translation = GetTranslation(id);
+                    }
+                }
+                if (translation == null)
+                {
+                    Debug.LogWarning("Translation not found: " + id);
+                }
+                else
+                {
+                    if (elements[i].GetType() == typeof(UnityEngine.UI.Text))
+                    {
+                        ((UnityEngine.UI.Text)elements[i]).text = translation;
+                    }
+                    else if (elements[i] is TextMesh)
+                    {
+                        ((TextMesh)elements[i]).text = translation;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the url to a profile picture of a user.
+        /// </summary>
+        /// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
+        /// <param name="size">The size of in pixels of the picture. Default is 64.</param>
+        public string GetProfilePicture (String uid, int size = 64) {
 			return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + uid + "&size=" + size;
 		}
 
@@ -930,23 +1050,31 @@ namespace NDream.AirConsole {
 		}
 
 		#endregion
-		#endif
-		
-		#region airconsole unity config
-		
-		public StartMode browserStartMode;
-		public UnityEngine.Object controllerHtml;
-		public bool autoScaleCanvas = true;
-#if UNITY_ANDROID
-        public string androidTvGameVersion;
-		public AndroidUIResizeMode androidUIResizeMode;
-		public Sprite webViewLoadingSprite;
 #endif
-		
-#endregion
+
+		#region airconsole unity config
+
+		[Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
+		public StartMode browserStartMode;
+		[Tooltip("The controller html file for your game")]
+		public UnityEngine.Object controllerHtml;
+		[Tooltip("Automatically scale the game canvas")]
+		public bool autoScaleCanvas = true;
+        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
+        public string devGameId;
+#if UNITY_ANDROID
+        [Tooltip("The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        public string androidTvGameVersion;
+		[Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        public AndroidUIResizeMode androidUIResizeMode;
+		[Tooltip("Loading Sprite to be displayed at the start of the game.")]
+        public Sprite webViewLoadingSprite;
+#endif
+
+		#endregion
 #if !DISABLE_AIRCONSOLE
-		
-#region unity functions
+
+		#region unity functions
 
 		void Awake () {
 			if (instance != this) {
@@ -1208,9 +1336,20 @@ namespace NDream.AirConsole {
 			
 			// parse location
 			_location = (string)msg ["location"];
-			
-			// load devices
-			_devices.Clear ();
+
+            if (msg["translations"] != null){
+                _translations = new Dictionary<string, string>();
+
+
+                foreach (var keyValue in (JObject)msg["translations"]){
+                    _translations.Add(keyValue.Key, (string)keyValue.Value);
+                }
+            }
+
+
+
+            // load devices
+            _devices.Clear ();
 			foreach (JToken data in (JToken)msg["devices"]) {
 				JToken assign = data;
 				if (data != null && !data.HasValues) {
@@ -1502,6 +1641,7 @@ namespace NDream.AirConsole {
 		private int _device_id;
 		private int _server_time_offset;
 		private string _location;
+        private Dictionary<string, string> _translations;
 		private List<int> _players = new List<int> ();
 		private readonly Queue<Action> eventQueue = new Queue<Action> ();
 		
@@ -1520,19 +1660,23 @@ namespace NDream.AirConsole {
 
 		public static string GetUrl (StartMode mode) {
 
-			switch (mode) {
-			case StartMode.VirtualControllers:
-				return Settings.AIRCONSOLE_SIMULATOR_URL;
-			case StartMode.Debug:
-				return Settings.AIRCONSOLE_DEBUG_URL;
-			case StartMode.DebugVirtualControllers:
-				return Settings.AIRCONSOLE_DEBUG_SIMULATOR_URL;
-			case StartMode.Normal:
-				return Settings.AIRCONSOLE_URL;
-			default:
-				return "";
-			}
-		}
+            string url = Settings.AIRCONSOLE_DEV_URL;
+            if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
+                url += "simulator/";
+            }
+
+            if (AirConsole.instance.devGameId != "") {
+                url += "?dev-game-id=" + AirConsole.instance.devGameId;
+            }
+
+            url += "#";
+
+            if (mode == StartMode.Debug || mode == StartMode.DebugVirtualControllers) {
+                url += "debug:";
+            }
+
+            return url;
+        }
 
 		public void ProcessJS (string data) {
 			wsListener.ProcessMessage (data);

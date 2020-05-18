@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/AirConsole/examples/basic/basic.unity
     guid: be2892f0848650f4fa6714ec6d9100bf
   - enabled: 0
@@ -14,4 +14,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/AirConsole/examples/gamestates/gamestates.unity
     guid: 0e5f4cea225b44e8290563cbebbb6a5c
+  - enabled: 1
+    path: Assets/AirConsole/examples/translations/translations.unity
+    guid: 7d28a38601c2f4547b1ecac64cf96761
   m_configObjects: {}

@@ -465,7 +465,6 @@ public class ExampleBasicLogic : MonoBehaviour {
 			//Log to on-screen Console
 			logWindow.text = logWindow.text.Insert (0, "No premium controllers are connected" + "\n \n");
 		}
-
 	}
 
 	void OnDestroy () {

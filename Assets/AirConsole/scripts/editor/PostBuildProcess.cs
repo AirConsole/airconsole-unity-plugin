@@ -25,9 +25,9 @@ namespace NDream.AirConsole.Editor {
 				if (File.Exists (pathToBuiltProject + "/Build/game.json")) {
 					File.Delete (pathToBuiltProject + "/Build/game.json");
 				}
-				
-				// rename json configuration to game.json
-				File.Move (pathToBuiltProject + "/Build/" + Path.GetFileName (pathToBuiltProject) + ".json", pathToBuiltProject + "/Build/game.json");
+
+                // rename json configuration to game.json
+                File.Move (pathToBuiltProject + "/Build/" + Path.GetFileName (pathToBuiltProject) + ".json", pathToBuiltProject + "/Build/game.json");
 
 				// save last port path
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);

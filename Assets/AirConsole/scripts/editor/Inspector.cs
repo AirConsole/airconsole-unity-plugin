@@ -13,6 +13,19 @@ namespace NDream.AirConsole.Editor {
 		AirConsole controller;
 		private SerializedProperty gameId;
 		private SerializedProperty gameVersion;
+		private bool translationValue;
+		private const string TRANSLATION_ACTIVE = "var AIRCONSOLE_TRANSLATION = true;";
+		private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
+
+		public void Awake()
+		{
+			string path = Application.dataPath + "/WebGLTemplates/AirConsole/translation.js";
+			if (System.IO.File.Exists(path))
+			{
+				translationValue = System.IO.File.ReadAllText(path).Equals(TRANSLATION_ACTIVE);
+			}
+
+		}
 
 		public void OnEnable () {
 
@@ -41,10 +54,25 @@ namespace NDream.AirConsole.Editor {
 			GUILayout.Label ("v" + Settings.VERSION, styleBlack);
 			EditorGUILayout.EndHorizontal ();
 
-			// show default inspector property editor withouth script referenz
+			// show default inspector property editor withouth script reference
 			serializedObject.Update ();
 			DrawPropertiesExcluding (serializedObject, new string[] { "m_Script" });
 			serializedObject.ApplyModifiedProperties ();
+
+			//translation bool
+			bool oldTranslationValue = translationValue;
+			translationValue = EditorGUILayout.Toggle("Translation", translationValue);
+			if (oldTranslationValue != translationValue) {
+				string path = Application.dataPath + "/WebGLTemplates/AirConsole/translation.js";
+
+				if (translationValue)
+				{
+					System.IO.File.WriteAllText(path, TRANSLATION_ACTIVE);
+				}
+				else {
+					System.IO.File.WriteAllText(path, TRANSLATION_INACTIVE);
+				}
+			}
 
 			EditorGUILayout.BeginHorizontal (styleBlack);
 			// check if a port was exported
