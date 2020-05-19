@@ -131,16 +131,14 @@ namespace NDream.AirConsole.Editor {
 		}
 
 		public static string GetLocalAddress () {
-
 			string localIP = "";
-  
-			foreach (IPAddress ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList) {
-                
-				if (ip.AddressFamily == AddressFamily.InterNetwork) {
-					localIP = ip.ToString ();
-					break;
-				}
-			}
+
+			using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0)) {
+        socket.Connect("8.8.8.8", 65530);
+        IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+        localIP = endPoint.Address.ToString();
+      }
+
 			return localIP;
 		}
 	}
