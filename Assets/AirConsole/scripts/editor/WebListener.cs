@@ -84,7 +84,7 @@ namespace NDream.AirConsole.Editor {
 				}
 
 				string filename = Path.GetFileName (rawUrl);
-				string path = startUpPath + rawUrl;
+				string path = startUpPath + System.Uri.UnescapeDataString(rawUrl);;
 
 				byte[] msg;
 
