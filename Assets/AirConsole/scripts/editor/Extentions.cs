@@ -134,10 +134,10 @@ namespace NDream.AirConsole.Editor {
 			string localIP = "";
 
 			using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0)) {
-                socket.Connect("192.168.1.1", 80);
-                IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
-                localIP = endPoint.Address.ToString();
-            }
+				socket.Connect("192.168.1.1", 80);
+            	IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
+            	localIP = endPoint.Address.ToString();
+			}
 
 			return localIP;
 		}
