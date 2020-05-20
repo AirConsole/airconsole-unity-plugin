@@ -1665,9 +1665,11 @@ namespace NDream.AirConsole {
                 url += "simulator/";
             }
 
-            if (AirConsole.instance.devGameId != "") {
+            #if UnityEditor
+			if (AirConsole.instance.devGameId != "") {
                 url += "?dev-game-id=" + AirConsole.instance.devGameId;
             }
+            #endif
 
             url += "#";
 
@@ -1857,7 +1859,7 @@ namespace NDream.AirConsole {
 
 #endif
 
-	}
+		}
 }
 
 
