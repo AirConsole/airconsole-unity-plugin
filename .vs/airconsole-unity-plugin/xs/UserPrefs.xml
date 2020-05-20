@@ -1,5 +1,5 @@
 ﻿<Properties StartupConfiguration="{4DD84565-A08F-F9E5-8513-56C532CC9090}|">
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/AirConsole/examples/translations/TranslationExampleLogic.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/AirConsole/scripts/AirConsole.cs">
     <Files>
       <File FileName="Assets/AirConsole/scripts/AirConsole.cs" Line="239" Column="38" />
       <File FileName="Assets/AirConsole/examples/basic/ExampleBasicLogic.cs" />
@@ -9,8 +9,8 @@
       <File FileName="Assets/AirConsole/scripts/WebsocketListener.cs" />
       <File FileName="Assets/AirConsole/scripts/editor/PostBuildProcess.cs" />
       <File FileName="Assets/AirConsole/scripts/editor/Inspector.cs" />
-      <File FileName="Assets/AirConsole/examples/translations/TranslationExampleLogic.cs" Line="27" Column="3" />
-      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="15" Column="42" NotebookId="1" />
+      <File FileName="Assets/AirConsole/examples/translations/TranslationExampleLogic.cs" />
+      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="22" Column="1" NotebookId="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -22,7 +22,7 @@
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="f4744334-efdc-4ddb-a2c2-618d2c8caa16" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="eebe4d85-2094-403d-8e4e-3c72f034f998" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore />
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
