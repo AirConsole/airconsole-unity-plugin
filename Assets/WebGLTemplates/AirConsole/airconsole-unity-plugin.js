@@ -342,8 +342,10 @@ App.prototype.processUnityData = function (data) {
 };
 
 App.prototype.resizeCanvas = function() {
+    var container = this.game.container;
     var aspectRatio = this.web_config.width / this.web_config.height;
     var w, h;
+
     if (window.innerWidth/aspectRatio > window.innerHeight) {
         w = window.innerHeight * aspectRatio;
         h = window.innerHeight;
@@ -351,11 +353,8 @@ App.prototype.resizeCanvas = function() {
         w = window.innerWidth;
         h = window.innerWidth / aspectRatio;
     }
-    
-    if (this.game.Module && this.game.Module.setCanvasSize) {
-      this.game.Module.setCanvasSize(w, h);
-    }
-    var container = this.game.container;
+
+    // Setting canvas size
     container.style.width = w + "px";
     container.style.height = h + "px";
 };
