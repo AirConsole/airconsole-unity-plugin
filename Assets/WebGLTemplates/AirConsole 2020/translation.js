@@ -1,0 +1,1 @@
+var AIRCONSOLE_TRANSLATION = false;
