@@ -35,7 +35,9 @@ function App(container, canvas, web_config, progress_config) {
             me.setupErrorHandler();
 
             createUnityInstance(canvas, me.web_config, function(progress) {
-                if (!progress_config) return;
+                if (!progress_config) {
+                    return;
+                }
 
                 me.updateProgressBar(progress_bar, progress);
             }).then(function(unityInstance) {
