@@ -16,7 +16,7 @@ namespace NDream.AirConsole.Editor {
 					File.Delete (pathToBuiltProject + "/screen.html");
 				}
 
-				// rename index.html to screen.html
+				// Renaming index.html to screen.html
 				File.Move (pathToBuiltProject + "/index.html", pathToBuiltProject + "/screen.html");
 
 				// Check if game.json already exists
@@ -28,7 +28,7 @@ namespace NDream.AirConsole.Editor {
 
 				// Rename JSON configuration to game.json (Only for Unity versions < 2020.x)
 				// See https://forum.unity.com/threads/changes-to-the-webgl-loader-and-templates-introduced-in-unity-2020-1.817698/
-				// for details, the build config is no longer stored in a JSON file but embedded in the HTML
+				// for details, the build config is no longer stored in a JSON file but embedded into the HTML
 				if (File.Exists (configuration_file_path)) {
 					File.Move (configuration_file_path, pathToBuiltProject + "/Build/game.json");
 				}
