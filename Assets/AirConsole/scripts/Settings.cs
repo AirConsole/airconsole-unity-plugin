@@ -18,7 +18,8 @@ namespace NDream.AirConsole {
 		public static readonly string WEBTEMPLATE_PATH;
 
 		static Settings() {
-			if (Application.unityVersion.Substring(0,4) == "2020") {
+			// For Unity 2020 and up
+			if (Application.unityVersion.Substring(0, 3) == "202") {
 				WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole-2020";
 			} else {
 				WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole";
