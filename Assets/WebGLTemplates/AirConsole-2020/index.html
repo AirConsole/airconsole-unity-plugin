@@ -38,6 +38,10 @@
           results = regex.exec(location.search);
         return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
       }
+
+      function isUnityEditor() {
+        return !!getURLParameterByName("unity-editor-websocket-port");
+      }
     </script>
     <script src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
     <script src="./airconsole-unity-plugin.js"></script>
@@ -60,10 +64,14 @@
         };
 
         // Only for the Build (Not for Unity Editor preview)
-        if (!getURLParameterByName("unity-editor-websocket-port")) {
-          var build_URL = "Build";
+        if (!isUnityEditor) {
           var UNITY_MEMORY_FILENAME = "{{{ MEMORY_FILENAME }}}";
           var UNITY_SYMBOLS_FILENAME = "{{{ SYMBOLS_FILENAME }}}";
+          var build_URL = "Build";
+          var progress_bar_height = parseFloat("{{{ PROGRESS_BAR_HEIGHT }}}");
+          var progress_bar_width = parseFloat("{{{ PROGRESS_BAR_WIDTH }}}");
+          var progress_bar_offset_top = parseFloat("{{{ PROGRESS_BAR_OFFSET_TOP }}}");
+          var progress_bar_offset_left = parseFloat("{{{ PROGRESS_BAR_OFFSET_LEFT }}}");
 
           unity_web_config.dataUrl = build_URL + "/{{{ DATA_FILENAME }}}";
           unity_web_config.frameworkUrl = build_URL + "/{{{ FRAMEWORK_FILENAME }}}";
@@ -79,48 +87,44 @@
           if (UNITY_SYMBOLS_FILENAME[0] !== "{") {
             unity_web_config.symbolsUrl = build_URL + "/" + UNITY_SYMBOLS_FILENAME;
           }
+
+          // If no float values are parsed, values are NaN
+          if (Number.isNaN(progress_bar_height) || Number.isNaN(progress_bar_offset_top)) {
+            progress_bar_height = default_progress_bar_config.height;
+            progress_bar_offset_top = default_progress_bar_config.top;
+          } else if (progress_bar_height + progress_bar_offset_top > 100) {
+            console.warn("The progress bar top and height percentages can\"t exceed 100%. Using height/top defaults.");
+
+            progress_bar_height = default_progress_bar_config.height;
+            progress_bar_offset_top = default_progress_bar_config.top;
+          } else {
+            progress_bar_height += "%";
+            progress_bar_offset_top += "%";
+          }
+
+          if (Number.isNaN(progress_bar_width) || Number.isNaN(progress_bar_offset_left)) {
+            progress_bar_width = default_progress_bar_config.width;
+            progress_bar_offset_left = default_progress_bar_config.left;
+          } else if (progress_bar_width + progress_bar_offset_left > 100) {
+            console.warn("The progress bar top and height percentages can\"t exceed 100%. Using width/left defaults.");
+
+            progress_bar_width = default_progress_bar_config.width;
+            progress_bar_offset_left = default_progress_bar_config.left;
+          } else {
+            progress_bar_width += "%";
+            progress_bar_offset_left += "%";
+          }
+
+          var progress_bar_config = {
+            height: progress_bar_height,
+            width: progress_bar_width,
+            top: progress_bar_offset_top,
+            left: progress_bar_offset_left,
+            background: "{{{ PROGRESS_BAR_BACKGROUND_COLOR }}}" || default_progress_bar_config.background_color,
+            color: "{{{ PROGRESS_BAR_COLOR }}}" || default_progress_bar_config.color,
+          };
         }
 
-        var progress_bar_height = parseFloat("{{{ PROGRESS_BAR_HEIGHT }}}");
-        var progress_bar_width = parseFloat("{{{ PROGRESS_BAR_WIDTH }}}");
-        var progress_bar_offset_top = parseFloat("{{{ PROGRESS_BAR_OFFSET_TOP }}}");
-        var progress_bar_offset_left = parseFloat("{{{ PROGRESS_BAR_OFFSET_LEFT }}}");
-
-        // If no float values are parsed, values are NaN
-        if (Number.isNaN(progress_bar_height) || Number.isNaN(progress_bar_offset_top)) {
-          progress_bar_height = default_progress_bar_config.height;
-          progress_bar_offset_top = default_progress_bar_config.top;
-        } else if (progress_bar_height + progress_bar_offset_top > 100) {
-          console.warn("The progress bar top and height percentages can\"t exceed 100%. Using height/top defaults.");
-
-          progress_bar_height = default_progress_bar_config.height;
-          progress_bar_offset_top = default_progress_bar_config.top;
-        } else {
-          progress_bar_height += "%";
-          progress_bar_offset_top += "%";
-        }
-
-        if (Number.isNaN(progress_bar_width) || Number.isNaN(progress_bar_offset_left)) {
-          progress_bar_width = default_progress_bar_config.width;
-          progress_bar_offset_left = default_progress_bar_config.left;
-        } else if (progress_bar_width + progress_bar_offset_left > 100) {
-          console.warn("The progress bar top and height percentages can\"t exceed 100%. Using width/left defaults.");
-
-          progress_bar_width = default_progress_bar_config.width;
-          progress_bar_offset_left = default_progress_bar_config.left;
-        } else {
-          progress_bar_width += "%";
-          progress_bar_offset_left += "%";
-        }
-
-        var progress_bar_config = {
-          height: progress_bar_height,
-          width: progress_bar_width,
-          top: progress_bar_offset_top,
-          left: progress_bar_offset_left,
-          background: "{{{ PROGRESS_BAR_BACKGROUND_COLOR }}}" || default_progress_bar_config.background_color,
-          color: "{{{ PROGRESS_BAR_COLOR }}}" || default_progress_bar_config.color,
-        };
         var container = document.querySelector("#game-container");
         var canvas = document.querySelector("#unity-canvas");
 
@@ -135,7 +139,7 @@
 
     <script>
       // Only during build we add the Unity loader
-      if (!getURLParameterByName("unity-editor-websocket-port")) {
+      if (!isUnityEditor) {
         var buildUrl = "Build";
         var loader_URL = buildUrl + "/{{{ LOADER_FILENAME }}}";
         var script = document.createElement("script");
