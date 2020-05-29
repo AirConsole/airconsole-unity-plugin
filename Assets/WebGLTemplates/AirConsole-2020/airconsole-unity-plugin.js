@@ -10,8 +10,8 @@
 function App(container, canvas, web_config, progress_config) {
     var me = this;
 
-    me.is_native_app = typeof Unity != 'undefined';
-    me.is_editor = !!me.getURLParameterByName('unity-editor-websocket-port');
+    me.is_native_app = typeof Unity != "undefined";
+    me.is_editor = !!me.getURLParameterByName("unity-editor-websocket-port");
     me.top_bar_height = window.outerHeight - window.innerHeight;
     me.is_unity_ready = false;
     me.queue = false;
@@ -54,20 +54,20 @@ function App(container, canvas, web_config, progress_config) {
 };
 
 App.prototype.initProgressBar = function(progress_config, game_container) {
-    var bar = document.createElement('div');
-    var fill = document.createElement('div');
+    var bar = document.createElement("div");
+    var fill = document.createElement("div");
 
-    bar.style.position = 'absolute';
+    bar.style.position = "absolute";
     bar.style.left = progress_config.left;
     bar.style.top = progress_config.top;
     bar.style.width = progress_config.width;
     bar.style.height = progress_config.height;
     bar.style.background = progress_config.background;
 
-    fill.style.width = '0';
-    fill.style.height = '100%';
-    fill.style.top = '0';
-    fill.style.left = '0';
+    fill.style.width = "0";
+    fill.style.height = "100%";
+    fill.style.top = "0";
+    fill.style.left = "0";
     fill.style.background = progress_config.color;
 
     bar.appendChild(fill);
@@ -80,11 +80,11 @@ App.prototype.initProgressBar = function(progress_config, game_container) {
 };
 
 App.prototype.updateProgressBar = function(progress_bar, progress) {
-    progress_bar.fill.style.width = progress * 100 + '%';
+    progress_bar.fill.style.width = progress * 100 + "%";
 
     if (progress >= 1) {
         setTimeout(function() {
-            progress_bar.bar.style.display = 'none';
+            progress_bar.bar.style.display = "none";
         }, 150);
     }
 };
@@ -93,23 +93,23 @@ App.prototype.startNativeApp = function() {
     var me = this;
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
-        Unity.call(JSON.stringify({ action: 'onGameEnd' }));
+        Unity.call(JSON.stringify({ action: "onGameEnd" }));
     };
     Unity.call(JSON.stringify({
-        action: 'onUnityWebviewResize',
+        action: "onUnityWebviewResize",
         top_bar_height: me.top_bar_height,
     }));
     // forward WebView postMessage data from parent window
-    window.addEventListener('message', function (event) {
-        if (event.data['action'] == 'androidunity') {
-            window.app.processUnityData(event.data['data_string']);
+    window.addEventListener("message", function (event) {
+        if (event.data["action"] == "androidunity") {
+            window.app.processUnityData(event.data["data_string"]);
         }
     });
     // tell webView screen.html is ready
-    var parts = document.location.href.split('/');
+    var parts = document.location.href.split("/");
     Unity.call(JSON.stringify({
-        action: 'onLaunchApp',
-        game_id: parts[parts.length-3].replace('.cdn.airconsole.com', ""),
+        action: "onLaunchApp",
+        game_id: parts[parts.length-3].replace(".cdn.airconsole.com", ""),
         game_version: parts[parts.length-2],
     }));
 };
@@ -382,8 +382,8 @@ App.prototype.resizeCanvas = function() {
     }
 
     // Setting canvas size
-    this.game_container.style.width = w + 'px';
-    this.game_container.style.height = h + 'px';
+    this.game_container.style.width = w + "px";
+    this.game_container.style.height = h + "px";
 };
 
 App.prototype.onGameReady = function(autoScale) {
@@ -393,7 +393,7 @@ App.prototype.onGameReady = function(autoScale) {
     me.postQueue();
 
     if (autoScale) {
-        window.addEventListener('resize', function() { me.resizeCanvas() });
+        window.addEventListener("resize", function() { me.resizeCanvas() });
         me.resizeCanvas();
     }
 };
