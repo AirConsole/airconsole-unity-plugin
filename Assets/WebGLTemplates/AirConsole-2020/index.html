@@ -39,9 +39,7 @@
         return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
       }
 
-      function isUnityEditor() {
-        return !!getURLParameterByName("unity-editor-websocket-port");
-      }
+      var isUnityEditor = !!getURLParameterByName("unity-editor-websocket-port");
     </script>
     <script src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
     <script src="./airconsole-unity-plugin.js"></script>
