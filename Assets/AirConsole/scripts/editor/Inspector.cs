@@ -19,7 +19,7 @@ namespace NDream.AirConsole.Editor {
 
 		public void Awake()
 		{
-			string path = Application.dataPath + "/WebGLTemplates/AirConsole/translation.js";
+			string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
 			if (System.IO.File.Exists(path))
 			{
 				translationValue = System.IO.File.ReadAllText(path).Equals(TRANSLATION_ACTIVE);
@@ -63,7 +63,7 @@ namespace NDream.AirConsole.Editor {
 			bool oldTranslationValue = translationValue;
 			translationValue = EditorGUILayout.Toggle("Translation", translationValue);
 			if (oldTranslationValue != translationValue) {
-				string path = Application.dataPath + "/WebGLTemplates/AirConsole/translation.js";
+				string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
 
 				if (translationValue)
 				{

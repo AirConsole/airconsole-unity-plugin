@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <style>
+      html, body {
+        font-family: sans-serif;
+        text-align: center;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+
+      #game-container {
+        position: absolute;
+        left: 50%;
+        top: 0;
+        transform: translate(-50%, 0%);
+      }
+
+      #unity-canvas {
+        height: 100%;
+        width: 100%;
+        background-image: url("TemplateData/loading-screen.png") !important;
+        background-color: black !important;
+        background-position: 50% 0 !important;
+        background-repeat: no-repeat !important;
+        background-size: contain !important;
+      }
+    </style>
+
+    <script>
+      function getURLParameterByName(name) {
+        name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+        var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+          results = regex.exec(location.search);
+        return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+      }
+
+      var isUnityEditor = !!getURLParameterByName("unity-editor-websocket-port");
+    </script>
+    <script src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
+    <script src="./airconsole-unity-plugin.js"></script>
+    <script src="translation.js"></script>
+    <script>
+      var default_progress_bar_config = {
+        top: "57.8%",
+        left: "42.6%",
+        width: "14.7%",
+        height: "1.6%",
+        background_color: "#3B3B3B",
+        color: "#ADEE00",
+      };
+
+      function initAirConsole() {
+        var unity_web_config = {
+          width: 16,
+          height: 9,
+          streamingAssetsUrl: "StreamingAssets",
+        };
+
+        // Only for the Build (Not for Unity Editor preview)
+        if (!isUnityEditor) {
+          var UNITY_MEMORY_FILENAME = "{{{ MEMORY_FILENAME }}}";
+          var UNITY_SYMBOLS_FILENAME = "{{{ SYMBOLS_FILENAME }}}";
+          var build_URL = "Build";
+          var progress_bar_height = parseFloat("{{{ PROGRESS_BAR_HEIGHT }}}");
+          var progress_bar_width = parseFloat("{{{ PROGRESS_BAR_WIDTH }}}");
+          var progress_bar_offset_top = parseFloat("{{{ PROGRESS_BAR_OFFSET_TOP }}}");
+          var progress_bar_offset_left = parseFloat("{{{ PROGRESS_BAR_OFFSET_LEFT }}}");
+
+          unity_web_config.dataUrl = build_URL + "/{{{ DATA_FILENAME }}}";
+          unity_web_config.frameworkUrl = build_URL + "/{{{ FRAMEWORK_FILENAME }}}";
+          unity_web_config.codeUrl = build_URL + "/{{{ CODE_FILENAME }}}";
+          unity_web_config.companyName = "{{{ COMPANY_NAME }}}";
+          unity_web_config.productName = "{{{ PRODUCT_NAME }}}";
+          unity_web_config.productVersion = "{{{ PRODUCT_VERSION }}}";
+
+          // Instead of doing #if MEMORY_FILENAME and #if SYMBOLS_FILENAME
+          if (UNITY_MEMORY_FILENAME[0] !== "{") {
+            unity_web_config.memoryUrl = build_URL + "/" + UNITY_MEMORY_FILENAME;
+          }
+          if (UNITY_SYMBOLS_FILENAME[0] !== "{") {
+            unity_web_config.symbolsUrl = build_URL + "/" + UNITY_SYMBOLS_FILENAME;
+          }
+
+          // If no float values are parsed, values are NaN
+          if (Number.isNaN(progress_bar_height) || Number.isNaN(progress_bar_offset_top)) {
+            progress_bar_height = default_progress_bar_config.height;
+            progress_bar_offset_top = default_progress_bar_config.top;
+          } else if (progress_bar_height + progress_bar_offset_top > 100) {
+            console.warn("The progress bar top and height percentages can\"t exceed 100%. Using height/top defaults.");
+
+            progress_bar_height = default_progress_bar_config.height;
+            progress_bar_offset_top = default_progress_bar_config.top;
+          } else {
+            progress_bar_height += "%";
+            progress_bar_offset_top += "%";
+          }
+
+          if (Number.isNaN(progress_bar_width) || Number.isNaN(progress_bar_offset_left)) {
+            progress_bar_width = default_progress_bar_config.width;
+            progress_bar_offset_left = default_progress_bar_config.left;
+          } else if (progress_bar_width + progress_bar_offset_left > 100) {
+            console.warn("The progress bar top and height percentages can\"t exceed 100%. Using width/left defaults.");
+
+            progress_bar_width = default_progress_bar_config.width;
+            progress_bar_offset_left = default_progress_bar_config.left;
+          } else {
+            progress_bar_width += "%";
+            progress_bar_offset_left += "%";
+          }
+
+          var progress_bar_config = {
+            height: progress_bar_height,
+            width: progress_bar_width,
+            top: progress_bar_offset_top,
+            left: progress_bar_offset_left,
+            background: "{{{ PROGRESS_BAR_BACKGROUND_COLOR }}}" || default_progress_bar_config.background_color,
+            color: "{{{ PROGRESS_BAR_COLOR }}}" || default_progress_bar_config.color,
+          };
+        }
+
+        var container = document.querySelector("#game-container");
+        var canvas = document.querySelector("#unity-canvas");
+
+        window.app = new App(container, canvas, unity_web_config, progress_bar_config);
+      }
+    </script>
+  </head>
+  <body onload="initAirConsole()">
+    <div id="game-container">
+      <canvas id="unity-canvas"></canvas>
+    </div>
+
+    <script>
+      // Only during build we add the Unity loader
+      if (!isUnityEditor) {
+        var buildUrl = "Build";
+        var loader_URL = buildUrl + "/{{{ LOADER_FILENAME }}}";
+        var script = document.createElement("script");
+
+        script.src = loader_URL;
+        document.body.appendChild(script);
+      }
+    </script>
+  </body>
+</html>
