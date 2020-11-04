@@ -1731,8 +1731,15 @@ namespace NDream.AirConsole {
 					GameObject.DontDestroyOnLoad(webViewObject.gameObject);
                     webViewObject.Init((msg) => ProcessJS(msg));
 
+                    // Get bundle version ("Bundle Version Code" in Unity)
+                    AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                    var ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                    AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
+                    var pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
+
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
+                    url += "&bundle-version=" + pInfo.Get<int>("versionCode");
                     url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + this.androidTvGameVersion;
 
