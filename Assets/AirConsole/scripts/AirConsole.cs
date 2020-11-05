@@ -1163,6 +1163,7 @@ namespace NDream.AirConsole {
 			//back button on TV remotes
 			if (Input.GetKeyDown(KeyCode.Escape)) {
 				Application.Quit();
+        System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
 		#endif
 		}
@@ -1810,6 +1811,7 @@ namespace NDream.AirConsole {
 				packageManager.Dispose();
 				launchIntent.Dispose();
 				Application.Quit();
+        System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
         }
 
@@ -1857,6 +1859,7 @@ namespace NDream.AirConsole {
 		void OnApplicationPause(bool pauseStatus){
 			if (pauseStatus) {
 				Application.Quit();
+        System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
 		}
 #endif
