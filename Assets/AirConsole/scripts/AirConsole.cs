@@ -1747,6 +1747,7 @@ namespace NDream.AirConsole {
 
                     url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + this.androidTvGameVersion;
+                    url += "&unity-version=" + Application.unityVersion;
 
 					webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
                     webViewObject.SetVisibility(true);
