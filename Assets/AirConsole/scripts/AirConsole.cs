@@ -1790,16 +1790,14 @@ namespace NDream.AirConsole {
 			string gameVersion = (string)msg ["game_version"];
 
 			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
-				bool noThreadSleepOnGameChange = false;
+				bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
-				if (msg["no_thread_sleep_on_game_change"] != null) {
-					noThreadSleepOnGameChange = msg.SelectToken("no_thread_sleep_on_game_change").Value<bool>();
+				if (msg["quit_after_launch_intent"] != null) {
+					quitAfterLaunchIntent = msg.SelectToken("quit_after_launch_intent").Value<bool>();
 				}
 
-				if (noThreadSleepOnGameChange) {
-					Application.Quit();
-				} else {
-					// Quit the Unity Player first and give it the time to close all the threads
+				// Quit the Unity Player first and give it the time to close all the threads (Default)
+				if (!quitAfterLaunchIntent) {
 					Application.Quit();
 					System.Threading.Thread.Sleep(2000);
 				}
@@ -1830,6 +1828,11 @@ namespace NDream.AirConsole {
 				ca.Dispose();
 				packageManager.Dispose();
 				launchIntent.Dispose();
+
+				// Quitting after launch intent was the pre v2.5 way
+				if (quitAfterLaunchIntent) {
+					Application.Quit();
+				}
 			}
         }
 
