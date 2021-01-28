@@ -1796,10 +1796,10 @@ namespace NDream.AirConsole {
 					noThreadSleepOnGameChange = msg.SelectToken("no_thread_sleep_on_game_change").Value<bool>();
 				}
 
-				// Quit the Unity Player first and give it the time to close are threads
 				if (noThreadSleepOnGameChange) {
 					Application.Quit();
 				} else {
+					// Quit the Unity Player first and give it the time to close all the threads
 					Application.Quit();
 					System.Threading.Thread.Sleep(2000);
 				}
