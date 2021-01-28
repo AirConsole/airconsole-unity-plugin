@@ -1798,7 +1798,7 @@ namespace NDream.AirConsole {
 				// Quit the Unity Player first and give it the time to close are threads
 				Application.Quit();
 				if (!noThreadSleepOnGameChange) {
-					System.Threading.Thread.Sleep(20000);
+					System.Threading.Thread.Sleep(2000);
 				}
 
 				// Start the main AirConsole App
