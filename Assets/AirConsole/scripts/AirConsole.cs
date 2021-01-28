@@ -1163,12 +1163,12 @@ namespace NDream.AirConsole {
 			//back button on TV remotes
 			if (Input.GetKeyDown(KeyCode.Escape)) {
 				Application.Quit();
-        System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
 		#endif
 		}
 
 		void OnApplicationQuit () {
+			Debug.Log("OnApplicationQuit");
 			StopWebsocketServer ();
 		}
 
@@ -1788,8 +1788,20 @@ namespace NDream.AirConsole {
             Debug.Log("onLaunchApp");
 			string gameId = (string)msg ["game_id"];
 			string gameVersion = (string)msg ["game_version"];
-			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
+			bool noThreadSleepOnGameChange = false;
 
+			if (msg["no_thread_sleep_on_game_change"] != null) {
+				noThreadSleepOnGameChange = msg.SelectToken("no_thread_sleep_on_game_change").Value<bool>();
+			}
+
+			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
+				// Quit the Unity Player first and give it the time to close are threads
+				Application.Quit();
+				if (!noThreadSleepOnGameChange) {
+					System.Threading.Thread.Sleep(20000);
+				}
+
+				// Start the main AirConsole App
 				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
 				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -1815,8 +1827,6 @@ namespace NDream.AirConsole {
 				ca.Dispose();
 				packageManager.Dispose();
 				launchIntent.Dispose();
-				Application.Quit();
-        System.Diagnostics.Process.GetCurrentProcess().Kill();
 			}
         }
 
@@ -1860,14 +1870,6 @@ namespace NDream.AirConsole {
 				}
 			}
 		}
-#if !UNITY_EDITOR
-		void OnApplicationPause(bool pauseStatus){
-			if (pauseStatus) {
-				Application.Quit();
-        System.Diagnostics.Process.GetCurrentProcess().Kill();
-			}
-		}
-#endif
 #endif
 
 #endregion
@@ -1876,5 +1878,3 @@ namespace NDream.AirConsole {
 
 		}
 }
-
-
