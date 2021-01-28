@@ -1788,16 +1788,19 @@ namespace NDream.AirConsole {
             Debug.Log("onLaunchApp");
 			string gameId = (string)msg ["game_id"];
 			string gameVersion = (string)msg ["game_version"];
-			bool noThreadSleepOnGameChange = false;
-
-			if (msg["no_thread_sleep_on_game_change"] != null) {
-				noThreadSleepOnGameChange = msg.SelectToken("no_thread_sleep_on_game_change").Value<bool>();
-			}
 
 			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
+				bool noThreadSleepOnGameChange = false;
+
+				if (msg["no_thread_sleep_on_game_change"] != null) {
+					noThreadSleepOnGameChange = msg.SelectToken("no_thread_sleep_on_game_change").Value<bool>();
+				}
+
 				// Quit the Unity Player first and give it the time to close are threads
-				Application.Quit();
-				if (!noThreadSleepOnGameChange) {
+				if (noThreadSleepOnGameChange) {
+					Application.Quit();
+				} else {
+					Application.Quit();
 					System.Threading.Thread.Sleep(2000);
 				}
 
