@@ -70,7 +70,7 @@ namespace NDream.AirConsole.Editor {
 		public void ProcessRequest (object listenerContext) {
 
 			try {
-               
+
 				var context = (HttpListenerContext)listenerContext;
 				string rawUrl = context.Request.RawUrl;
 
@@ -127,6 +127,8 @@ namespace NDream.AirConsole.Editor {
 				return "image/jpeg";
 			case ".bmp":
 				return "image/bmp";
+      case ".svg":
+        return "image/svg+xml";
 			case ".wav":
 				return "audio/wav";
 			case ".mp3":
