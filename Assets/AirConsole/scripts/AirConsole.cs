@@ -723,25 +723,6 @@ namespace NDream.AirConsole {
 		}
 
 		/// <summary>
-		/// Shows or hides the default UI.
-		/// </summary>
-		/// <param name="visible">Whether to show or hide the default UI.</param>
-		public void ShowDefaultUI (bool visible) {
-
-			if (!IsAirConsoleUnityPluginReady ()) {
-
-				throw new NotReadyException ();
-
-			}
-
-			JObject msg = new JObject ();
-			msg.Add ("action", "showDefaultUI");
-			msg.Add ("data", visible);
-
-			wsListener.Message (msg);
-		}
-
-		/// <summary>
 		/// Returns the device ID of the master controller. Premium devices are prioritized.
 		/// </summary>
 		public int GetMasterControllerDeviceId () {

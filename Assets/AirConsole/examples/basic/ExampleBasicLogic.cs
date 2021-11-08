@@ -51,7 +51,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	void OnMessage (int from, JToken data) {
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "Incoming message from device: " + from + ": " + data.ToString () + " \n \n");
-		
+
 		// Rotate the AirConsole Logo to the right
 		if ((string)data == "left") {
 			turnLeft = true;
@@ -130,7 +130,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 			logWindow.text = logWindow.text.Insert (0, "On High Scores Stored (null)\n \n");
 		} else {
 			logWindow.text = logWindow.text.Insert (0, "On High Scores Stored " + highscore + "\n \n");
-		}		
+		}
 	}
 
 	void OnPersistentDataStored (string uid) {
@@ -152,7 +152,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		//If any controller is pressing a 'Rotate' button, rotate the AirConsole Logo in the scene
 		if (turnLeft) {
 			this.logo.transform.Rotate (0, 0, 2);
-		
+
 		} else if (turnRight) {
 			this.logo.transform.Rotate (0, 0, -2);
 		}
@@ -161,7 +161,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	public void SendMessageToController1 () {
 		//Say Hi to the first controller in the GetControllerDeviceIds List.
 
-		//We cannot assume that the first controller's device ID is '1', because device 1 
+		//We cannot assume that the first controller's device ID is '1', because device 1
 		//might have left and now the first controller in the list has a different ID.
 		//Never hardcode device IDs!
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
@@ -181,14 +181,14 @@ public class ExampleBasicLogic : MonoBehaviour {
 		//Get the device id of this device
 		int device_id = AirConsole.instance.GetDeviceId ();
 
-		//Log to on-screen Console		
+		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "This device's id: " + device_id + "\n \n");
 	}
 
 	public void DisplayNicknameOfFirstController () {
-		//We cannot assume that the first controller's device ID is '1', because device 1 
+		//We cannot assume that the first controller's device ID is '1', because device 1
 		//might have left and now the first controller in the list has a different ID.
-		//Never hardcode device IDs!		
+		//Never hardcode device IDs!
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
 
 		//To get the controller's name right, we get their nickname by using the device id we just saved
@@ -196,16 +196,16 @@ public class ExampleBasicLogic : MonoBehaviour {
 
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "The first controller's nickname is: " + nicknameOfFirstController + "\n \n");
-		
+
 	}
 
 	private IEnumerator DisplayUrlPicture (string url) {
 		// Start a download of the given URL
 		WWW www = new WWW (url);
-		
+
 		// Wait for download to complete
 		yield return www;
-		
+
 		// assign texture
 		profilePicturePlaneRenderer.material.mainTexture = www.texture;
 		Color color = Color.white;
@@ -216,15 +216,15 @@ public class ExampleBasicLogic : MonoBehaviour {
 
 		color.a = 0;
 		profilePicturePlaneRenderer.material.color = color;
-		
+
 	}
-	
+
 	public void DisplayProfilePictureOfFirstController () {
-		//We cannot assume that the first controller's device ID is '1', because device 1 
+		//We cannot assume that the first controller's device ID is '1', because device 1
 		//might have left and now the first controller in the list has a different ID.
-		//Never hardcode device IDs!		
+		//Never hardcode device IDs!
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
-	
+
 		string urlOfProfilePic = AirConsole.instance.GetProfilePicture (idOfFirstController, 512);
 
 		//Log url to on-screen Console
@@ -233,19 +233,19 @@ public class ExampleBasicLogic : MonoBehaviour {
 	}
 
 	public void DisplayAllCustomDataOfFirstController () {
-		//We cannot assume that the first controller's device ID is '1', because device 1 
+		//We cannot assume that the first controller's device ID is '1', because device 1
 		//might have left and now the first controller in the list has a different ID.
-		//Never hardcode device IDs!		
+		//Never hardcode device IDs!
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
 
 		//Get the Custom Device State of the first Controller
 		JToken data = AirConsole.instance.GetCustomDeviceState (idOfFirstController);
-		
+
 		if (data != null) {
-			
+
 			// Check if data has multiple properties
 			if (data.HasValues) {
-				
+
 				// go through all properties
 				foreach (var prop in ((JObject)data).Properties()) {
 					logWindow.text = logWindow.text.Insert (0, "Custom Data on first Controller - Key:  " + prop.Name + " / Value:" + prop.Value + "\n \n");
@@ -261,11 +261,11 @@ public class ExampleBasicLogic : MonoBehaviour {
 	}
 
 	public void DisplayCustomPropertyHealthOnFirstController () {
-		//We cannot assume that the first controller's device ID is '1', because device 1 
+		//We cannot assume that the first controller's device ID is '1', because device 1
 		//might have left and now the first controller in the list has a different ID.
-		//Never hardcode device IDs!		
+		//Never hardcode device IDs!
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
-		
+
 		//Get the Custom Device State of the first Controller
 		JToken data = AirConsole.instance.GetCustomDeviceState (idOfFirstController);
 
@@ -280,7 +280,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 
 	public void SetSomeCustomDataOnScreen () {
 		//create some data
-		var customData = new { 
+		var customData = new {
 			players = AirConsole.instance.GetControllerDeviceIds ().Count,
 			started = false,
 		};
@@ -345,7 +345,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	public void DisplayServerTime () {
 		//Get the Server Time
 		float time = AirConsole.instance.GetServerTime ();
-		
+
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "Server Time: " + time + "\n \n");
 	}
@@ -355,25 +355,9 @@ public class ExampleBasicLogic : MonoBehaviour {
 		int idOfFirstController = AirConsole.instance.GetControllerDeviceIds () [0];
 
 		bool firstPlayerLoginStatus = AirConsole.instance.IsUserLoggedIn (idOfFirstController);
-		
+
 		//Log to on-screen Console
 		logWindow.text = logWindow.text.Insert (0, "First Player is logged in: " + firstPlayerLoginStatus + "\n \n");
-	}
-
-	public void HideDefaultUI () {
-		//Hide the Default UI in the Browser Window
-		AirConsole.instance.ShowDefaultUI (false);
-
-		//Log to on-screen Console
-		logWindow.text = logWindow.text.Insert (0, "Hid Default UI" + "\n \n");
-	}
-
-	public void ShowDefaultUI () {
-		//Show the Default UI in the Browser Window
-		AirConsole.instance.ShowDefaultUI (true);
-
-		//Log to on-screen Console
-		logWindow.text = logWindow.text.Insert (0, "Showed Default UI" + "\n \n");
 	}
 
 	public void NavigateHome () {
@@ -440,7 +424,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 	public void RequestPersistentData () {
 		List<string> connectedUids = new List<string> ();
 		List<int> deviceIds = AirConsole.instance.GetControllerDeviceIds();
-		
+
 		for (int i = 0; i < deviceIds.Count; i++) {
 			connectedUids.Add (AirConsole.instance.GetUID(deviceIds[i]));
 		}

@@ -342,12 +342,6 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setCustomDeviceState(data.data);
     } else if (data.action == "setCustomDeviceStateProperty") {
         this.airconsole.setCustomDeviceStateProperty(data.key, data.value);
-    } else if (data.action == "showDefaultUI") {
-        this.airconsole.showDefaultUI(data.data);
-        if (this.is_native_app) {
-            Unity.call(JSON.stringify({"action": "onUnityWebviewResize",
-                "top_bar_height": data.data ? this.top_bar_height : 0}));
-        }
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
     } else if (data.action == "navigateTo") {

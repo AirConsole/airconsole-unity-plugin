@@ -59,7 +59,7 @@ App.prototype.updateProgress = function(progress_config, game, progress) {
         fill.style.background = progress_config.color;
         bar.appendChild(fill);
         game.progress = bar;
-        container.appendChild(bar);  
+        container.appendChild(bar);
     }
     game.progress.childNodes[0].style.width = progress * 100 + "%";
     if (progress >= 1) {
@@ -142,41 +142,41 @@ App.prototype.initAirConsole = function() {
             "device_data": device_data
         });
     };
-    
+
     me.airconsole.onConnect = function (device_id) {
         me.postToUnity({
             "action": "onConnect",
             "device_id": device_id
         });
     };
-    
+
     me.airconsole.onDisconnect = function (device_id) {
         me.postToUnity({
             "action": "onDisconnect",
             "device_id": device_id
         });
     };
-    
+
     me.airconsole.onCustomDeviceStateChange = function (device_id) {
         me.postToUnity({
             "action": "onCustomDeviceStateChange",
             "device_id": device_id
         });
     };
-    
+
     me.airconsole.onDeviceProfileChange = function(device_id) {
         me.postToUnity({
             "action": "onDeviceProfileChange",
             "device_id": device_id
         });
     };
-    
+
     me.airconsole.onAdShow = function() {
         me.postToUnity({
             "action": "onAdShow"
         });
     };
-    
+
     me.airconsole.onAdComplete = function(ad_was_shown) {
         me.postToUnity({
             "action": "onAdComplete",
@@ -314,12 +314,6 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setCustomDeviceState(data.data);
     } else if (data.action == "setCustomDeviceStateProperty") {
         this.airconsole.setCustomDeviceStateProperty(data.key, data.value);
-    } else if (data.action == "showDefaultUI") {
-        this.airconsole.showDefaultUI(data.data);
-        if (this.is_native_app) {
-          Unity.call(JSON.stringify({"action": "onUnityWebviewResize",
-                                     "top_bar_height": data.data ? this.top_bar_height : 0}));
-        }
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
     } else if (data.action == "navigateTo") {
