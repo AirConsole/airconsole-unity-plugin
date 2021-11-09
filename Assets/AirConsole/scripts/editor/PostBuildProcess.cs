@@ -21,7 +21,7 @@ namespace NDream.AirConsole.Editor {
 
 				// Check if game.json already exists
 				if (File.Exists (pathToBuiltProject + "/Build/game.json")) {
-				File.Delete (pathToBuiltProject + "/Build/game.json");
+				  File.Delete (pathToBuiltProject + "/Build/game.json");
 				}
 
 				string configuration_file_path = pathToBuiltProject + "/Build/" + Path.GetFileName (pathToBuiltProject) + ".json";
@@ -35,7 +35,7 @@ namespace NDream.AirConsole.Editor {
 
 				// Save last port path
 				EditorPrefs.SetString ("airconsolePortPath", pathToBuiltProject);
-			} 
+			}
 		}
 	}
 }
