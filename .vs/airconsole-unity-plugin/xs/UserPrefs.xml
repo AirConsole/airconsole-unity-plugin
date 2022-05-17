@@ -1,30 +1,36 @@
 ﻿<Properties StartupConfiguration="{4DD84565-A08F-F9E5-8513-56C532CC9090}|">
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/AirConsole/scripts/AirConsole.cs">
     <Files>
-      <File FileName="Assets/AirConsole/scripts/AirConsole.cs" Line="239" Column="38" />
-      <File FileName="Assets/AirConsole/examples/basic/ExampleBasicLogic.cs" />
-      <File FileName="Assets/AirConsole/scripts/editor/Extentions.cs" />
-      <File FileName="../Dust Squad/Assets/Scripts/AirConsole/AirConsoleInputIngame.cs" />
-      <File FileName="Assets/AirConsole/examples/pong/ExamplePongLogic.cs" />
-      <File FileName="Assets/AirConsole/scripts/WebsocketListener.cs" />
-      <File FileName="Assets/AirConsole/scripts/editor/PostBuildProcess.cs" />
-      <File FileName="Assets/AirConsole/scripts/editor/Inspector.cs" />
-      <File FileName="Assets/AirConsole/examples/translations/TranslationExampleLogic.cs" />
-      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="22" Column="1" NotebookId="1" />
+      <File FileName="Assets/AirConsole/scripts/AirConsole.cs" Line="1625" Column="35" />
+      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="7" Column="37" NotebookId="1" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
         <State name="__root__">
-          <Node name="airconsole-unity-plugin" expanded="True" selected="True" />
+          <Node name="airconsole-unity-plugin" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="AirConsole" expanded="True">
+                <Node name="examples" expanded="True">
+                  <Node name="basic" expanded="True" />
+                </Node>
+                <Node name="scripts" expanded="True">
+                  <Node name="editor" expanded="True" />
+                  <Node name="AirConsole.cs" selected="True" />
+                </Node>
+              </Node>
+            </Node>
+          </Node>
         </State>
       </Pad>
     </Pads>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="eebe4d85-2094-403d-8e4e-3c72f034f998" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="9026419d-3d03-4f2e-a365-365828de3e4f" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
-    <BreakpointStore />
+    <BreakpointStore>
+      <Breakpoint file="/Users/daniel/Work/airconsole-unity-plugin/Assets/AirConsole/scripts/Settings.cs" relfile="Assets/AirConsole/scripts/Settings.cs" line="29" column="1" />
+    </BreakpointStore>
   </MonoDevelop.Ide.DebuggingService.Breakpoints>
   <MultiItemStartupConfigurations />
 </Properties>
