@@ -1618,6 +1618,7 @@ namespace NDream.AirConsole {
 		private UnityEngine.UI.Image webViewLoadingBG;
 		private int webViewHeight;
 		private int defaultScreenHeight;
+		private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
 #endif
 		private List<JToken> _devices = new List<JToken> ();
 		private int _device_id;
@@ -1853,7 +1854,12 @@ namespace NDream.AirConsole {
 				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
 
 				for (int i = 0; i < allCanvasScalers.Length; ++i) {
+					if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {
+						continue;
+					}
+
 					allCanvasScalers[i].referenceResolution = new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight()) * allCanvasScalers[i].referenceResolution.y);
+					fixedCanvasScalers.Add(allCanvasScalers[i]);
 				}
 			}
 		}
