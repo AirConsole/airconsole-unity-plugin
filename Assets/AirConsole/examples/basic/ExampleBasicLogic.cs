@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NDream.AirConsole;
 using Newtonsoft.Json.Linq;
+using UnityEngine.Networking;
 
 public class ExampleBasicLogic : MonoBehaviour {
 
@@ -199,15 +200,14 @@ public class ExampleBasicLogic : MonoBehaviour {
 
 	}
 
-	private IEnumerator DisplayUrlPicture (string url) {
-		// Start a download of the given URL
-		WWW www = new WWW (url);
+	private IEnumerator DisplayUrlPicture (string uri) {
+		// Download the picture URL as a texture
+		var www = UnityWebRequestTexture.GetTexture(uri);
+		yield return www.SendWebRequest();
+		Texture pictureText = DownloadHandlerTexture.GetContent(www);
 
-		// Wait for download to complete
-		yield return www;
-
-		// assign texture
-		profilePicturePlaneRenderer.material.mainTexture = www.texture;
+		// Assign texture
+		profilePicturePlaneRenderer.material.mainTexture = pictureText;
 		Color color = Color.white;
 		color.a = 1;
 		profilePicturePlaneRenderer.material.color = color;
@@ -216,7 +216,6 @@ public class ExampleBasicLogic : MonoBehaviour {
 
 		color.a = 0;
 		profilePicturePlaneRenderer.material.color = color;
-
 	}
 
 	public void DisplayProfilePictureOfFirstController () {

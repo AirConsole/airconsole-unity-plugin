@@ -45,7 +45,6 @@ namespace NDream.AirConsole.Editor {
 		}
 
 		public bool IsRunning () {
-
 			if (listener != null) {
 				return listener.IsListening;
 			}
@@ -57,7 +56,7 @@ namespace NDream.AirConsole.Editor {
 				try {
 					request = listener.GetContext ();
 					ThreadPool.QueueUserWorkItem (ProcessRequest, request);
-				} catch (ThreadAbortException e) {
+				} catch (ThreadAbortException) {
 					// ThreadAbortException is thrown when the webserver gets stopped/restarted
 				} catch (Exception e) {
 					if (Settings.debug.error) {
@@ -68,9 +67,7 @@ namespace NDream.AirConsole.Editor {
 		}
 
 		public void ProcessRequest (object listenerContext) {
-
 			try {
-
 				var context = (HttpListenerContext)listenerContext;
 				string rawUrl = context.Request.RawUrl;
 
@@ -103,9 +100,7 @@ namespace NDream.AirConsole.Editor {
 					s.Write (msg, 0, msg.Length);
 				}
 			} catch (Exception e) {
-
 				if (Settings.debug.error) {
-
 					if (e.Message != "Write failure") {
 						Debug.LogError (e.Message);
 					}
@@ -127,8 +122,8 @@ namespace NDream.AirConsole.Editor {
 				return "image/jpeg";
 			case ".bmp":
 				return "image/bmp";
-      case ".svg":
-        return "image/svg+xml";
+			case ".svg":
+				return "image/svg+xml";
 			case ".wav":
 				return "audio/wav";
 			case ".mp3":

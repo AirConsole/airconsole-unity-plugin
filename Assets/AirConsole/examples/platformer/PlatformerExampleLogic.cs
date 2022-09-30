@@ -25,12 +25,11 @@ public class PlatformerExampleLogic : MonoBehaviour {
 		}
 	}
 
-	void OnConnect (int device){
+	void OnConnect (int device) {
 		AddNewPlayer (device);
 	}
 
-	private void AddNewPlayer(int deviceID){
-
+	private void AddNewPlayer(int deviceID) {
 		if (players.ContainsKey (deviceID)) {
 			return;
 		}

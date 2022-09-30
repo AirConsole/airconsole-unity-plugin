@@ -3,20 +3,8 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-    <style type=text/css>
-      #game {
-        background-image: url('TemplateData/loading-screen.png') !important;
-        background-color: black !important;
-        background-position: 50% 0 !important;
-        background-repeat: no-repeat !important;
-        background-size: contain !important;
-        position: absolute;
-        left: 50%;
-        top: 0%;
-        transform: translate(-50%, 0%);
-      }
-
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+    <style>
       html, body {
         margin: 0;
         padding: 0;
@@ -25,12 +13,23 @@
         font-family: sans-serif;
       }
 
+      #game {
+        background-image: url('TemplateData/loading-screen.png') !important;
+        background-color: black !important;
+        background-position: 50% 0 !important;
+        background-repeat: no-repeat !important;
+        background-size: contain !important;
+        position: absolute;
+        left: 50%;
+        top: 0;
+        transform: translate(-50%, 0%);
+      }
     </style>
-    <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
-    <script type="text/javascript" src="./airconsole-unity-plugin.js"></script>
-    <script type="text/javascript" src="Build/UnityLoader.js"></script>
-    <script type="text/javascript" src="translation.js"></script>
-    <script type="text/javascript">
+    <script src="https://www.airconsole.com/api/airconsole-1.8.0.js"></script>
+    <script src="./airconsole-unity-plugin.js"></script>
+    <script src="Build/UnityLoader.js"></script>
+    <script src="translation.js"></script>
+    <script>
        function initAirConsole() {
          var unity_web_config = {
            width: 16,
@@ -44,6 +43,7 @@
            background: "#3b3b3b",
            color: "#ADEE00"
          };
+
          window.app = new App('game', unity_web_config, progress_bar_config);
        }
     </script>

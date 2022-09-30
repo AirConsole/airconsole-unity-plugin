@@ -54,8 +54,14 @@ namespace NDream.AirConsole {
 
 	public delegate void OnPremium (int device_id);
 
+	public delegate void OnMute (bool muted);
+
+	public delegate void OnPause ();
+
+	public delegate void OnResume ();
+
 	public class AirConsole : MonoBehaviour {
-		#if !DISABLE_AIRCONSOLE
+#if !DISABLE_AIRCONSOLE
 		#region airconsole api
 
 		/// <summary>
@@ -176,6 +182,22 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device id of the premium device.</param>
 		/// </summary>
 		public event OnPremium onPremium;
+
+		/// <summary>
+		/// Gets called when the game should mute/unmute any sound.
+		/// <param name="muted">If true mute all sounds, if false resume all sounds</param>
+		/// </summary>
+		public event OnMute onMute;
+
+		/// <summary>
+		/// Gets called when the game should be paused.
+		/// </summary>
+		public event OnPause onPause;
+
+		/// <summary>
+		/// Gets called when the game should be resumed.
+		/// </summary>
+		public event OnResume onResume;
 
 		/// <summary>
 		/// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -1109,11 +1131,13 @@ namespace NDream.AirConsole {
 			wsListener.onPersistentDataStored += OnPersistentDataStored;
 			wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
 			wsListener.onPremium += OnPremium;
+			wsListener.onMute += OnMute;
+			wsListener.onPause += OnPause;
+			wsListener.onResume += OnResume;
 
 
 			// check if game is running in webgl build
 			if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
-
 				// start websocket connection
 				wsServer = new WebSocketServer (Settings.webSocketPort);
 				wsServer.AddWebSocketService<WebsocketListener> (Settings.WEBSOCKET_PATH, () => wsListener);
@@ -1122,19 +1146,15 @@ namespace NDream.AirConsole {
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: Dev-Server started!");
 				}
-
 			} else {
-
 				if (Application.platform == RuntimePlatform.WebGLPlayer) {
 					// call external javascript init function
 					Application.ExternalCall ("onGameReady", this.autoScaleCanvas);
 				}
 			}
-
 		}
 
 		void Update () {
-
 			// dispatch event queue on main unity thread
 			while (eventQueue.Count > 0) {
 				eventQueue.Dequeue ().Invoke ();
@@ -1565,12 +1585,11 @@ namespace NDream.AirConsole {
 
 		void OnPremium (JObject msg) {
 			try {
-
 				int device_id = (int)msg ["device_id"];
 
 				if (this.onPremium != null) {
 					eventQueue.Enqueue (delegate() {
-						if(this.onPremium != null){
+						if (this.onPremium != null) {
 							this.onPremium (device_id);
 						}
 					});
@@ -1579,9 +1598,71 @@ namespace NDream.AirConsole {
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onPremium");
 				}
-
 			} catch (Exception e) {
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
 
+		void OnMute (JObject msg) {
+			try {
+				Debug.Log("OnMute");
+				Debug.Log(msg);
+				bool mute = (bool)msg ["mute"];
+
+				if (this.onMute != null) {
+					eventQueue.Enqueue (delegate() {
+						if (this.onMute != null) {
+							this.onMute (mute);
+						}
+					});
+				}
+
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onMute");
+				}
+			} catch (Exception e) {
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnPause (JObject msg) {
+			try {
+				if (this.onPause != null) {
+					eventQueue.Enqueue (delegate() {
+						if (this.onPause != null) {
+							this.onPause ();
+						}
+					});
+				}
+
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onPause");
+				}
+			} catch (Exception e) {
+				if (Settings.debug.error) {
+					Debug.LogError (e.Message);
+				}
+			}
+		}
+
+		void OnResume (JObject msg) {
+			try {
+				if (this.onResume != null) {
+					eventQueue.Enqueue (delegate() {
+						if (this.onResume != null) {
+							this.onResume ();
+						}
+					});
+				}
+
+				if (Settings.debug.info) {
+					Debug.Log ("AirConsole: onResume");
+				}
+			} catch (Exception e) {
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 				}

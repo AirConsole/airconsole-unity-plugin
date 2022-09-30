@@ -37,10 +37,16 @@ namespace NDream.AirConsole {
 	public delegate void OnHighScoreStoredInternal (JObject data);
 
 	public delegate void OnPersistentDataStoredInternal (JObject data);
-	
+
 	public delegate void OnPersistentDataLoadedInternal (JObject data);
-	
+
 	public delegate void OnPremiumInternal (JObject data);
+
+	public delegate void OnMuteInternal (JObject data);
+
+	public delegate void OnPauseInternal (JObject data);
+
+	public delegate void OnResumeInternal (JObject data);
 
 	public delegate void OnLaunchAppInternal (JObject data);
 
@@ -69,6 +75,9 @@ namespace NDream.AirConsole {
 		public event OnPersistentDataStoredInternal onPersistentDataStored;
 		public event OnPersistentDataLoadedInternal onPersistentDataLoaded;
 		public event OnPremiumInternal onPremium;
+		public event OnMuteInternal onMute;
+		public event OnPauseInternal onPause;
+		public event OnResumeInternal onResume;
 		public event OnLaunchAppInternal onLaunchApp;
 		public event OnUnityWebviewResizeInternal onUnityWebviewResize;
 		public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
@@ -114,7 +123,7 @@ namespace NDream.AirConsole {
 			if (Settings.debug.info) {
 				Debug.Log ("AirConsole: screen.html disconnected");
 			}
-           
+
 			base.OnClose (e);
 		}
 
@@ -135,7 +144,6 @@ namespace NDream.AirConsole {
 				JObject msg = JObject.Parse (data);
 
 				if ((string)msg ["action"] == "onReady") {
-
 					this.isReady = true;
 
 					if (this.onReady != null) {
@@ -146,95 +154,88 @@ namespace NDream.AirConsole {
 						Debug.Log ("AirConsole: Connections are ready!");
 					}
 				} else if ((string)msg ["action"] == "onMessage") {
-
 					if (this.onMessage != null) {
 						this.onMessage (msg);
 					}
 				} else if ((string)msg ["action"] == "onDeviceStateChange") {
-
 					if (this.onDeviceStateChange != null) {
 						this.onDeviceStateChange (msg);
 					}
 				} else if ((string)msg ["action"] == "onConnect") {
-					
 					if (this.onConnect != null) {
 						this.onConnect (msg);
 					}
 				} else if ((string)msg ["action"] == "onDisconnect") {
-					
 					if (this.onDisconnect != null) {
 						this.onDisconnect (msg);
 					}
 				} else if ((string)msg ["action"] == "onCustomDeviceStateChange") {
-
 					if (this.onCustomDeviceStateChange != null) {
 						this.onCustomDeviceStateChange (msg);
 					}
 				} else if ((string)msg ["action"] == "onDeviceProfileChange") {
-					
 					if (this.onDeviceProfileChange != null) {
 						this.onDeviceProfileChange (msg);
 					}
 				} else if ((string)msg ["action"] == "onAdShow") {
-					
 					if (this.onAdShow != null) {
 						this.onAdShow (msg);
 					}
 				} else if ((string)msg ["action"] == "onAdComplete") {
-					
 					if (this.onAdComplete != null) {
 						this.onAdComplete (msg);
 					}
 				} else if ((string)msg ["action"] == "onGameEnd") {
-					
 					if (this.onGameEnd != null) {
 						this.onGameEnd (msg);
 					}
 				} else if ((string)msg ["action"] == "onHighScores") {
-					
 					if (this.onHighScores != null) {
 						this.onHighScores (msg);
 					}
 				} else if ((string)msg ["action"] == "onHighScoreStored") {
-					
 					if (this.onHighScoreStored != null) {
 						this.onHighScoreStored (msg);
 					}
 				} else if ((string)msg ["action"] == "onPersistentDataStored") {
-					
 					if (this.onPersistentDataStored != null) {
 						this.onPersistentDataStored (msg);
 					}
 				} else if ((string)msg ["action"] == "onPersistentDataLoaded") {
-					
+
 					if (this.onPersistentDataLoaded != null) {
 						this.onPersistentDataLoaded (msg);
 					}
 				} else if ((string)msg ["action"] == "onPremium") {
-					
 					if (this.onPremium != null) {
 						this.onPremium (msg);
 					}
-				} else if ((string)msg ["action"] == "onLaunchApp") {
-
+				} else if ((string)msg ["action"] == "onMute") {
+          if (this.onMute != null) {
+            this.onMute (msg);
+          }
+        } else if ((string)msg ["action"] == "onPause") {
+          if (this.onPause != null) {
+            this.onPause (msg);
+          }
+        } else if ((string)msg ["action"] == "onResume") {
+          if (this.onResume != null) {
+            this.onResume (msg);
+          }
+        } else if ((string)msg ["action"] == "onLaunchApp") {
 					if (this.onLaunchApp != null) {
 						this.onLaunchApp (msg);
 					}
 				} else if ((string)msg ["action"] == "onUnityWebviewResize") {
-
 					if (this.onUnityWebviewResize != null) {
 						this.onUnityWebviewResize (msg);
 					}
 				} else if ((string)msg ["action"] == "onUnityWebviewPlatformReady") {
-					
 					if (this.onUnityWebviewPlatformReady != null) {
 						this.onUnityWebviewPlatformReady (msg);
 					}
 				}
-
-
 			} catch (Exception e) {
-
 				if (Settings.debug.error) {
 					Debug.LogError (e.Message);
 					Debug.LogError (e.StackTrace);
@@ -247,11 +248,8 @@ namespace NDream.AirConsole {
 		}
 
 		public void Message (JObject data) {
-
 			if (Application.platform == RuntimePlatform.WebGLPlayer) {
-
-				Application.ExternalCall ("window.app.processUnityData", data.ToString ()); //TODO: External Call is obsolete? 
-
+				Application.ExternalCall ("window.app.processUnityData", data.ToString ()); //TODO: External Call is obsolete?
 			} else if (Application.platform == RuntimePlatform.Android) {
 
 #if UNITY_ANDROID
