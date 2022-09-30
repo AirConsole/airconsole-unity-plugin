@@ -93,25 +93,26 @@ public class GameStatesExampleLogic : MonoBehaviour {
 
 		var action = message["action"].ToString();
 
-		switch (action) {
-			case ControllerEvents.ToggleAudio when this.audioIsMutedByAirConsole:
+		if (action == ControllerEvents.ToggleAudio) {
+			if (this.gameIsPausedByAirConsole) {
+				Debug.Log("Ignoring toggle-audio event because the game is paused by AirConsole");
+			} else if (this.audioIsMutedByAirConsole) {
 				Debug.Log("Ignoring toggle-audio event because the game is muted by AirConsole");
-				break;
-			case ControllerEvents.ToggleAudio:
+			} else {
 				this.ToggleAudio(!AudioIsCurrentlyMuted());
-				break;
-			case ControllerEvents.PauseGame when this.gameIsPausedByAirConsole:
+			}
+		} else if (action == ControllerEvents.PauseGame) {
+			if (this.gameIsPausedByAirConsole) {
 				Debug.Log("Ignoring pause-game event because the game is paused by AirConsole");
-				break;
-			case ControllerEvents.PauseGame:
+			} else {
 				this.PauseGame();
-				break;
-			case ControllerEvents.ResumeGame when this.gameIsPausedByAirConsole:
+			}
+		} else if (action == ControllerEvents.ResumeGame) {
+			if (this.gameIsPausedByAirConsole) {
 				Debug.Log("Ignoring resume-game event because the game is paused by AirConsole");
-				break;
-			case ControllerEvents.ResumeGame:
+			} else {
 				this.ResumeGame();
-				break;
+			}
 		}
 	}
 
