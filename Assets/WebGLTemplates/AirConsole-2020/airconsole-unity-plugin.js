@@ -246,6 +246,25 @@ App.prototype.initAirConsole = function() {
             "device_id": device_id
         });
     };
+
+    me.airconsole.onMute = function(mute) {
+        me.postToUnity({
+            action: "onMute",
+            mute: mute
+        });
+    };
+
+    me.airconsole.onPause = function() {
+        me.postToUnity({
+            action: "onPause"
+        });
+    };
+
+    me.airconsole.onResume = function() {
+        me.postToUnity({
+            action: "onResume"
+        });
+    };
 };
 
 
