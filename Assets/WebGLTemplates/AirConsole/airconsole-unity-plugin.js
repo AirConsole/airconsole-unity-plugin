@@ -20,7 +20,6 @@ function App(container, web_config, progress_config) {
 
     if (me.is_editor) {
         me.setupEditorSocket();
-
     } else {
         me.initAirConsole();
         if (!me.is_native_app) {
@@ -216,6 +215,25 @@ App.prototype.initAirConsole = function() {
         me.postToUnity({
             "action": "onPremium",
             "device_id": device_id
+        });
+    };
+
+    me.airconsole.onMute = function(mute) {
+        me.postToUnity({
+            action: "onMute",
+            mute: mute
+        });
+    };
+
+    me.airconsole.onPause = function() {
+        me.postToUnity({
+            action: "onPause"
+        });
+    };
+
+    me.airconsole.onResume = function() {
+        me.postToUnity({
+            action: "onResume"
         });
     };
 };

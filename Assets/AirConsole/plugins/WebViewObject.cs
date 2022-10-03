@@ -24,6 +24,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Networking;
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
 using System.IO;
 using System.Text.RegularExpressions;
@@ -32,10 +33,8 @@ using System.Text.RegularExpressions;
 using Callback = System.Action<string>;
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-public class UnitySendMessageDispatcher
-{
-    public static void Dispatch(string name, string method, string message)
-    {
+public class UnitySendMessageDispatcher {
+    public static void Dispatch(string name, string method, string message) {
         GameObject obj = GameObject.Find(name);
         if (obj != null)
             obj.SendMessage(method, message);
@@ -43,8 +42,7 @@ public class UnitySendMessageDispatcher
 }
 #endif
 
-public class WebViewObject : MonoBehaviour
-{
+public class WebViewObject : MonoBehaviour {
     Callback onJS;
     Callback onError;
     Callback onHttpError;
@@ -646,52 +644,41 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void CallOnError(string error)
-    {
-        if (onError != null)
-        {
+    public void CallOnError(string error) {
+        if (onError != null) {
             onError(error);
         }
     }
 
-    public void CallOnHttpError(string error)
-    {
-        if (onHttpError != null)
-        {
+    public void CallOnHttpError(string error) {
+        if (onHttpError != null) {
             onHttpError(error);
         }
     }
 
-    public void CallOnStarted(string url)
-    {
-        if (onStarted != null)
-        {
+    public void CallOnStarted(string url) {
+        if (onStarted != null) {
             onStarted(url);
         }
     }
 
-    public void CallOnLoaded(string url)
-    {
-        if (onLoaded != null)
-        {
+    public void CallOnLoaded(string url) {
+        if (onLoaded != null) {
             onLoaded(url);
         }
     }
 
-    public void CallFromJS(string message)
-    {
-        if (onJS != null)
-        {
+    public void CallFromJS(string message) {
+        if (onJS != null) {
 #if !UNITY_ANDROID
-            message = WWW.UnEscapeURL(message);
+            message = UnityWebRequest.UnEscapeURL(message);
 #endif
             onJS(message);
         }
     }
 
 
-    public void AddCustomHeader(string headerKey, string headerValue)
-    {
+    public void AddCustomHeader(string headerKey, string headerValue) {
 #if UNITY_WEBPLAYER
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN

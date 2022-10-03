@@ -2,8 +2,8 @@
 <html>
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.7.0.js"></script>
-  <style type=text/css>
+  <script src="https://www.airconsole.com/api/airconsole-1.8.0.js"></script>
+  <style>
 
 .text {
   color: white;
@@ -28,7 +28,7 @@
 
 
   </style>
-  
+
   <script type="text/javascript">
 
     function App() {
@@ -38,7 +38,7 @@
       me.airconsole = new AirConsole({"orientation": "portrait", "translation" : true});
 
       me.airconsole.onReady = function (){
-        //set translation string with nickname as replacement value. 
+        //set translation string with nickname as replacement value.
         document.getElementById("welcome-message").innerHTML = me.airconsole.getTranslation("welcome_nickname", { "nickname" : me.airconsole.getNickname()});
       };
 
@@ -48,7 +48,7 @@
        * --> WE STRONGLY ENCOURAGE YOU TO USE THE AIRCONSOLE CONTROLS LIBRARY
        * WHICH IS EVEN BETTER (BUT WE DONT WANT TO BLOAT THE CODE HERE).
        * https://github.com/AirConsole/airconsole-controls/
-       * 
+       *
        * DO NOT USE ONCLICK HANDLERS.
        * THEY ADD A 200MS DELAY!
        */
@@ -72,7 +72,7 @@
   </script>
 </head>
 <body onload="window.app = new App()">
- 
+
  <p id="welcome-message" class="text">text</p>
   <!--the data-translation attribute can be used for simple, static translations without replacement values. -->
  <p data-translation="left" class="text" id="leftText">text</p>

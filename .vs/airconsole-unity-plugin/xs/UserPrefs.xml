@@ -1,8 +1,9 @@
 ﻿<Properties StartupConfiguration="{4DD84565-A08F-F9E5-8513-56C532CC9090}|">
   <MonoDevelop.Ide.Workbench ActiveDocument="Assets/AirConsole/scripts/AirConsole.cs">
     <Files>
-      <File FileName="Assets/AirConsole/scripts/AirConsole.cs" Line="1625" Column="35" />
-      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="7" Column="37" NotebookId="1" />
+      <File FileName="Assets/AirConsole/examples/game-states/GameStatesExampleLogic.cs" Line="197" Column="65" />
+      <File FileName="Assets/AirConsole/scripts/Settings.cs" Line="7" Column="37" />
+      <File FileName="Assets/AirConsole/scripts/AirConsole.cs" Line="1615" Column="25" />
     </Files>
     <Pads>
       <Pad Id="ProjectPad">
@@ -12,6 +13,8 @@
               <Node name="AirConsole" expanded="True">
                 <Node name="examples" expanded="True">
                   <Node name="basic" expanded="True" />
+                  <Node name="game-states" expanded="True" />
+                  <Node name="pong" expanded="True" />
                 </Node>
                 <Node name="scripts" expanded="True">
                   <Node name="editor" expanded="True" />
@@ -26,7 +29,7 @@
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.PinnedWatches />
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="9026419d-3d03-4f2e-a365-365828de3e4f" />
+  <MonoDevelop.Ide.ItemProperties.Assembly-CSharp PreferredExecutionTarget="63402de1-6b0d-4f16-92e3-2ddebbb5232d" />
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
     <BreakpointStore>
       <Breakpoint file="/Users/daniel/Work/airconsole-unity-plugin/Assets/AirConsole/scripts/Settings.cs" relfile="Assets/AirConsole/scripts/Settings.cs" line="29" column="1" />
