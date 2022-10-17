@@ -192,7 +192,7 @@ MonoBehaviour:
   browserStartMode: 0
   controllerHtml: {fileID: 4900000, guid: ab5a57d187e074ea3b7285d1c90e187d, type: 3}
   autoScaleCanvas: 1
-  devGameId: 
+  devGameId: com.airconsole.plugin.unity
 --- !u!4 &245589325
 Transform:
   m_ObjectHideFlags: 0
@@ -343,7 +343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ca421917d12344192a0e312fbfdfecf9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPrefab: {fileID: 1018172500222856, guid: d88c1d1b0f4f4466781a6766e3723fd2,
+  playerPrefab: {fileID: 1018172500222856, guid: 38981a680ee6e49a7a8e01595d2bdf3a,
     type: 3}
 --- !u!1 &638488486
 GameObject:
