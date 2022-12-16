@@ -15,11 +15,8 @@ public class PreBuildProcessing : IPreprocessBuildWithReport {
         // the Build process.
 
         // If you need to set the Python path manually you can use the code below, uncomment it and
-        // set "python_path" to the the Python 3 (Or Python 2 for old Unity versions) path
-        // string python_path = "<set-me>";
-        // if (python_path != "<set-me>") {
-        //     System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", python_path);
-        // }
+        // set "EMSDK_PYTHON" to the the Python 3 (Or Python 2 for old Unity versions) path:
+        // System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", "<python-path-here>");
     }
 }
 #endif
