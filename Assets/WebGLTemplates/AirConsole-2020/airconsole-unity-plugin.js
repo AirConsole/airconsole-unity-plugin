@@ -247,13 +247,6 @@ App.prototype.initAirConsole = function() {
         });
     };
 
-    me.airconsole.onMute = function(mute) {
-        me.postToUnity({
-            action: "onMute",
-            mute: mute
-        });
-    };
-
     me.airconsole.onPause = function() {
         me.postToUnity({
             action: "onPause"
