@@ -42,8 +42,6 @@ namespace NDream.AirConsole {
 
 	public delegate void OnPremiumInternal (JObject data);
 
-	public delegate void OnMuteInternal (JObject data);
-
 	public delegate void OnPauseInternal (JObject data);
 
 	public delegate void OnResumeInternal (JObject data);
@@ -75,7 +73,6 @@ namespace NDream.AirConsole {
 		public event OnPersistentDataStoredInternal onPersistentDataStored;
 		public event OnPersistentDataLoadedInternal onPersistentDataLoaded;
 		public event OnPremiumInternal onPremium;
-		public event OnMuteInternal onMute;
 		public event OnPauseInternal onPause;
 		public event OnResumeInternal onResume;
 		public event OnLaunchAppInternal onLaunchApp;
@@ -210,19 +207,15 @@ namespace NDream.AirConsole {
 					if (this.onPremium != null) {
 						this.onPremium (msg);
 					}
-				} else if ((string)msg ["action"] == "onMute") {
-          if (this.onMute != null) {
-            this.onMute (msg);
-          }
-        } else if ((string)msg ["action"] == "onPause") {
-          if (this.onPause != null) {
-            this.onPause (msg);
-          }
-        } else if ((string)msg ["action"] == "onResume") {
-          if (this.onResume != null) {
-            this.onResume (msg);
-          }
-        } else if ((string)msg ["action"] == "onLaunchApp") {
+				} else if ((string)msg ["action"] == "onPause") {
+				  if (this.onPause != null) {
+					this.onPause (msg);
+				  }
+				} else if ((string)msg ["action"] == "onResume") {
+				  if (this.onResume != null) {
+					this.onResume (msg);
+				  }
+				} else if ((string)msg ["action"] == "onLaunchApp") {
 					if (this.onLaunchApp != null) {
 						this.onLaunchApp (msg);
 					}

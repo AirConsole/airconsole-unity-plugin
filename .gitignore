@@ -30,3 +30,8 @@ obj/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# ============ #
+# IDEA generated #
+# ============ #
+/.idea

@@ -9,7 +9,7 @@ using NDream.AirConsole;
 public class GameStatesExampleLogic : MonoBehaviour {
 
 	public GameObject logo;
-	public Text screenStateText;
+	public Text gameStateText;
 	public Text audioStateText;
 	public AudioSource backgroundMusic;
 
@@ -30,15 +30,13 @@ public class GameStatesExampleLogic : MonoBehaviour {
 	private readonly string[] colorNames = new string[]{ "red", "blue", "green", "yellow", "orange", "purple", "pink" };
 	private int colorIndex;
 
-	// Those 2 fields should overwrite any game state
+	// This field should overwrite any game state
 	private bool gameIsPausedByAirConsole = false;
-	private bool audioIsMutedByAirConsole = false;
 
 	private void Awake() {
 		// Register all the events I need
 		AirConsole.instance.onReady += OnAirConsoleReady;
 		AirConsole.instance.onMessage += OnAirConsoleMessage;
-		AirConsole.instance.onMute += OnAirConsoleMute;
 		AirConsole.instance.onPause += OnAirConsolePause;
 		AirConsole.instance.onResume += OnAirConsoleResume;
 
@@ -59,7 +57,6 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		// Unregister events
 		AirConsole.instance.onReady -= OnAirConsoleReady;
 		AirConsole.instance.onMessage -= OnAirConsoleMessage;
-		AirConsole.instance.onMute -= OnAirConsoleMute;
 		AirConsole.instance.onPause -= OnAirConsolePause;
 		AirConsole.instance.onResume -= OnAirConsoleResume;
 	}
@@ -79,8 +76,8 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		}
 
 		// The game is initialized in the playing state without being muted
-		this.SetScreenState(GameStates.Playing);
-		this.SetAudioIsMutedState(false);
+		this.SetGameState(GameStates.Playing);
+		this.SetAudioIsPausedState(false);
 
 		// Start background music
 		backgroundMusic.Play();
@@ -93,15 +90,7 @@ public class GameStatesExampleLogic : MonoBehaviour {
 
 		var action = message["action"].ToString();
 
-		if (action == ControllerEvents.ToggleAudio) {
-			if (this.gameIsPausedByAirConsole) {
-				Debug.Log("Ignoring toggle-audio event because the game is paused by AirConsole");
-			} else if (this.audioIsMutedByAirConsole) {
-				Debug.Log("Ignoring toggle-audio event because the game is muted by AirConsole");
-			} else {
-				this.ToggleAudio(!AudioIsCurrentlyMuted());
-			}
-		} else if (action == ControllerEvents.PauseGame) {
+		if (action == ControllerEvents.PauseGame) {
 			if (this.gameIsPausedByAirConsole) {
 				Debug.Log("Ignoring pause-game event because the game is paused by AirConsole");
 			} else {
@@ -116,11 +105,6 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		}
 	}
 
-	private void OnAirConsoleMute(bool audioIsMuted) {
-		this.audioIsMutedByAirConsole = audioIsMuted;
-		this.ToggleAudio(audioIsMuted);
-	}
-
 	private void OnAirConsolePause() {
 		this.gameIsPausedByAirConsole = true;
 		this.PauseGame();
@@ -131,37 +115,26 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		this.ResumeGame();
 	}
 
-	private void ToggleAudio(bool audioIsMuted) {
-		if (audioIsMuted) {
-			this.PauseAudio();
-		} else {
-			this.UnPauseAudio();
-		}
-
-		// Update screen state so that the controllers can know if the audio is muted or not
-		AirConsole.instance.SetCustomDeviceStateProperty("audioIsMuted", audioIsMuted);
-	}
-
 	private void PauseAudio() {
 		AudioListener.pause = true;
-		this.SetAudioIsMutedState(true);
+		this.SetAudioIsPausedState(true);
 	}
 
 	private void UnPauseAudio() {
 		AudioListener.pause = false;
-		this.SetAudioIsMutedState(false);
+		this.SetAudioIsPausedState(false);
 	}
 
 	private void PauseGame() {
 		Time.timeScale = 0;
 		this.PauseAudio();
-		this.SetScreenState(GameStates.Paused);
+		this.SetGameState(GameStates.Paused);
 	}
 
 	private void ResumeGame() {
 		Time.timeScale = 1;
 		this.UnPauseAudio();
-		this.SetScreenState(GameStates.Playing);
+		this.SetGameState(GameStates.Playing);
 	}
 
 	public void AssignPlayerColors() {
@@ -190,9 +163,8 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		}
 	}
 
-	private void SetScreenState(string state) {
-		this.screenStateText.text = state;
-
+	private void SetGameState(string state) {
+		this.gameStateText.text = state;
 		// Set a custom device state property to inform all connected devices
 		// of the current game state
 		AirConsole.instance.SetCustomDeviceStateProperty("state", state);
@@ -201,17 +173,8 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		// Open controller-game-states.html to see how it is handled.
 	}
 
-	private void SetAudioIsMutedState(bool audioIsMuted) {
-		this.audioStateText.text = audioIsMuted ? "Muted (Paused)" : "Unmuted (Playing)";
-
-		// Set a custom device state property to inform all connected devices
-		// of the current audioIsMuted state
-		AirConsole.instance.SetCustomDeviceStateProperty("audioIsMuted", audioIsMuted);
-	}
-
-	private static bool AudioIsCurrentlyMuted() {
-		// Get the current audio state
-		return (bool)GetCurrentScreenState()["audioIsMuted"];
+	private void SetAudioIsPausedState(bool audioIsPaused) {
+		this.audioStateText.text = audioIsPaused ? "Paused" : "Playing";
 	}
 
 	private static JToken GetCurrentScreenState() {

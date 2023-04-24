@@ -54,8 +54,6 @@ namespace NDream.AirConsole {
 
 	public delegate void OnPremium (int device_id);
 
-	public delegate void OnMute (bool muted);
-
 	public delegate void OnPause ();
 
 	public delegate void OnResume ();
@@ -182,12 +180,6 @@ namespace NDream.AirConsole {
 		/// <param name="device_id">The device id of the premium device.</param>
 		/// </summary>
 		public event OnPremium onPremium;
-
-		/// <summary>
-		/// Gets called when the game should mute/unmute any sound.
-		/// <param name="muted">If true mute all sounds, if false resume all sounds</param>
-		/// </summary>
-		public event OnMute onMute;
 
 		/// <summary>
 		/// Gets called when the game should be paused.
@@ -1131,7 +1123,6 @@ namespace NDream.AirConsole {
 			wsListener.onPersistentDataStored += OnPersistentDataStored;
 			wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
 			wsListener.onPremium += OnPremium;
-			wsListener.onMute += OnMute;
 			wsListener.onPause += OnPause;
 			wsListener.onResume += OnResume;
 
@@ -1597,30 +1588,6 @@ namespace NDream.AirConsole {
 
 				if (Settings.debug.info) {
 					Debug.Log ("AirConsole: onPremium");
-				}
-			} catch (Exception e) {
-				if (Settings.debug.error) {
-					Debug.LogError (e.Message);
-				}
-			}
-		}
-
-		void OnMute (JObject msg) {
-			try {
-				Debug.Log("OnMute");
-				Debug.Log(msg);
-				bool mute = (bool)msg ["mute"];
-
-				if (this.onMute != null) {
-					eventQueue.Enqueue (delegate() {
-						if (this.onMute != null) {
-							this.onMute (mute);
-						}
-					});
-				}
-
-				if (Settings.debug.info) {
-					Debug.Log ("AirConsole: onMute");
 				}
 			} catch (Exception e) {
 				if (Settings.debug.error) {

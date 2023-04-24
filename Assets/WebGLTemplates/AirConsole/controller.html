@@ -76,14 +76,6 @@
         padding: 4vmin 11vmin;
         min-height: 40px;
       }
-
-      #audio-button {
-        position: absolute;
-        top: 0;
-        right: 0;
-        margin-top: 2vmin;
-        margin-right: 2vmin;
-      }
     </style>
 
     <script>
@@ -91,7 +83,6 @@
 
       function App() {
         var me = this;
-        var mute_button = document.getElementById("audio-button");
 
         me.airconsole = new AirConsole({
           orientation: "landscape",
@@ -132,13 +123,6 @@
                 document.getElementById("background").style.backgroundColor = device_data["playerColors"][me.airconsole.getDeviceId()];
               }
             }
-
-            // Update mute button label based on the current audio playing state
-            if (device_data.audioIsMuted) {
-              mute_button.innerHTML = "Unmute";
-            } else {
-              mute_button.innerHTML = "Mute";
-            }
           }
         };
 
@@ -170,17 +154,12 @@
 
       var CONTROLLER_EVENTS = {
         hello: 'hello',
-        toggleAudio: 'toggle-audio',
         pauseGame: 'pause-game',
         resumeGame: 'resume-game'
       };
 
       App.prototype.sendHelloMessage = function() {
         this.airconsole.message(window.AirConsole.SCREEN, { action: CONTROLLER_EVENTS.hello });
-      };
-
-      App.prototype.sendToggleAudioMessage = function() {
-        this.airconsole.message(window.AirConsole.SCREEN, { action: CONTROLLER_EVENTS.toggleAudio });
       };
 
       App.prototype.sendPauseGameMessage = function() {
@@ -214,8 +193,5 @@
       </div>
     </div>
 
-    <div id="audio-button" class="button" ontouchstart="window.app.sendToggleAudioMessage()">
-      Mute
-    </div>
   </body>
 </html>
