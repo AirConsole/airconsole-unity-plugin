@@ -117,15 +117,15 @@ public class GameStatesExampleLogic : MonoBehaviour {
 
 	private void PauseAudio() {
 		AudioListener.pause = true;
-        this.SetAudioIsPausedState(true);
-    }
+		this.SetAudioIsPausedState(true);
+	}
 
-    private void UnPauseAudio() {
+	private void UnPauseAudio() {
 		AudioListener.pause = false;
-        this.SetAudioIsPausedState(false);
-    }
+		this.SetAudioIsPausedState(false);
+	}
 
-    private void PauseGame() {
+	private void PauseGame() {
 		Time.timeScale = 0;
 		this.PauseAudio();
 		this.SetGameState(GameStates.Paused);
@@ -173,9 +173,9 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		// Open controller-game-states.html to see how it is handled.
 	}
 
-    private void SetAudioIsPausedState(bool audioIsPaused) {
-        this.audioStateText.text = audioIsPaused ? "Paused" : "Playing";
-    }
+	private void SetAudioIsPausedState(bool audioIsPaused) {
+		this.audioStateText.text = audioIsPaused ? "Paused" : "Playing";
+	}
 
 	private static JToken GetCurrentScreenState() {
 		return AirConsole.instance.GetCustomDeviceState(0);
