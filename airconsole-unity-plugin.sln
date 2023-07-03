@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp", "Assembly-CSharp.csproj", "{4DD84565-A08F-F9E5-8513-56C532CC9090}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "asset-store-tools-editor", "asset-store-tools-editor.csproj", "{B8D3B9F4-BF5E-8D97-343D-9CA3A689744F}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Assembly-CSharp-Editor", "Assembly-CSharp-Editor.csproj", "{DC4B6657-3BBB-B147-C60B-BE02A5BE0FC8}"
 EndProject
 Global
@@ -15,6 +17,10 @@ Global
 		{4DD84565-A08F-F9E5-8513-56C532CC9090}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4DD84565-A08F-F9E5-8513-56C532CC9090}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4DD84565-A08F-F9E5-8513-56C532CC9090}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8D3B9F4-BF5E-8D97-343D-9CA3A689744F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8D3B9F4-BF5E-8D97-343D-9CA3A689744F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8D3B9F4-BF5E-8D97-343D-9CA3A689744F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8D3B9F4-BF5E-8D97-343D-9CA3A689744F}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DC4B6657-3BBB-B147-C60B-BE02A5BE0FC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DC4B6657-3BBB-B147-C60B-BE02A5BE0FC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DC4B6657-3BBB-B147-C60B-BE02A5BE0FC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
