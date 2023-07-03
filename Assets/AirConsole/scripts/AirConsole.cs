@@ -1599,7 +1599,7 @@ namespace NDream.AirConsole {
 		void OnPause (JObject msg) {
 			try {
 				if (this.onPause != null) {
-                    this.onPause ();
+					this.onPause ();
 				}
 
 				if (Settings.debug.info) {
@@ -1615,7 +1615,7 @@ namespace NDream.AirConsole {
 		void OnResume (JObject msg) {
 			try {
 				if (this.onResume != null) {
-                    this.onResume ();
+					this.onResume ();
 				}
 
 				if (Settings.debug.info) {
