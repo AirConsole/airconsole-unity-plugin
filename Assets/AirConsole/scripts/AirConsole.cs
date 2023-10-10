@@ -61,6 +61,18 @@ namespace NDream.AirConsole {
 	public class AirConsole : MonoBehaviour {
 #if !DISABLE_AIRCONSOLE
 		#region airconsole api
+		/// <summary>
+		/// Gets the Version string to provide it to remote addressable path.
+		/// </summary>
+		/// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
+		public static string Version
+		{
+#if UNITY_ANDROID
+			get { return instance.androidTvGameVersion; }
+#else
+			get { return  string.Empty; }
+#endif
+		}
 
 		/// <summary>
 		/// AirConsole Singleton Instance.

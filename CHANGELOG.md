@@ -8,6 +8,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### New Features
 
+- AirConsole.Version: AirConsole now provides a static function to use for Remote Addressable of Android Builds.
 - Updated Unity Webview: The updated webview supports all 64Bit Intel and ARM Macs now, including and in particular Unity 2021 LTS and newer.
 
 ### Improvement
