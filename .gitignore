@@ -3,8 +3,12 @@
 # =============== #
 Temp/
 /Library/
+Logs/
+Temp/
+UserSettings/
 AssetStoreTools/
 AssetStoreTools.*
+
 # ===================================== #
 # Visual Studio / MonoDevelop generated #
 # ===================================== #
@@ -35,3 +39,9 @@ Thumbs.db
 # IDEA generated #
 # ============ #
 /.idea
+
+
+# ============ #
+# Visual Studio Code generated #
+# ============ #
+/.vs
