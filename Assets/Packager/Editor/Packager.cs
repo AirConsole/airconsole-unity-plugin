@@ -1,5 +1,6 @@
 #region
 using NDream.AirConsole;
+using System;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -28,18 +29,51 @@ namespace NDream.Unity
 
             string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
             if(Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
-            Directory.Move(webviewPackagePath, targetPath);
-            Debug.Log($"Moved {webviewPackagePath} to {targetPath}");
-            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-
+            CopyDirectory(webviewPackagePath, targetPath, true, filename => !filename.Contains(".asmdef"));
+            AssetDatabase.Refresh();
+            
             AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Edtor", "Assets/Plugins", "Assets/WebGLTemplates" },
                                         outputPath, ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies);
-
-            Directory.Move(targetPath, webviewPackagePath);
-            Debug.Log($"Moved {targetPath} to {webviewPackagePath}");
-            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport | ImportAssetOptions.ForceUpdate);
-
+            
+            Directory.Delete(targetPath, true);
+            AssetDatabase.Refresh();
+            
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
+        }
+        
+        // adapted from https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
+        private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive, Func<string, bool> include)
+        {
+            // Get information about the source directory
+            DirectoryInfo dir = new DirectoryInfo(sourceDir);
+
+            // Check if the source directory exists
+            if (!dir.Exists)
+                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+            // Cache directories before we start copying
+            DirectoryInfo[] dirs = dir.GetDirectories();
+
+            // Create the destination directory
+            Directory.CreateDirectory(destinationDir);
+
+            // Get the files in the source directory and copy to the destination directory
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                if(!include(file.FullName)) continue;
+                string targetFilePath = Path.Combine(destinationDir, file.Name);
+                file.CopyTo(targetFilePath);
+            }
+
+            // If recursive and copying subdirectories, recursively call this method
+            if (recursive)
+            {
+                foreach (DirectoryInfo subDir in dirs)
+                {
+                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                    CopyDirectory(subDir.FullName, newDestinationDir, true, include);
+                }
+            }
         }
     }
 }
