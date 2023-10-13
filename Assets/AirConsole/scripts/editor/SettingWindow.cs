@@ -1,6 +1,7 @@
 ﻿#if !DISABLE_AIRCONSOLE
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
@@ -16,14 +17,14 @@ namespace NDream.AirConsole.Editor {
 
 		GUIStyle styleBlack = new GUIStyle ();
 		private GUIStyle styleRedBold = new GUIStyle();
-		bool groupEnabled = false;
-		static Texture2D bg;
-		static Texture logo;
-		static Texture logoSmall;
-		static GUIContent titleInfo;
+		private bool groupEnabled = false;
+		private Texture2D bg;
+		private Texture logo;
+		private Texture logoSmall;
 		
 		Color darkRed = new Color(0.7f, 0.0f, 0.0f);
 
+		private string AndroidPluginPath = Path.Combine("Assets", "Plugins", "Android");
 		private bool debugFoldout;
 		private bool androidFoldout;
 		private bool webglFoldout;
@@ -35,7 +36,7 @@ namespace NDream.AirConsole.Editor {
 			logo = (Texture)Resources.Load ("AirConsoleLogoText");
 			// ReSharper disable once Unity.UnknownResource
 			logoSmall = (Texture)Resources.Load ("AirConsoleLogoSmall");
-			titleInfo = new GUIContent ("AirConsole", logoSmall, "AirConsole Settings");
+			titleContent = new GUIContent ("AirConsole", logoSmall, "AirConsole Settings");
 
 			// setup style for airconsole logo
 			styleBlack.normal.background = bg;
@@ -54,10 +55,17 @@ namespace NDream.AirConsole.Editor {
 			// SettingWindow.RemoveDisallowedUnityPackages();
 		}
 
+		private void OnDisable()
+		{
+			bg = null;
+			logo = null;
+			logoSmall = null;
+			Resources.UnloadUnusedAssets();
+		}
+
 		[MenuItem("Window/AirConsole/Settings")]
 		static void Init () {
 			SettingWindow window = (SettingWindow)EditorWindow.GetWindow (typeof(SettingWindow));
-			window.titleContent = titleInfo;
 			window.Show ();
 		}
 
@@ -94,6 +102,10 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.Space();
 			debugFoldout = EditorGUILayout.Foldout (debugFoldout, "Debug Configuration", true);
 			if(debugFoldout) DrawDebugFoldout();
+			
+			EditorGUILayout.Space();
+			EditorGUILayout.LabelField("Build Settings", EditorStyles.boldLabel);
+			DrawGeneralSettings();
 			
 			EditorGUILayout.Space();
 			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true);
@@ -143,11 +155,32 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.BeginVertical();
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
+			// TODO: check if 2020 requires it - I think no.
 			bool requiresGradle = !Application.unityVersion.Contains("202") || Application.unityVersion.Contains("2020");
-			// launcher gradle
+			
+			
+			// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
 			EditorGUILayout.BeginHorizontal();
-			GUI.enabled = requiresGradle;// && UnityEditor.pu;
-			GUILayout.Toggle(true, "Enable Custom Launcher Gradle Template");
+			GUI.enabled = requiresGradle;
+			bool mainGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+			if(GUILayout.Toggle(mainGradleEnabled, "Enable Custom Main Gradle Template"))
+			{
+				if(!mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")))
+				{
+					File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"),
+					          Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+					AssetDatabase.Refresh();
+				}
+
+			} else
+			{
+				if(mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
+				{
+					File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"),
+					          Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
+					AssetDatabase.Refresh();
+				}
+			}
 			GUI.enabled = true;
 			EditorGUILayout.EndHorizontal();
 			if(!requiresGradle)
@@ -159,10 +192,29 @@ namespace NDream.AirConsole.Editor {
 			// main gradle
 			EditorGUILayout.BeginHorizontal();
 			GUI.enabled = requiresGradle;
+			
 			// Debug.LogWarning($"Main: {EditorUserBuildSettings.GetPlatformSettings("Android", "BuildSubtarget")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("buildLauncherAppBundle", "true")}");
 			// Debug.LogWarning($"Main2: {EditorUserBuildSettings.GetPlatformSettings("Editor","AndroidCustomMainGradleTemplate")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("AndroidUseCustomMainGradleTemplate", "true")}");
 			// Debug.LogWarning($"Custom Main Template enabled: {EditorUserBuildSettings.GetPlatformSettings("Android", "buildAppBundle")} or1 {EditorUserBuildSettings.GetPlatformSettings("Android", "m_CustomLauncherGradleTemplate")}");
-			GUILayout.Toggle(true, "Enable Custom Main Gradle Template");
+			bool launcherGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+			if(GUILayout.Toggle(launcherGradleEnabled, "Enable Custom Launcher Gradle Template"))
+			{
+				if(!launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")))
+				{
+					File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"),
+					          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+					AssetDatabase.Refresh();
+				}
+
+			} else
+			{
+				if(launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
+				{
+					File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"),
+					          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
+					AssetDatabase.Refresh();
+				}
+			}
 			GUI.enabled = true;
 			EditorGUILayout.EndHorizontal();
 			if(!requiresGradle)
@@ -181,16 +233,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndHorizontal();
 			if(PlayerSettings.Android.blitType != AndroidBlitType.Auto && PlayerSettings.Android.blitType!= AndroidBlitType.Never)
 			{
-				GUILayout.Label("Unless absolutely required after tests on AndroidTV hardware it is recommended to configure Blit Type to be \"Auto\" or \"Never\"", styleRedBold);
-			}
-			
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField("Incremental GC:");
-			PlayerSettings.gcIncremental = EditorGUILayout.Toggle(PlayerSettings.gcIncremental);
-			EditorGUILayout.EndHorizontal();
-			if(!PlayerSettings.gcIncremental)
-			{
-				GUILayout.Label("Unless your tests on AndroidTV show a negative impact it is recommended to enable the incremental GC", styleRedBold);
+				GUILayout.Label("Unless your tests on AndroidTV hardware requires this, we recommended to use \"Never\" or \"Auto\"", styleRedBold);
 			}
 			
 			EditorGUILayout.BeginHorizontal();
@@ -204,7 +247,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndHorizontal();
 			if(newLevel != ManagedStrippingLevel.High)
 			{
-				GUILayout.Label("Unless your tests on AndroidTV show a negative impact it is recommended to always use High Managed Stripping.", styleRedBold);
+				GUILayout.Label("We recommended to use High Code Stripping for the best game experience.", styleRedBold);
 				GUILayout.Label("If you face issues, check your Link.xml file to not strip required functionality.", styleRedBold);
 			}
 			
@@ -254,6 +297,19 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndVertical();
 		}
 
+		private void DrawGeneralSettings()
+		{
+			using (new EditorGUILayout.HorizontalScope())
+			{
+				EditorGUILayout.LabelField("Incremental GC:");
+				PlayerSettings.gcIncremental = EditorGUILayout.Toggle(PlayerSettings.gcIncremental);
+			}
+			if(!PlayerSettings.gcIncremental)
+			{
+				GUILayout.Label("We recommended to enable this for the best game experience", styleRedBold);
+			}
+		}
+
 		private void DrawWebGLFoldout()
 		{
 			EditorGUILayout.BeginVertical();
@@ -262,15 +318,6 @@ namespace NDream.AirConsole.Editor {
 			
 			EditorGUILayout.Space(20);
 			GUILayout.Label ("Recommended Settings", EditorStyles.boldLabel);
-			
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.LabelField("Incremental GC:");
-			PlayerSettings.gcIncremental = EditorGUILayout.Toggle(PlayerSettings.gcIncremental);
-			EditorGUILayout.EndHorizontal();
-			if(!PlayerSettings.gcIncremental)
-			{
-				GUILayout.Label("Unless your tests on WebGL show a negative impact it is recommended to enable the incremental GC", styleRedBold);
-			}
 			
 			EditorGUILayout.BeginHorizontal();
 			EditorGUILayout.LabelField("Code Stripping Level:");
@@ -284,7 +331,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndHorizontal();
 			if(newStrippingLevel != ManagedStrippingLevel.High)
 			{
-				GUILayout.Label("Unless your tests on WebGL show a negative impact it is recommended to always use High Managed Stripping.", styleRedBold);
+				GUILayout.Label("We recommended to use High Code Stripping for the best game experience.", styleRedBold);
 				GUILayout.Label("If you face issues, check your Link.xml file to not strip required functionality.", styleRedBold);
 			}
 
@@ -588,6 +635,7 @@ namespace NDream.AirConsole.Editor {
 		
 	}
 	
+	// The implementation is based on the UnityEditor.PlayerSettingsEditor and its internal only aspects
 	internal static class PlayerSettingsHelper
 	{
 		public static void SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)

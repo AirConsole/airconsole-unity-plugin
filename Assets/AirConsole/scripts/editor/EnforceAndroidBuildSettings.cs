@@ -16,7 +16,6 @@ namespace NDream.AirConsole.Editor
         private static bool ShallExecute()
         {
             if(EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) return false;
-            if(PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android).Contains("DISABLE_AIRCONSOLE")) return false;
 
             return true;
         }
@@ -35,7 +34,8 @@ namespace NDream.AirConsole.Editor
 
             if(SettingWindow.AndroidBuildNotAllowed) throw new Exception("Android build is not allowed due to disallowed packages");
 
-            SettingWindow.CheckUnityVersionForBuildSupport();
+            // TODO (Marc): Act based on identified need for Query and Intent in AndroidManifest.xml
+            // SettingWindow.CheckUnityVersionForBuildSupport();
             SettingWindow.ApplyAndroidRequiredSettings();
             SettingWindow.QueryAndApplyRecommendedAndroidSettings();
         }
