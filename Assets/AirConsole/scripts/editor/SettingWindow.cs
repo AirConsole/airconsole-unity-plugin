@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
+using System.Reflection;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEngine.Rendering;
-using WebSocketSharp;
 using AndroidSdkVersions = UnityEditor.AndroidSdkVersions;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
@@ -26,6 +26,7 @@ namespace NDream.AirConsole.Editor {
 
 		private bool debugFoldout;
 		private bool androidFoldout;
+		private bool webglFoldout;
 
 		public void OnEnable () {
 			// ReSharper disable once Unity.UnknownResource
@@ -43,6 +44,7 @@ namespace NDream.AirConsole.Editor {
 			styleBlack.padding.right = 5;
 
 			styleRedBold.normal.textColor = darkRed;
+			styleRedBold.wordWrap = true;
 			styleRedBold.fontStyle = FontStyle.Bold;
 			styleRedBold.margin.top = 5;
 			styleRedBold.padding.right = 5;
@@ -60,7 +62,6 @@ namespace NDream.AirConsole.Editor {
 		}
 
 		void OnGUI () {
-
 			// show logo & version
 			EditorGUILayout.BeginHorizontal (styleBlack, GUILayout.Height (30));
 			GUILayout.Label (logo, GUILayout.Width (128), GUILayout.Height (30));
@@ -89,16 +90,23 @@ namespace NDream.AirConsole.Editor {
 			}
 
 			GUILayout.EndHorizontal ();
-
+			
+			EditorGUILayout.Space();
 			debugFoldout = EditorGUILayout.Foldout (debugFoldout, "Debug Configuration", true);
 			if(debugFoldout) DrawDebugFoldout();
 			
+			EditorGUILayout.Space();
 			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true);
 			if(androidFoldout) DrawAndroidFoldout();
+			
+			EditorGUILayout.Space();
+			webglFoldout = EditorGUILayout.Foldout (webglFoldout, "WebGL Configuration", true);
+			if(webglFoldout) DrawWebGLFoldout();
 			
 			DrawFooter();
 
 			SettingWindow.ApplyDefaultWebGLSettings();
+			SettingWindow.ApplyAndroidRequiredSettings();
 		}
 
 		private void DrawFooter()
@@ -132,7 +140,6 @@ namespace NDream.AirConsole.Editor {
 
 		private void DrawAndroidFoldout()
 		{
-			
 			EditorGUILayout.BeginVertical();
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
@@ -152,7 +159,9 @@ namespace NDream.AirConsole.Editor {
 			// main gradle
 			EditorGUILayout.BeginHorizontal();
 			GUI.enabled = requiresGradle;
-			Debug.LogWarning($"Custom Main Template enabled: {EditorUserBuildSettings.GetPlatformSettings("Android", "buildAppBundle")} or1 {EditorUserBuildSettings.GetPlatformSettings("Android", "m_CustomLauncherGradleTemplate")}");
+			// Debug.LogWarning($"Main: {EditorUserBuildSettings.GetPlatformSettings("Android", "BuildSubtarget")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("buildLauncherAppBundle", "true")}");
+			// Debug.LogWarning($"Main2: {EditorUserBuildSettings.GetPlatformSettings("Editor","AndroidCustomMainGradleTemplate")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("AndroidUseCustomMainGradleTemplate", "true")}");
+			// Debug.LogWarning($"Custom Main Template enabled: {EditorUserBuildSettings.GetPlatformSettings("Android", "buildAppBundle")} or1 {EditorUserBuildSettings.GetPlatformSettings("Android", "m_CustomLauncherGradleTemplate")}");
 			GUILayout.Toggle(true, "Enable Custom Main Gradle Template");
 			GUI.enabled = true;
 			EditorGUILayout.EndHorizontal();
@@ -172,8 +181,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndHorizontal();
 			if(PlayerSettings.Android.blitType != AndroidBlitType.Auto && PlayerSettings.Android.blitType!= AndroidBlitType.Never)
 			{
-				GUILayout.Label("Unless absolutely required after tests on AndroidTV hardware", styleRedBold);
-				GUILayout.Label("it is recommended to configure Blit Type to be \"Auto\" or \"Never\"", styleRedBold);
+				GUILayout.Label("Unless absolutely required after tests on AndroidTV hardware it is recommended to configure Blit Type to be \"Auto\" or \"Never\"", styleRedBold);
 			}
 			
 			EditorGUILayout.BeginHorizontal();
@@ -182,16 +190,133 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.EndHorizontal();
 			if(!PlayerSettings.gcIncremental)
 			{
-				GUILayout.Label("Unless your tests on AndroidTV show a negative impact", styleRedBold);
-				GUILayout.Label("it is recommended to enable the incremental GC", styleRedBold);
+				GUILayout.Label("Unless your tests on AndroidTV show a negative impact it is recommended to enable the incremental GC", styleRedBold);
+			}
+			
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("Code Stripping Level:");
+			ManagedStrippingLevel currentLevel = PlayerSettings.GetManagedStrippingLevel(BuildTargetGroup.Android);
+			ManagedStrippingLevel newLevel = (ManagedStrippingLevel)EditorGUILayout.EnumPopup(currentLevel);
+			if(currentLevel != newLevel)
+			{
+				PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, newLevel);
+			}
+			EditorGUILayout.EndHorizontal();
+			if(newLevel != ManagedStrippingLevel.High)
+			{
+				GUILayout.Label("Unless your tests on AndroidTV show a negative impact it is recommended to always use High Managed Stripping.", styleRedBold);
+				GUILayout.Label("If you face issues, check your Link.xml file to not strip required functionality.", styleRedBold);
+			}
+			
+			if(!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android))
+			{
+				if(!EditorUtility.DisplayDialog("Verification",
+                                                "You do currently not have Multithreaded Rendering enabled.\nPlease confirm that this is required as it decreases performance", "Yes", "No"))
+                {
+                    Debug.Log("Enable Multithreaded Rendering");
+                    PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android,true);
+                }
+                else
+                {
+                    Debug.LogWarning("User declined to enable Mixed Reality Rendering");
+                }
+			}
+
+			if(!PlayerSettingsHelper.GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Android))
+			{
+				if(!EditorUtility.DisplayDialog("Verification",
+                                                "You do currently not have Low Lightmap Encoding Quality enabled for Android.\nPlease confirm that you do not use Lightmaps in ES2 otherwise you will face issues", "Yes", "No"))
+                {
+                    Debug.Log("Enable Low Lightmap Encoding Quality");
+                    PlayerSettingsHelper.SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Android);
+                }
+				else
+				{
+					Debug.LogWarning("User declined to set Lightmap Encoding to low quality for ES2");
+				}
+			}
+
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("API Compatibility Level:");
+			ApiCompatibilityLevel currentApiLevel = PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Android);
+			ApiCompatibilityLevel newApiLevel = (ApiCompatibilityLevel)EditorGUILayout.EnumPopup(currentApiLevel);
+			if(currentApiLevel != newApiLevel)
+			{
+				Debug.Log($"Set API Compatibility Level to {newApiLevel}");
+				PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Android, newApiLevel);
+			}
+			EditorGUILayout.EndHorizontal();
+			if(newApiLevel != ApiCompatibilityLevel.NET_Standard_2_0)
+			{
+				GUILayout.Label("Unless your tests on AndroidTV show a negative impact it is recommended to use .NET Standard as it increases performance and decreases the size.", styleRedBold);
 			}
 			
 			EditorGUILayout.EndVertical();
 		}
 
+		private void DrawWebGLFoldout()
+		{
+			EditorGUILayout.BeginVertical();
+			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
+			
+			
+			EditorGUILayout.Space(20);
+			GUILayout.Label ("Recommended Settings", EditorStyles.boldLabel);
+			
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("Incremental GC:");
+			PlayerSettings.gcIncremental = EditorGUILayout.Toggle(PlayerSettings.gcIncremental);
+			EditorGUILayout.EndHorizontal();
+			if(!PlayerSettings.gcIncremental)
+			{
+				GUILayout.Label("Unless your tests on WebGL show a negative impact it is recommended to enable the incremental GC", styleRedBold);
+			}
+			
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("Code Stripping Level:");
+			ManagedStrippingLevel currentStrippingLevel = PlayerSettings.GetManagedStrippingLevel(BuildTargetGroup.WebGL);
+			ManagedStrippingLevel newStrippingLevel = (ManagedStrippingLevel)EditorGUILayout.EnumPopup(currentStrippingLevel);
+			if(currentStrippingLevel != newStrippingLevel)
+			{
+				Debug.Log($"Update managed stripping level to {newStrippingLevel}");
+				PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.WebGL, newStrippingLevel);
+			}
+			EditorGUILayout.EndHorizontal();
+			if(newStrippingLevel != ManagedStrippingLevel.High)
+			{
+				GUILayout.Label("Unless your tests on WebGL show a negative impact it is recommended to always use High Managed Stripping.", styleRedBold);
+				GUILayout.Label("If you face issues, check your Link.xml file to not strip required functionality.", styleRedBold);
+			}
+
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("API Compatibility Level:");
+			ApiCompatibilityLevel currentApiLevel = PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.WebGL);
+			ApiCompatibilityLevel newApiLevel = (ApiCompatibilityLevel)EditorGUILayout.EnumPopup(currentApiLevel);
+			if(currentApiLevel != newApiLevel)
+			{
+				Debug.Log($"Set API Compatibility Level to {newApiLevel}");
+				PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.WebGL, newApiLevel);
+			}
+			EditorGUILayout.EndHorizontal();
+			if(newApiLevel != ApiCompatibilityLevel.NET_Standard_2_0)
+			{
+				GUILayout.Label("Unless your tests on WebGL show a negative impact it is recommended to use .NET Standard as it increases performance and decreases the size.", styleRedBold);
+			}
+			
+			EditorGUILayout.EndVertical();
+		}
+		
 		internal static void ApplyAndroidRequiredSettings()
 		{
+			// TODO: required or recommended?
 			PlayerSettings.Android.optimizedFramePacing = true;
+
+			if(PlayerSettings.Android.androidTargetDevices != AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly)
+			{
+				Debug.Log("Configure Android target devices to AndroidTV and Phones/Tablets only, removing ChromeOS");
+				PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
+			}
+			
 			if(PlayerSettings.Android.fullscreenMode != FullScreenMode.FullScreenWindow)
 			{
 				Debug.Log("Enable Android Fullscreen Mode");
@@ -221,6 +346,12 @@ namespace NDream.AirConsole.Editor {
 				PlayerSettings.Android.androidTVCompatibility = true;
 			}
 
+			if(PlayerSettingsHelper.GetAndroidGamepadSupportLevel() != AndroidGamepadSupportLevel.SupportsDPad)
+			{
+				Debug.Log("Reduce Android Gamepad Support to only DPad");
+                PlayerSettingsHelper.SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel.SupportsDPad);
+			}
+
 			if(!PlayerSettings.Android.androidIsGame)
 			{
 				Debug.Log("Enable Android is Game PlayerSettings flag");
@@ -238,31 +369,19 @@ namespace NDream.AirConsole.Editor {
 				Debug.Log("Disable Android ChromeOS Input Emulation flag");
                 PlayerSettings.Android.chromeosInputEmulation = false;
 			}
-
-			int minSdk = (int)AndroidSdkVersions.AndroidApiLevel19;
-			AndroidSdkVersions minSdkVersion = (AndroidSdkVersions)Mathf.Max(minSdk, 
-			                                                                 Enum.GetValues(typeof(AndroidSdkVersions)).Cast<AndroidSdkVersions>().ToArray()
-			                                                                     .Select(version => (int)version)
-			                                                                     .Where(version => version >= minSdk)
-			                                                                     .Min());
-			AndroidSdkVersions originalMinSdkVersion = PlayerSettings.Android.minSdkVersion;
-			if(minSdkVersion != originalMinSdkVersion)
+			
+			if((int)PlayerSettings.Android.minSdkVersion > 22)
 			{
 	
-                Debug.LogWarning($"Set Android API Level to {minSdkVersion}");
-                PlayerSettings.Android.minSdkVersion = minSdkVersion;
+                Debug.LogWarning($"Set Android API Level to 22");
+                PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)22;
           
 			}
 			
-			AndroidSdkVersions originalTargetSdkVersion = PlayerSettings.Android.targetSdkVersion;
-			AndroidSdkVersions targetSdkVersion = (AndroidSdkVersions)Enum.GetValues(typeof(AndroidSdkVersions)).Cast<AndroidSdkVersions>().ToArray()
-			                                                           .Select(version => (int)version)
-			                                                           .Where(version => version >= (int)minSdkVersion)
-			                                                           .Max();
-			if(originalTargetSdkVersion != targetSdkVersion)
+			if((int)PlayerSettings.Android.targetSdkVersion < 33 && PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto)
 			{
-				Debug.LogWarning("Set Target Android SDK Version to " + targetSdkVersion);
-                PlayerSettings.Android.targetSdkVersion = targetSdkVersion;
+				Debug.LogWarning($"Set Target Android SDK Version to API Level 33");
+                PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)33;
 			}
 
 			GraphicsDeviceType[] androidGraphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
@@ -272,6 +391,12 @@ namespace NDream.AirConsole.Editor {
 				Debug.Log("Enable OpenES2 in Android GraphicsAPIs and disable DefaultGraphicsAPI");
 				PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, androidGraphicsAPIs.Append(GraphicsDeviceType.OpenGLES2).ToArray());
 				PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+			}
+
+			if(!PlayerSettings.stripEngineCode)
+			{
+				Debug.Log("Enable Engine Code stripping");
+                PlayerSettings.stripEngineCode = true;
 			}
 
 			if(PlayerSettings.GetScriptingBackend(BuildTargetGroup.Android) != ScriptingImplementation.IL2CPP)
@@ -289,8 +414,26 @@ namespace NDream.AirConsole.Editor {
 				Debug.Log("Enable ARM64 Architecture");
 				PlayerSettings.Android.targetArchitectures |= AndroidArchitecture.ARM64;
 			}
+			
+			PlayerSettings.Android.targetArchitectures &= ~AndroidArchitecture.X86 & ~AndroidArchitecture.X86_64;
 		}
 
+		internal static void CheckUnityVersionForBuildSupport()
+		{
+			if(!Application.unityVersion.Contains("202") && 
+                EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android && 
+                !EditorUserBuildSettings.exportAsGoogleAndroidProject)
+			{
+				if(EditorUtility.DisplayDialog("IMPORTANT",
+				                               "Unity 2019 requires Android Studio to use Android SDK 30 features and Gradle 5.6. We will update the Build Settings now to export an Android Studio Project",
+				                               "I understand, please build an Android Studio project",
+				                               "I prefer to update the project to Unity 2020.3 or newer!"))
+				{
+					EditorUserBuildSettings.exportAsGoogleAndroidProject = true;
+				}
+			}
+		}
+		
 		internal static bool AndroidBuildNotAllowed;
 		// static RemoveRequest Request;
 		static ListRequest Request;
@@ -316,7 +459,7 @@ namespace NDream.AirConsole.Editor {
 			Request = Client.List(true, true);
 			EditorApplication.update -= Progress;
 			EditorApplication.update += Progress;
-			EditorApplication.LockReloadAssemblies();
+			// EditorApplication.LockReloadAssemblies();
 		}
 		static void Progress()
 		{
@@ -326,11 +469,10 @@ namespace NDream.AirConsole.Editor {
 				{
 					case StatusCode.Success:
 					{
-						foreach (PackageInfo packageInfo in SettingWindow.Request.Result)
-						{
-							Debug.Log(packageInfo.packageId);
-						}
-						
+						// foreach (PackageInfo packageInfo in SettingWindow.Request.Result)
+						// {
+						// 	Debug.Log(packageInfo.packageId);
+						// }
 						string notAllowedPackage = string.Empty;
 						foreach(PackageInfo packageInfo in Request.Result)
 						{
@@ -370,10 +512,11 @@ namespace NDream.AirConsole.Editor {
 					}
 				}
 				EditorApplication.update -= Progress;
-				EditorApplication.UnlockReloadAssemblies();
+				// EditorApplication.UnlockReloadAssemblies();
 			}
 		}
 
+		[MenuItem("Window/AirConsole/Recommendations/Android")]
 		internal static void QueryAndApplyRecommendedAndroidSettings()
 		{
 			if(PlayerSettings.GetManagedStrippingLevel(BuildTargetGroup.Android) != ManagedStrippingLevel.High)
@@ -389,6 +532,48 @@ namespace NDream.AirConsole.Editor {
 					Debug.LogWarning("User declined to set Managed Stripping Level to High");
 				}
 			}
+			
+			if(!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android))
+			{
+				if(!EditorUtility.DisplayDialog("Verification",
+                                                "You do currently not have Multithreaded Rendering enabled.\nPlease confirm that this is required as it decreases performance", "Yes", "No"))
+                {
+                    Debug.Log("Enable Multithreaded Rendering for Android");
+                    PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android,true);
+                }
+                else
+                {
+                    Debug.LogWarning("User declined to enable Multithreaded Rendering on Android");
+                }
+			}
+
+			if(!PlayerSettingsHelper.GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Android))
+			{
+				if(!EditorUtility.DisplayDialog("Verification",
+                                                "You do currently not have Low Lightmap Encoding Quality enabled for Android.\nPlease confirm that you do not use Lightmaps in ES2 otherwise you will face issues", "Yes", "No"))
+                {
+                    Debug.Log("Enable Low Lightmap Encoding Quality");
+                    PlayerSettingsHelper.SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup.Android);
+                }
+				else
+				{
+					Debug.LogWarning("User declined to set Lightmap Encoding to low quality for ES2");
+				}
+			}
+
+			if(PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.Android) != ApiCompatibilityLevel.NET_Standard_2_0)
+			{
+				if(!EditorUtility.DisplayDialog("Verification",
+                                                "You do currently not have API Compatibility Level set to.NET Standard 2.0.\nPlease confirm that this is required as it decreases performance and increases the size", "Yes", "No"))
+                {
+                    Debug.Log("Set API Compatibility Level to.NET Standard 2.0");
+                    PlayerSettings.SetApiCompatibilityLevel(BuildTargetGroup.Android, ApiCompatibilityLevel.NET_Standard_2_0);
+                }
+                else
+                {
+                    Debug.LogWarning("User declined to set API Compatibility Level to.NET Standard 2.0");
+                }
+			}
 		}
 		
 		private static void ApplyDefaultWebGLSettings()
@@ -401,6 +586,48 @@ namespace NDream.AirConsole.Editor {
 			}
 		}
 		
+	}
+	
+	internal static class PlayerSettingsHelper
+	{
+		public static void SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
+		{
+			// Get the internal static method.
+			MethodInfo method = typeof(PlayerSettings).GetMethod("SetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
+
+			// Get the internal enum type.
+			Type enumType = typeof(PlayerSettings).Assembly.GetType("UnityEditor.LightmapEncodingQuality");
+			
+			// Get the field value of the given enum value.
+			int qualityLevelValue = (int)enumType.GetField("Low").GetValue(null);
+			
+			// Invoke the method with the given parameters.
+			method.Invoke(null, new object[] { platformGroup, qualityLevelValue });
+		}
+		
+		public static bool GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
+		{
+			// Get the internal static method.
+			MethodInfo method = typeof(PlayerSettings).GetMethod("GetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
+
+			// Invoke the method with the given parameters.
+			object qualityLevel = method.Invoke(null, new object[] { platformGroup });
+
+			return qualityLevel.ToString().ToLower() == "low";
+		}
+		
+		public static AndroidGamepadSupportLevel GetAndroidGamepadSupportLevel()
+		{
+			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
+			int gamepadSupportLevel = (int)property.GetValue(null);
+			return (AndroidGamepadSupportLevel)gamepadSupportLevel;
+		}
+		
+		public static void SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel gamepadSupportLevel)
+		{
+			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
+			property.SetValue(null, (int)gamepadSupportLevel);
+		}
 	}
 }
 #endif
