@@ -1,11 +1,15 @@
 ﻿#if !DISABLE_AIRCONSOLE
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
+using System.Net;
 using System.Reflection;
+using System.Text;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEngine.Rendering;
@@ -15,17 +19,49 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 namespace NDream.AirConsole.Editor {
 	public class SettingWindow : EditorWindow {
 
+		#if !UNITY_2019_4_OR_NEWER
+		[InitializeOnLoadMethod]
+		private static void UnsupportedUnityVersion()
+		{
+			if(EditorUtility.DisplayDialog("Unsupported Unity Version", "AirConsole only supports Unity 2019.4 or newer.", "I understand that AirConsole is being disabled"))
+			{
+				PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, "DISABLE_AIRCONSOLE;"+PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android));
+				PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL, "DISABLE_AIRCONSOLE;"+PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL));
+			}
+		}
+		#elif !UNITY_2021_3_OR_NEWER
+		private const string AC_OUTDATEDVERSION_PREFS = "AirConsole_OutdatedUnityVersion";
+		[InitializeOnLoadMethod]
+		private static void OutdatedUnityVersion()
+		{
+			if(EditorPrefs.GetString(AC_OUTDATEDVERSION_PREFS, "") != Application.unityVersion && EditorUtility.DisplayDialog("Old Unity Version", "AirConsole recommends\n- 2021.3 LTS\n- 2022.3 LTS", "OK"))
+			{
+				EditorPrefs.SetString(AC_OUTDATEDVERSION_PREFS, Application.unityVersion);
+			}
+		}
+		#endif
+		
+		
+		[MenuItem("Window/AirConsole/Clear AC Prefs")]
+		private static void ClearPrefs() {
+            EditorPrefs.DeleteKey(SettingWindow.AC_OUTDATEDVERSION_PREFS);
+            EditorPrefs.DeleteKey(SettingWindow.AC_LATEST_VERSION_PREFS);
+        }
+		
+		const string AC_LATEST_VERSION_PREFS = "AC_LATEST_VERSION";
+		
 		GUIStyle styleBlack = new GUIStyle ();
+		GUIStyle updateBanner = new GUIStyle ();
+		GUIStyle platformFoldout = new GUIStyle ();
+		private Texture2D updateBannerBg;
 		private GUIStyle styleRedBold = new GUIStyle();
-		private bool groupEnabled = false;
 		private Texture2D bg;
 		private Texture logo;
 		private Texture logoSmall;
 		
 		Color darkRed = new Color(0.7f, 0.0f, 0.0f);
 
-		private string AndroidPluginPath = Path.Combine("Assets", "Plugins", "Android");
-		private bool debugFoldout;
+		private readonly string AndroidPluginPath = Path.Combine("Assets", "Plugins", "Android");
 		private bool androidFoldout;
 		private bool webglFoldout;
 
@@ -50,9 +86,32 @@ namespace NDream.AirConsole.Editor {
 			styleRedBold.margin.top = 5;
 			styleRedBold.padding.right = 5;
 			styleRedBold.padding.left = 5;
-			
+
+			updateBannerBg = MakeTex(1, 1, new Color(0.68f, 0.94f, 0f));
+			updateBanner.normal.background = updateBannerBg;
+			updateBanner.normal.textColor = Color.black;
+			updateBanner.fontStyle = FontStyle.Bold;
+			updateBanner.padding = new RectOffset(10, 20, 10, 10);
+
+			platformFoldout = new GUIStyle(EditorStyles.foldout)
+			{
+				fontStyle = FontStyle.Bold
+			};
+
 			ApplyAndroidRequiredSettings();
 			// SettingWindow.RemoveDisallowedUnityPackages();
+		}
+		
+		private Texture2D MakeTex(int width, int height, Color col) {
+			Color[] pix = new Color[width * height];
+			for (int i = 0; i < pix.Length; i++) {
+				pix[i] = col;
+			}
+   
+			Texture2D result = new Texture2D(width, height);
+			result.SetPixels(pix);
+			result.Apply();
+			return result;
 		}
 
 		private void OnDisable()
@@ -60,24 +119,132 @@ namespace NDream.AirConsole.Editor {
 			bg = null;
 			logo = null;
 			logoSmall = null;
+			updateBannerBg = null;
 			Resources.UnloadUnusedAssets();
 		}
 
 		[MenuItem("Window/AirConsole/Settings")]
-		static void Init () {
+		static void Init ()
+		{
+			if(!EditorPrefs.HasKey(SettingWindow.AC_LATEST_VERSION_PREFS))
+			{
+				HttpWebRequest request = (HttpWebRequest)HttpWebRequest.Create("https://api.github.com/repos/AirConsole/airconsole-unity-plugin/releases");
+                request.Method = "GET";
+                request.ContentType = "application/json";
+         
+                request.Accept = "application/vnd.github+json";
+                request.Headers.Add("X-GitHub-Api-Version: 2022-11-28");
+                request.UserAgent = "AirConsole";
+                
+                try
+                {
+                    using(HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+                    {
+                        Debug.Log("Publish Response: " + (int)response.StatusCode + ", " + response.StatusDescription);
+                        if((int)response.StatusCode == 200)
+                        {
+	                        string json = "[]";
+	                        using (StreamReader reader = new StreamReader(response.GetResponseStream(), Encoding.UTF8))
+	                        {
+		                        json = reader.ReadToEnd();
+	                        }
+	                        List<JToken> releases = JsonConvert.DeserializeObject<List<JToken>>(json);
+							List<float> versions = releases
+							                      ?.Where(t => t.HasValues && !string.IsNullOrEmpty(t["tag_name"].ToString()))
+							                      .Select(t => t["tag_name"].ToString().Replace("v",""))
+							                      .Select(float.Parse)
+							                      .ToList();
+							if(versions != null)
+							{
+								EditorPrefs.SetFloat(SettingWindow.AC_LATEST_VERSION_PREFS, versions.First());
+							}
+                        }
+                    }
+                }
+                catch(Exception e)
+                {
+                    Debug.LogError(e.ToString());
+                }
+			}
 			SettingWindow window = (SettingWindow)EditorWindow.GetWindow (typeof(SettingWindow));
 			window.Show ();
 		}
 
 		void OnGUI () {
+			if(!new[] { BuildTarget.Android, BuildTarget.WebGL }.Contains(EditorUserBuildSettings.activeBuildTarget))
+			{
+				GUILayout.Label("AirConsole only supports Android and WebGL.", styleRedBold);
+				return;
+			}
+			
 			// show logo & version
 			EditorGUILayout.BeginHorizontal (styleBlack, GUILayout.Height (30));
 			GUILayout.Label (logo, GUILayout.Width (128), GUILayout.Height (30));
 			GUILayout.FlexibleSpace ();
 			GUILayout.Label ("v" + Settings.VERSION, styleBlack);
 			EditorGUILayout.EndHorizontal ();
+			
+			DrawUpdatedVersionNotification();
+			
+			DrawEditorSettings();
+			
+			EditorGUILayout.Space(20);
+			EditorGUILayout.LabelField("Build Settings", EditorStyles.boldLabel);
+			DrawGeneralSettings();
+			
+			EditorGUILayout.Space(20);
+			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true, platformFoldout);
+			if(androidFoldout) DrawAndroidFoldout();
+			
+			EditorGUILayout.Space(20);
+			webglFoldout = EditorGUILayout.Foldout (webglFoldout, "WebGL Configuration", true, platformFoldout);
+			if(webglFoldout) DrawWebGLFoldout();
+			EditorGUILayout.Space();
+			
+			DrawFooter();
 
-			GUILayout.Label ("AirConsole Settings", EditorStyles.boldLabel);
+			SettingWindow.ApplyDefaultWebGLSettings();
+			SettingWindow.ApplyAndroidRequiredSettings();
+		}
+
+		private void DrawUpdatedVersionNotification()
+		{
+			if(EditorPrefs.HasKey(SettingWindow.AC_LATEST_VERSION_PREFS) &&
+			   float.TryParse(Settings.VERSION, out float pluginVersion) && 
+			   EditorPrefs.GetFloat(AC_LATEST_VERSION_PREFS, 0f) > pluginVersion)
+			{
+				EditorGUILayout.BeginHorizontal(updateBanner);
+				EditorGUILayout.Space(20);
+				GUILayout.Label("Newer Version");
+				GUILayout.Label($"v{EditorPrefs.GetFloat(AC_LATEST_VERSION_PREFS)}",EditorStyles.boldLabel);
+				GUILayout.Label("available");
+				GUILayout.FlexibleSpace();
+				if(GUILayout.Button("Download now"))
+				{
+					Application.OpenURL("https://github.com/AirConsole/airconsole-unity-plugin/releases");
+				}
+				EditorGUILayout.EndHorizontal();
+				EditorGUILayout.Space(20);
+			}
+		}
+
+		private void DrawFooter()
+		{
+			EditorGUILayout.BeginHorizontal(styleBlack);
+
+			GUILayout.FlexibleSpace();
+			if(GUILayout.Button("Reset Settings", GUILayout.MaxWidth(110)))
+			{
+				Extentions.ResetDefaultValues();
+			}
+
+			GUILayout.EndHorizontal();
+		}
+
+		private void DrawEditorSettings()
+		{
+			
+			GUILayout.Label ("Editor Connection Settings", EditorStyles.boldLabel);
 
 			Settings.webSocketPort = EditorGUILayout.IntField ("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth (200));
 			EditorPrefs.SetInt ("webSocketPort", Settings.webSocketPort);
@@ -100,58 +267,21 @@ namespace NDream.AirConsole.Editor {
 			GUILayout.EndHorizontal ();
 			
 			EditorGUILayout.Space();
-			debugFoldout = EditorGUILayout.Foldout (debugFoldout, "Debug Configuration", true);
-			if(debugFoldout) DrawDebugFoldout();
-			
-			EditorGUILayout.Space();
-			EditorGUILayout.LabelField("Build Settings", EditorStyles.boldLabel);
-			DrawGeneralSettings();
-			
-			EditorGUILayout.Space();
-			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true);
-			if(androidFoldout) DrawAndroidFoldout();
-			
-			EditorGUILayout.Space();
-			webglFoldout = EditorGUILayout.Foldout (webglFoldout, "WebGL Configuration", true);
-			if(webglFoldout) DrawWebGLFoldout();
-			
-			DrawFooter();
+			GUILayout.Label("Editor Debug Logging Settings", EditorStyles.boldLabel);
 
-			SettingWindow.ApplyDefaultWebGLSettings();
-			SettingWindow.ApplyAndroidRequiredSettings();
-		}
-
-		private void DrawFooter()
-		{
-			EditorGUILayout.BeginHorizontal(styleBlack);
-
-			GUILayout.FlexibleSpace();
-			if(GUILayout.Button("Reset Settings", GUILayout.MaxWidth(110)))
-			{
-				Extentions.ResetDefaultValues();
-			}
-
-			GUILayout.EndHorizontal();
-		}
-
-		private void DrawDebugFoldout()
-		{
-			groupEnabled = EditorGUILayout.BeginToggleGroup ("Debug Settings", groupEnabled);
-
-			Settings.debug.info = EditorGUILayout.Toggle ("Info", Settings.debug.info);
+			Settings.debug.info = EditorGUILayout.Toggle ("Log Info", Settings.debug.info);
 			EditorPrefs.SetBool ("debugInfo", Settings.debug.info);
 
-			Settings.debug.warning = EditorGUILayout.Toggle ("Warning", Settings.debug.warning);
+			Settings.debug.warning = EditorGUILayout.Toggle ("Log Warnings", Settings.debug.warning);
 			EditorPrefs.SetBool ("debugWarning", Settings.debug.warning);
 
-			Settings.debug.error = EditorGUILayout.Toggle ("Error", Settings.debug.error);
+			Settings.debug.error = EditorGUILayout.Toggle ("Log Errors", Settings.debug.error);
 			EditorPrefs.SetBool ("debugError", Settings.debug.error);
-
-			EditorGUILayout.EndToggleGroup ();
 		}
 
 		private void DrawAndroidFoldout()
 		{
+			EditorGUILayout.Space(5);
 			EditorGUILayout.BeginVertical();
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
@@ -312,9 +442,28 @@ namespace NDream.AirConsole.Editor {
 
 		private void DrawWebGLFoldout()
 		{
+			EditorGUILayout.Space(5);
 			EditorGUILayout.BeginVertical();
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
+			EditorGUILayout.BeginHorizontal();
+			EditorGUILayout.LabelField("Compression Format:");
+			WebGLCompressionFormat currentCompression = PlayerSettings.WebGL.compressionFormat;
+			WebGLCompressionFormat newCompression = (WebGLCompressionFormat)EditorGUILayout.EnumPopup(currentCompression);
+			if(currentCompression != newCompression)
+			{
+				Debug.Log($"Update WebGL compression to {newCompression}");
+				PlayerSettings.WebGL.compressionFormat = newCompression;
+			}
+			EditorGUILayout.EndHorizontal();
+			if(newCompression == WebGLCompressionFormat.Disabled)
+			{
+				GUILayout.Label("We recommended to GZip compression for the best game experience.", styleRedBold);
+			}
+			if(newCompression == WebGLCompressionFormat.Brotli)
+			{
+				GUILayout.Label("ERROR: AirConsole does not support Brotli compression!", styleRedBold);
+			}
 			
 			EditorGUILayout.Space(20);
 			GUILayout.Label ("Recommended Settings", EditorStyles.boldLabel);
@@ -620,6 +769,47 @@ namespace NDream.AirConsole.Editor {
                 {
                     Debug.LogWarning("User declined to set API Compatibility Level to.NET Standard 2.0");
                 }
+			}
+		}
+		
+		[MenuItem("Window/AirConsole/Recommendations/WebGL")]
+		internal static void QueryAndApplyRecommendedWebGLSettings()
+		{
+			if(PlayerSettings.WebGL.compressionFormat != WebGLCompressionFormat.Gzip)
+			{
+				if(EditorUtility.DisplayDialog("Verification",
+				                                "You do currently not use GZip Compression. This is", "a release", "a test build"))
+				{
+					Debug.Log("Set WebGL compression to Gzip");
+					PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+				}
+				else
+				{
+					Debug.LogWarning("User declined to set WebGL compression to Gzip");
+				}
+			}
+			
+			if(PlayerSettings.WebGL.exceptionSupport != WebGLExceptionSupport.None)
+			{
+				if(EditorUtility.DisplayDialog("Verification",
+				                                "You do currently not have WebGL exception support disabled. This is", "a release", "a test build"))
+				{
+					Debug.Log("Disable WebGL exception support");
+					PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.None;
+				}
+				else
+				{
+					Debug.LogWarning("WebGL exception support left enabled for test build");
+				}
+			}
+			
+			if(PlayerSettings.WebGL.compressionFormat == WebGLCompressionFormat.Brotli)
+			{
+				if(!EditorUtility.DisplayDialog("Error",
+				                                "AirConsole does not currently support Brotli compression for WebGL builds", "Cancel"))
+				{
+					throw new Exception("AirConsole does not currently support Brotli compression for WebGL builds");
+				}
 			}
 		}
 		
