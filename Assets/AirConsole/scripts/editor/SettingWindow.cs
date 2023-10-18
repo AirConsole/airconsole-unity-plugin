@@ -715,11 +715,22 @@ namespace NDream.AirConsole.Editor {
 							AndroidBuildNotAllowed = SettingWindow.packagesFound.Count > 0;
 							if(AndroidBuildNotAllowed && EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
 							{
-								SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));
-								EditorUtility.DisplayDialog("AirConsole Android Error",
-								                            $"To deploy to AirConsole AndroidTV, please remove the following packages from the PackageManager:\n-{string.Join("\n-", SettingWindow.packagesFound)}",
-								                            $"I understand and will remove {(SettingWindow.packagesFound.Count == 1 ? "it" : "them")}!");
+								if(!EditorUtility.DisplayDialog("AirConsole Android Error",
+								                               $"To deploy to AirConsole AndroidTV, please remove the following packages from the PackageManager:\n-{string.Join("\n-", SettingWindow.packagesFound)}",
+								                               $"I understand and will remove {(SettingWindow.packagesFound.Count == 1 ? "it" : "them")}!",
+								                               "Please remove them for me"))
+								{
+									string manifestPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Packages", "manifest.json"));
+									Dictionary<string, Dictionary<string,string>> manifest = JsonConvert.DeserializeObject<Dictionary<string,Dictionary<string,string>>>(File.ReadAllText(manifestPath));
+									SettingWindow.packagesFound.ForEach(package => manifest["dependencies"].Remove(package));
+									File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest, Formatting.Indented));
+								}
+								else
+								{
+									SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));
+								}
 							}
+							
 							break;
 						}
 						case StatusCode.Failure:
