@@ -680,8 +680,8 @@ namespace NDream.AirConsole.Editor {
 		internal static bool AndroidBuildNotAllowed;
 		// static RemoveRequest Request;
 		static ListRequest Request;
-		static List<string> packages = new();
-		public static List<string> packagesFound = new();
+		static List<string> packages = new List<string>();
+		public static List<string> packagesFound = new List<string>();
 		
 		[InitializeOnLoadMethod]
 		internal static void ReportDisallowedUnityPackages()
@@ -727,7 +727,7 @@ namespace NDream.AirConsole.Editor {
 								}
 								else
 								{
-									SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));
+								    LogFoundDisallowedPackages();
 								}
 							}
 							
@@ -742,6 +742,11 @@ namespace NDream.AirConsole.Editor {
 				}
 				EditorApplication.update -= Progress;
 			}
+		}
+
+		internal static void LogFoundDisallowedPackages()
+		{
+			SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));
 		}
 
 		[MenuItem("Window/AirConsole/Recommendations/Android")]
@@ -857,7 +862,7 @@ namespace NDream.AirConsole.Editor {
 
 		private static void ResetWebsocketServer()
 		{
-			WebSocketServer wsServer = new(Settings.webSocketPort);
+			WebSocketServer wsServer = new WebSocketServer(Settings.webSocketPort);
 			wsServer.Stop();
 		}
 	}

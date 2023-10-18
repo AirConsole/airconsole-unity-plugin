@@ -32,7 +32,11 @@ namespace NDream.AirConsole.Editor
         {
             if(!EnforceAndroidBuildSettings.ShallExecute()) return;
 
-            if(SettingWindow.AndroidBuildNotAllowed) throw new Exception("Android build is not allowed due to disallowed packages");
+            if(SettingWindow.AndroidBuildNotAllowed)
+            {
+                SettingWindow.LogFoundDisallowedPackages();
+                throw new BuildFailedException("Android build is not allowed due to disallowed packages");
+            }
 
             // TODO (Marc): Act based on identified need for Query and Intent in AndroidManifest.xml
             // SettingWindow.CheckUnityVersionForBuildSupport();
