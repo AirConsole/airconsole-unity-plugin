@@ -107,7 +107,6 @@ namespace NDream.AirConsole.Editor {
 
 
 			ApplyAndroidRequiredSettings();
-			// SettingWindow.RemoveDisallowedUnityPackages();
 		}
 		
 		private Texture2D MakeTex(int width, int height, Color col) {
@@ -681,82 +680,58 @@ namespace NDream.AirConsole.Editor {
 		internal static bool AndroidBuildNotAllowed;
 		// static RemoveRequest Request;
 		static ListRequest Request;
-		static List<string> packages = new List<string>();
+		static List<string> packages = new();
+		public static List<string> packagesFound = new();
 		
 		[InitializeOnLoadMethod]
-		internal static void RemoveDisallowedUnityPackages()
+		internal static void ReportDisallowedUnityPackages()
 		{
-			// TODO: Analytics should be allowed but not PII, independent of game dev wishes?
-			// packages.Add("com.unity.analytics");
-			// TODO: ID legacy ads
-			// packages.Add("");
-			// // // TODO: ID ads
 			packages.Add("com.unity.ads.ios-support");
-			// // TODO: ID new ads
 			packages.Add("com.unity.ads");
-			// // TODO: ID legacy iap?
-			// packages.Add("");
-			// TODO: ID iap
-			packages.Add("com.unity.purchasing");  
-			// TODO: don't forget to also remove BillingMode.json and its meta.
-			// Request = Client.Remove(packages.Dequeue());
+			packages.Add("com.unity.purchasing");
+			packages.Add("com.unity.purchasing.udp");
 			Request = Client.List(true, true);
 			EditorApplication.update -= Progress;
 			EditorApplication.update += Progress;
-			// EditorApplication.LockReloadAssemblies();
 		}
 		static void Progress()
 		{
 			if (Request.IsCompleted)
 			{
-				switch (Request.Status)
+				if(EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
 				{
-					case StatusCode.Success:
+					switch (Request.Status)
 					{
-						// foreach (PackageInfo packageInfo in SettingWindow.Request.Result)
-						// {
-						// 	Debug.Log(packageInfo.packageId);
-						// }
-						string notAllowedPackage = string.Empty;
-						foreach(PackageInfo packageInfo in Request.Result)
+						case StatusCode.Success:
 						{
-							foreach (string package in SettingWindow.packages)
+							foreach (PackageInfo packageInfo in Request.Result)
 							{
-								if(packageInfo.packageId.Contains(package))
-								{
-									AndroidBuildNotAllowed = true;
-									notAllowedPackage = package;
-									Debug.LogError($"Not allowed package for AndroidTV builds found: {notAllowedPackage}");
-									break;
-								}
+								SettingWindow.packages.Where(package => packageInfo.packageId.StartsWith($"{package}@"))
+								             .ToList()
+								             .ForEach(package => SettingWindow.packagesFound.Add(package));
+							}
+							if(SettingWindow.packagesFound.Count > 0)
+							{
+								AndroidBuildNotAllowed = true;
 							}
 
-							if(SettingWindow.AndroidBuildNotAllowed) break;
+							if(AndroidBuildNotAllowed && EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
+							{
+								SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));
+								EditorUtility.DisplayDialog("AirConsole Android Error",
+								                            $"To deploy to AirConsole AndroidTV, please remove the following packages from the PackageManager:\n-{string.Join("\n-", SettingWindow.packagesFound)}",
+								                            $"I understand and will remove {(SettingWindow.packagesFound.Count == 1 ? "it" : "them")}!");
+							}
+							break;
 						}
-						
-						if(AndroidBuildNotAllowed && EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
+						case StatusCode.Failure:
 						{
-							EditorUtility.DisplayDialog("Error", $"We found package {notAllowedPackage}. This is not allowed for AndroidTV releases of AirConsole", "I understand and will remove it.");
+							Debug.LogError(Request.Error.message);
+							break;
 						}
-						// Debug.Log("Removed: " + Request.PackageIdOrName);
-						// if(packages.Count > 0)
-						// {
-						// 	Request = Client.Remove(packages.Dequeue());
-						// }
-						// else
-						// {
-						// 	EditorApplication.update -= Progress;
-						// }
-						break;
-					}
-					case StatusCode.Failure:
-					{
-						Debug.LogError(Request.Error.message);
-						break;
 					}
 				}
 				EditorApplication.update -= Progress;
-				// EditorApplication.UnlockReloadAssemblies();
 			}
 		}
 
