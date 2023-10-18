@@ -13,6 +13,7 @@ using System.Text;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEngine.Rendering;
+using WebSocketSharp.Server;
 using AndroidSdkVersions = UnityEditor.AndroidSdkVersions;
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
@@ -44,7 +45,9 @@ namespace NDream.AirConsole.Editor {
 		
 		[MenuItem("Window/AirConsole/Clear AC Prefs")]
 		private static void ClearPrefs() {
+#if !UNITY_2021_3_OR_NEWER
             EditorPrefs.DeleteKey(SettingWindow.AC_OUTDATEDVERSION_PREFS);
+#endif
             EditorPrefs.DeleteKey(SettingWindow.AC_LATEST_VERSION_PREFS);
         }
 		
@@ -93,10 +96,15 @@ namespace NDream.AirConsole.Editor {
 			updateBanner.fontStyle = FontStyle.Bold;
 			updateBanner.padding = new RectOffset(10, 20, 10, 10);
 
-			platformFoldout = new GUIStyle(EditorStyles.foldout)
+			// In certain Unity versions, Unity has not fully initialized EditorStyles through its InitSharedStyles ahead of usage.
+			try
 			{
-				fontStyle = FontStyle.Bold
-			};
+				platformFoldout = new GUIStyle(EditorStyles.foldout)
+				{
+					fontStyle = FontStyle.Bold
+				};
+			} catch {}
+
 
 			ApplyAndroidRequiredSettings();
 			// SettingWindow.RemoveDisallowedUnityPackages();
@@ -176,6 +184,8 @@ namespace NDream.AirConsole.Editor {
 				GUILayout.Label("AirConsole only supports Android and WebGL.", styleRedBold);
 				return;
 			}
+
+			GUI.enabled = !Application.isPlaying;
 			
 			// show logo & version
 			EditorGUILayout.BeginHorizontal (styleBlack, GUILayout.Height (30));
@@ -246,25 +256,50 @@ namespace NDream.AirConsole.Editor {
 			
 			GUILayout.Label ("Editor Connection Settings", EditorStyles.boldLabel);
 
+			EditorGUILayout.BeginHorizontal();
 			Settings.webSocketPort = EditorGUILayout.IntField ("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth (200));
+			
+			if(GUILayout.Button(new GUIContent("Force Reset", "Will stop existing Unity WebSocket Servers on this port"), GUILayout.MaxWidth(100)))
+			{
+				SettingWindow.ResetWebsocketServer();
+			}
 			EditorPrefs.SetInt ("webSocketPort", Settings.webSocketPort);
+			EditorGUILayout.EndHorizontal();
 
-			Settings.webServerPort = EditorGUILayout.IntField ("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth (200));
-			EditorPrefs.SetInt ("webServerPort", Settings.webServerPort);
-
-			EditorGUILayout.LabelField ("Webserver is running", Extentions.webserver.IsRunning ().ToString ());
-
-			GUILayout.BeginHorizontal ();
-
-			GUILayout.Space (150);
-			if (GUILayout.Button ("Stop", GUILayout.MaxWidth (60))) {
-				Extentions.webserver.Stop ();
+			int newWebserverPort = EditorGUILayout.IntField ("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth (200));
+			if(newWebserverPort != Settings.webServerPort)
+			{
+				if(Extentions.webserver.IsRunning() && !Extentions.webserver.IsBlocked)
+				{
+					Extentions.webserver.Stop();
+				}
+				
+				Settings.webServerPort = newWebserverPort;
+				EditorPrefs.SetInt ("webServerPort", Settings.webServerPort);
+				
+				Extentions.webserver.Start();
 			}
-			if (GUILayout.Button ("Restart", GUILayout.MaxWidth (60))) {
-				Extentions.webserver.Restart ();
-			}
 
-			GUILayout.EndHorizontal ();
+			if(Extentions.webserver.IsBlocked)
+			{
+				EditorGUILayout.LabelField ($"Webserver Port {Settings.webServerPort} already in use.\nAirConsole is not able to communicate with the Simulator", styleRedBold);
+			}
+			else
+			{
+				EditorGUILayout.LabelField ("Webserver is running", Extentions.webserver.IsRunning () .ToString ());
+
+				GUILayout.BeginHorizontal ();
+
+				GUILayout.Space (150);
+				if (GUILayout.Button ("Stop", GUILayout.MaxWidth (60))) {
+					Extentions.webserver.Stop ();
+				}
+				if (GUILayout.Button ("Restart", GUILayout.MaxWidth (60))) {
+					Extentions.webserver.Restart ();
+				}
+
+				GUILayout.EndHorizontal ();
+			}
 			
 			EditorGUILayout.Space();
 			GUILayout.Label("Editor Debug Logging Settings", EditorStyles.boldLabel);
@@ -286,73 +321,11 @@ namespace NDream.AirConsole.Editor {
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
 			// TODO: check if 2020 requires it - I think no.
-			bool requiresGradle = !Application.unityVersion.Contains("202") || Application.unityVersion.Contains("2020");
-			
-			
-			// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
-			EditorGUILayout.BeginHorizontal();
-			GUI.enabled = requiresGradle;
-			bool mainGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
-			if(GUILayout.Toggle(mainGradleEnabled, "Enable Custom Main Gradle Template"))
-			{
-				if(!mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")))
-				{
-					File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"),
-					          Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
-					AssetDatabase.Refresh();
-				}
+			bool requiresGradleExtension = !Application.unityVersion.Contains("202") || Application.unityVersion.Contains("2020");
 
-			} else
-			{
-				if(mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
-				{
-					File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"),
-					          Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
-					AssetDatabase.Refresh();
-				}
-			}
-			GUI.enabled = true;
-			EditorGUILayout.EndHorizontal();
-			if(!requiresGradle)
-			{
-				GUILayout.Label("With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.");
-				GUILayout.Label("Only enable this if you have your own custom launcher gradle template", styleRedBold);
-			}
-			
-			// main gradle
-			EditorGUILayout.BeginHorizontal();
-			GUI.enabled = requiresGradle;
-			
-			// Debug.LogWarning($"Main: {EditorUserBuildSettings.GetPlatformSettings("Android", "BuildSubtarget")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("buildLauncherAppBundle", "true")}");
-			// Debug.LogWarning($"Main2: {EditorUserBuildSettings.GetPlatformSettings("Editor","AndroidCustomMainGradleTemplate")}; Launcher: {EditorUserBuildSettings.GetPlatformSettings("AndroidUseCustomMainGradleTemplate", "true")}");
-			// Debug.LogWarning($"Custom Main Template enabled: {EditorUserBuildSettings.GetPlatformSettings("Android", "buildAppBundle")} or1 {EditorUserBuildSettings.GetPlatformSettings("Android", "m_CustomLauncherGradleTemplate")}");
-			bool launcherGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
-			if(GUILayout.Toggle(launcherGradleEnabled, "Enable Custom Launcher Gradle Template"))
-			{
-				if(!launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")))
-				{
-					File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"),
-					          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
-					AssetDatabase.Refresh();
-				}
+			DrawCustomMainGradleWidget(requiresGradleExtension);
+			DrawCustomLauncherGradleWidget(requiresGradleExtension);
 
-			} else
-			{
-				if(launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
-				{
-					File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"),
-					          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
-					AssetDatabase.Refresh();
-				}
-			}
-			GUI.enabled = true;
-			EditorGUILayout.EndHorizontal();
-			if(!requiresGradle)
-			{
-				GUILayout.Label("With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.");
-				GUILayout.Label("Only enable this if you have your own custom main gradle template", styleRedBold);
-			}
-			
 			EditorGUILayout.Space(20);
 			
 			GUILayout.Label ("Recommended Settings", EditorStyles.boldLabel);
@@ -425,6 +398,81 @@ namespace NDream.AirConsole.Editor {
 			}
 			
 			EditorGUILayout.EndVertical();
+		}
+
+		private void DrawCustomLauncherGradleWidget(bool requiresGradleExtension)
+		{
+			if(File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")) ||
+			   File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
+			{
+				// main gradle
+				EditorGUILayout.BeginHorizontal();
+				GUI.enabled = !Application.isPlaying &&
+				              (requiresGradleExtension || File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")));
+
+				bool launcherGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+				if(GUILayout.Toggle(launcherGradleEnabled, new GUIContent("Enable Custom Launcher Gradle Template", "With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
+				{
+					if(!launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")))
+					{
+						File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"),
+						          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+						AssetDatabase.Refresh();
+					}
+				}
+				else
+				{
+					if(launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
+					{
+						File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"),
+						          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
+						AssetDatabase.Refresh();
+					}
+				}
+				GUI.enabled = !Application.isPlaying;
+				EditorGUILayout.EndHorizontal();
+				if(!requiresGradleExtension)
+				{
+					GUILayout.Label("Only enable this if you have your own custom main gradle template", styleRedBold);
+				}
+			}
+		}
+
+		private void DrawCustomMainGradleWidget(bool requiresGradleExtension)
+		{
+			if(File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")) ||
+			   File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
+			{
+				// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
+				EditorGUILayout.BeginHorizontal();
+				GUI.enabled = !Application.isPlaying &&
+				              (requiresGradleExtension || File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")));
+				bool mainGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+				if(GUILayout.Toggle(mainGradleEnabled, new GUIContent("Enable Custom Main Gradle Template","With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
+				{
+					if(!mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")))
+					{
+						File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"),
+						          Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+						AssetDatabase.Refresh();
+					}
+				}
+				else
+				{
+					if(mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
+					{
+						File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"),
+						          Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
+						AssetDatabase.Refresh();
+					}
+				}
+				GUI.enabled = !Application.isPlaying;
+				EditorGUILayout.EndHorizontal();
+				if(!requiresGradleExtension)
+				{
+					GUILayout.Label("Only enable this if you have your own custom launcher gradle template", styleRedBold);
+				}
+			}
 		}
 
 		private void DrawGeneralSettings()
@@ -822,7 +870,12 @@ namespace NDream.AirConsole.Editor {
 				EditorUtility.DisplayDialog("Information", $"Updated WebGL Template from {originalTemplate.Replace("APPLICATION", "")} to {PlayerSettings.WebGL.template.Replace("APPLICATION:","")}", "OK");
 			}
 		}
-		
+
+		private static void ResetWebsocketServer()
+		{
+			WebSocketServer wsServer = new(Settings.webSocketPort);
+			wsServer.Stop();
+		}
 	}
 	
 	// The implementation is based on the UnityEditor.PlayerSettingsEditor and its internal only aspects
