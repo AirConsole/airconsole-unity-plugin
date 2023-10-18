@@ -691,6 +691,7 @@ namespace NDream.AirConsole.Editor {
 			packages.Add("com.unity.purchasing");
 			packages.Add("com.unity.purchasing.udp");
 			Request = Client.List(true, true);
+			SettingWindow.packagesFound.Clear();
 			EditorApplication.update -= Progress;
 			EditorApplication.update += Progress;
 		}
@@ -710,11 +711,8 @@ namespace NDream.AirConsole.Editor {
 								             .ToList()
 								             .ForEach(package => SettingWindow.packagesFound.Add(package));
 							}
-							if(SettingWindow.packagesFound.Count > 0)
-							{
-								AndroidBuildNotAllowed = true;
-							}
-
+			
+							AndroidBuildNotAllowed = SettingWindow.packagesFound.Count > 0;
 							if(AndroidBuildNotAllowed && EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
 							{
 								SettingWindow.packagesFound.ForEach(it => Debug.LogError($"AirConsole Android Error: Please remove package \"{it}\" from 'Window > Package Manager'"));

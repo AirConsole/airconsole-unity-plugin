@@ -41,7 +41,14 @@ namespace NDream.AirConsole.Editor {
 					catch (SocketException e)
 					{
 						IsBlocked = true;
-						listener.Stop();
+						try
+						{
+							listener.Stop();
+						}
+						catch (SocketException ex)
+						{
+							Debug.LogException(ex);
+						}
 						Debug.LogException(e);
 						return;
 					}
