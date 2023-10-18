@@ -30,12 +30,12 @@ namespace NDream.AirConsole.Editor {
 				PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL, "DISABLE_AIRCONSOLE;"+PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL));
 			}
 		}
-		#elif !UNITY_2021_3_OR_NEWER
+		#elif !UNITY_2020_3_OR_NEWER
 		private const string AC_OUTDATEDVERSION_PREFS = "AirConsole_OutdatedUnityVersion";
 		[InitializeOnLoadMethod]
 		private static void OutdatedUnityVersion()
 		{
-			if(EditorPrefs.GetString(AC_OUTDATEDVERSION_PREFS, "") != Application.unityVersion && EditorUtility.DisplayDialog("Old Unity Version", "AirConsole recommends\n- 2021.3 LTS\n- 2022.3 LTS", "OK"))
+			if(EditorPrefs.GetString(AC_OUTDATEDVERSION_PREFS, "") != Application.unityVersion && EditorUtility.DisplayDialog("Old Unity Version", "AirConsole recommends\n- 2020.3 LTS\n- 2021.3 LTS\n- 2022.3 LTS", "OK"))
 			{
 				EditorPrefs.SetString(AC_OUTDATEDVERSION_PREFS, Application.unityVersion);
 			}
@@ -45,7 +45,7 @@ namespace NDream.AirConsole.Editor {
 		
 		[MenuItem("Window/AirConsole/Clear AC Prefs")]
 		private static void ClearPrefs() {
-#if !UNITY_2021_3_OR_NEWER
+#if !UNITY_2020_3_OR_NEWER
             EditorPrefs.DeleteKey(SettingWindow.AC_OUTDATEDVERSION_PREFS);
 #endif
             EditorPrefs.DeleteKey(SettingWindow.AC_LATEST_VERSION_PREFS);
@@ -55,7 +55,6 @@ namespace NDream.AirConsole.Editor {
 		
 		GUIStyle styleBlack = new GUIStyle ();
 		GUIStyle updateBanner = new GUIStyle ();
-		GUIStyle platformFoldout = new GUIStyle ();
 		private Texture2D updateBannerBg;
 		private GUIStyle styleRedBold = new GUIStyle();
 		private Texture2D bg;
@@ -77,7 +76,6 @@ namespace NDream.AirConsole.Editor {
 			logoSmall = (Texture)Resources.Load ("AirConsoleLogoSmall");
 			titleContent = new GUIContent ("AirConsole", logoSmall, "AirConsole Settings");
 
-			// setup style for airconsole logo
 			styleBlack.normal.background = bg;
 			styleBlack.normal.textColor = Color.white;
 			styleBlack.margin.top = 5;
@@ -95,16 +93,6 @@ namespace NDream.AirConsole.Editor {
 			updateBanner.normal.textColor = Color.black;
 			updateBanner.fontStyle = FontStyle.Bold;
 			updateBanner.padding = new RectOffset(10, 20, 10, 10);
-
-			// In certain Unity versions, Unity has not fully initialized EditorStyles through its InitSharedStyles ahead of usage.
-			try
-			{
-				platformFoldout = new GUIStyle(EditorStyles.foldout)
-				{
-					fontStyle = FontStyle.Bold
-				};
-			} catch {}
-
 
 			ApplyAndroidRequiredSettings();
 		}
@@ -202,11 +190,11 @@ namespace NDream.AirConsole.Editor {
 			DrawGeneralSettings();
 			
 			EditorGUILayout.Space(20);
-			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true, platformFoldout);
+			androidFoldout = EditorGUILayout.Foldout (androidFoldout, "Android Configuration", true);
 			if(androidFoldout) DrawAndroidFoldout();
 			
 			EditorGUILayout.Space(20);
-			webglFoldout = EditorGUILayout.Foldout (webglFoldout, "WebGL Configuration", true, platformFoldout);
+			webglFoldout = EditorGUILayout.Foldout (webglFoldout, "WebGL Configuration", true);
 			if(webglFoldout) DrawWebGLFoldout();
 			EditorGUILayout.Space();
 			
@@ -319,8 +307,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.BeginVertical();
 			GUILayout.Label ("Required Settings", EditorStyles.boldLabel);
 			
-			// TODO: check if 2020 requires it - I think no.
-			bool requiresGradleExtension = !Application.unityVersion.Contains("202") || Application.unityVersion.Contains("2020");
+			bool requiresGradleExtension = !Application.unityVersion.Contains("202");
 
 			DrawCustomMainGradleWidget(requiresGradleExtension);
 			DrawCustomLauncherGradleWidget(requiresGradleExtension);
@@ -678,10 +665,9 @@ namespace NDream.AirConsole.Editor {
 		}
 		
 		internal static bool AndroidBuildNotAllowed;
-		// static RemoveRequest Request;
 		static ListRequest Request;
-		static List<string> packages = new List<string>();
-		public static List<string> packagesFound = new List<string>();
+		static readonly List<string> packages = new List<string>();
+		static readonly List<string> packagesFound = new List<string>();
 		
 		[InitializeOnLoadMethod]
 		internal static void ReportDisallowedUnityPackages()
