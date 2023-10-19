@@ -23,14 +23,13 @@ using UnityEditor;
 namespace NDream.AirConsole.Editor {
 	public class SettingWindow : EditorWindow {
 #if !UNITY_2019_4_OR_NEWER
-		// TODO(marc): Are we able to drop support for Unity < 2019?
+		private const string AC_UNSUPPORTEDVERSION_PREFS = "AirConsole_UnsupportedUnityVersion";
 		[InitializeOnLoadMethod]
 		private static void UnsupportedUnityVersion()
-		{
-			if(EditorUtility.DisplayDialog("Unsupported Unity Version", "AirConsole only supports Unity 2019.4 or newer.", "I understand that AirConsole is being disabled"))
-			{
-				PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android, "DISABLE_AIRCONSOLE;"+PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.Android));
-				PlayerSettings.SetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL, "DISABLE_AIRCONSOLE;"+PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildTargetGroup.WebGL));
+		{			
+			if(EditorPrefs.GetString(AC_UNSUPPORTEDVERSION_PREFS, "") != Application.unityVersion) {
+				EditorUtility.DisplayDialog("Unsupported Unity Version", "AirConsole officially only supports Unity 2019.4 or newer LTS versions.", "I understand");
+				EditorPrefs.GetString(AC_UNSUPPORTEDVERSION_PREFS, Application.unityVersion);
 			}
 		}
 #elif !UNITY_2020_3_OR_NEWER
@@ -45,9 +44,12 @@ namespace NDream.AirConsole.Editor {
 		}
 #endif
 
-		[MenuItem("Window/AirConsole/Clear AC Prefs")]
+		// KEEP: Used for development purposes
+		// [MenuItem("Window/AirConsole/Clear AC Prefs")]
 		private static void ClearPrefs() {
-#if !UNITY_2020_3_OR_NEWER
+#if !UNITY_2019_4_OR_NEWER
+            EditorPrefs.DeleteKey(AC_UNSUPPORTEDVERSION_PREFS);
+#elif !UNITY_2020_3_OR_NEWER
             EditorPrefs.DeleteKey(AC_OLDVERSION_PREFS);
 #endif
 			EditorPrefs.DeleteKey(AC_LATEST_VERSION_PREFS);
