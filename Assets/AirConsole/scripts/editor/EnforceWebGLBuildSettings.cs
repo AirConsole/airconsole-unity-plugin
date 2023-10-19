@@ -3,33 +3,28 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 
-namespace NDream.AirConsole.Editor
-{
-    internal class EnforceWebGLBuildSettings : IPreprocessBuildWithReport
-    {
-        public int callbackOrder => 1;
+namespace NDream.AirConsole.Editor {
+	internal class EnforceWebGLBuildSettings : IPreprocessBuildWithReport {
+		public int callbackOrder => 1;
 
-        private static bool ShallExecute()
-        {
-            if(EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL) return false;
+		private static bool ShallExecute() {
+			if(EditorUserBuildSettings.activeBuildTarget != BuildTarget.WebGL) return false;
 
-            return true;
-        }
+			return true;
+		}
 
-        [InitializeOnLoadMethod]
-        private static void Init()
-        {
-            if(!EnforceWebGLBuildSettings.ShallExecute()) return;
+		[InitializeOnLoadMethod]
+		private static void Init() {
+			if(!ShallExecute()) return;
 
-            // SettingWindow.ApplyWebGLRequiredSettings();
-        }
+			// SettingWindow.ApplyWebGLRequiredSettings();
+		}
 
-        public void OnPreprocessBuild(BuildReport report)
-        {
-            if(!EnforceWebGLBuildSettings.ShallExecute()) return;
+		public void OnPreprocessBuild(BuildReport report) {
+			if(!ShallExecute()) return;
 
-            SettingWindow.QueryAndApplyRecommendedWebGLSettings();
-        }
-    }
+			SettingWindow.QueryAndApplyRecommendedWebGLSettings();
+		}
+	}
 }
 #endif
