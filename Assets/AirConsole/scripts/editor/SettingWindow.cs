@@ -8,7 +8,6 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 using System.Net;
-using System.Reflection;
 using System.Text;
 using UnityEditor.Build;
 using UnityEditor.PackageManager.Requests;
@@ -290,6 +289,9 @@ namespace NDream.AirConsole.Editor {
 			}
 			
 			EditorGUILayout.Space();
+			
+			bool guiWasEnabled = GUI.enabled;
+			GUI.enabled = true;
 			GUILayout.Label("Editor Debug Logging Settings", EditorStyles.boldLabel);
 
 			Settings.debug.info = EditorGUILayout.Toggle ("Log Info", Settings.debug.info);
@@ -300,6 +302,7 @@ namespace NDream.AirConsole.Editor {
 
 			Settings.debug.error = EditorGUILayout.Toggle ("Log Errors", Settings.debug.error);
 			EditorPrefs.SetBool ("debugError", Settings.debug.error);
+			GUI.enabled = guiWasEnabled;
 		}
 
 		private void DrawAndroidFoldout()
@@ -391,6 +394,8 @@ namespace NDream.AirConsole.Editor {
 		{
 			bool launcherTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
 			bool disabledLauncherTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
+			string launcherTemplatePath = Path.Combine(AndroidPluginPath, "launcherTemplate.gradle");
+			string disabledLauncherTemplatePath = Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED");
 			if(disabledLauncherTemplateExists || launcherTemplateExists)
 			{
 				GUI.enabled = !Application.isPlaying &&
@@ -399,22 +404,33 @@ namespace NDream.AirConsole.Editor {
 				// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
 				EditorGUILayout.BeginHorizontal();
 
-				bool launcherGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
-				if(GUILayout.Toggle(launcherGradleEnabled, new GUIContent("Enable Custom Launcher Gradle Template", "With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
+				bool launcherGradleEnabled = GUILayout.Toggle(launcherTemplateExists,
+				                                              new GUIContent("Enable Custom Launcher Gradle Template",
+				                                                             "With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required."));
+				if(launcherGradleEnabled)
 				{
-					if(!launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")))
+					if(disabledLauncherTemplateExists)
 					{
-						File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"),
-						          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+						File.Move(disabledLauncherTemplatePath, launcherTemplatePath);
 						AssetDatabase.Refresh();
 					}
 				}
 				else
 				{
-					if(launcherGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
+					if(launcherTemplateExists)
 					{
-						File.Move(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"),
-						          Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
+						if(disabledLauncherTemplateExists)
+						{
+							try
+							{
+								File.Delete(disabledLauncherTemplatePath);
+							}
+							catch (IOException e)
+							{
+								Debug.LogException(e);
+							}
+						}
+						File.Move(launcherTemplatePath, disabledLauncherTemplatePath);
 						AssetDatabase.Refresh();
 					}
 				}
@@ -429,9 +445,10 @@ namespace NDream.AirConsole.Editor {
 
 		private void DrawCustomMainGradleWidget(bool requiresGradleExtension)
 		{
-			
 			bool mainTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
 			bool disabledMainTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
+			string mainTemplatePath = Path.Combine(AndroidPluginPath, "mainTemplate.gradle");
+			string disabledMainTemplatePath = Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED");
 			if(disabledMainTemplateExists || mainTemplateExists)
 			{
 				GUI.enabled = !Application.isPlaying &&
@@ -439,22 +456,33 @@ namespace NDream.AirConsole.Editor {
 				
 				// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
 				EditorGUILayout.BeginHorizontal();
-				bool mainGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
-				if(GUILayout.Toggle(mainGradleEnabled, new GUIContent("Enable Custom Main Gradle Template","With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
+				bool mainGradleEnabled = GUILayout.Toggle(mainTemplateExists,
+				                                          new GUIContent("Enable Custom Main Gradle Template",
+				                                                         "With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required."));
+				if(mainGradleEnabled)
 				{
-					if(!mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")))
+					if(disabledMainTemplateExists)
 					{
-						File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"),
-						          Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+						File.Move(disabledMainTemplatePath,mainTemplatePath);
 						AssetDatabase.Refresh();
 					}
 				}
 				else
 				{
-					if(mainGradleEnabled && File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
+					if(mainTemplateExists)
 					{
-						File.Move(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"),
-						          Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
+						if(disabledMainTemplateExists)
+						{
+							try
+							{
+								File.Delete(disabledMainTemplatePath);
+							}
+							catch (IOException e)
+							{
+								Debug.LogException(e);
+							}
+						}
+						File.Move(mainTemplatePath, disabledMainTemplatePath);
 						AssetDatabase.Refresh();
 					}
 				}
@@ -858,49 +886,6 @@ namespace NDream.AirConsole.Editor {
 		{
 			WebSocketServer wsServer = new WebSocketServer(Settings.webSocketPort);
 			wsServer.Stop();
-		}
-	}
-	
-	// The implementation is based on the UnityEditor.PlayerSettingsEditor and its internal only aspects
-	internal static class PlayerSettingsHelper
-	{
-		internal static void SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
-		{
-			// Get the internal static method.
-			MethodInfo method = typeof(PlayerSettings).GetMethod("SetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
-
-			// Get the internal enum type.
-			Type enumType = typeof(PlayerSettings).Assembly.GetType("UnityEditor.LightmapEncodingQuality");
-			
-			// Get the field value of the given enum value.
-			int qualityLevelValue = (int)enumType.GetField("Low").GetValue(null);
-			
-			// Invoke the method with the given parameters.
-			method.Invoke(null, new object[] { platformGroup, qualityLevelValue });
-		}
-		
-		internal static bool GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
-		{
-			// Get the internal static method.
-			MethodInfo method = typeof(PlayerSettings).GetMethod("GetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
-
-			// Invoke the method with the given parameters.
-			object qualityLevel = method.Invoke(null, new object[] { platformGroup });
-
-			return qualityLevel.ToString().ToLower() == "low";
-		}
-		
-		internal static AndroidGamepadSupportLevel GetAndroidGamepadSupportLevel()
-		{
-			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
-			int gamepadSupportLevel = (int)property.GetValue(null);
-			return (AndroidGamepadSupportLevel)gamepadSupportLevel;
-		}
-		
-		internal static void SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel gamepadSupportLevel)
-		{
-			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
-			property.SetValue(null, (int)gamepadSupportLevel);
 		}
 	}
 }
