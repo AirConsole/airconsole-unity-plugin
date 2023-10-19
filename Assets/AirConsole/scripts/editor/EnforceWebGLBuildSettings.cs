@@ -7,7 +7,7 @@ namespace NDream.AirConsole.Editor
 {
     internal class EnforceWebGLBuildSettings : IPreprocessBuildWithReport
     {
-        public int callbackOrder => 0;
+        public int callbackOrder => 1;
 
         private static bool ShallExecute()
         {
@@ -28,11 +28,6 @@ namespace NDream.AirConsole.Editor
         {
             if(!EnforceWebGLBuildSettings.ShallExecute()) return;
 
-            // if(SettingWindow.AndroidBuildNotAllowed) throw new Exception("Android build is not allowed due to disallowed packages");
-
-            // TODO (Marc): Act based on identified need for Query and Intent in AndroidManifest.xml
-            // SettingWindow.CheckUnityVersionForBuildSupport();
-            // SettingWindow.ApplyAndroidRequiredSettings();
             SettingWindow.QueryAndApplyRecommendedWebGLSettings();
         }
     }

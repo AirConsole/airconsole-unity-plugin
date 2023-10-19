@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Text;
+using UnityEditor.Build;
 using UnityEditor.PackageManager.Requests;
 using UnityEditor.PackageManager;
 using UnityEngine.Rendering;
@@ -21,6 +22,7 @@ namespace NDream.AirConsole.Editor {
 	public class SettingWindow : EditorWindow {
 
 		#if !UNITY_2019_4_OR_NEWER
+		// TODO(marc): Are we able to drop support for Unity < 2019?
 		[InitializeOnLoadMethod]
 		private static void UnsupportedUnityVersion()
 		{
@@ -31,22 +33,21 @@ namespace NDream.AirConsole.Editor {
 			}
 		}
 		#elif !UNITY_2020_3_OR_NEWER
-		private const string AC_OUTDATEDVERSION_PREFS = "AirConsole_OutdatedUnityVersion";
+		private const string AC_OLDVERSION_PREFS = "AirConsole_OldUnityVersion";
 		[InitializeOnLoadMethod]
-		private static void OutdatedUnityVersion()
+		private static void OldUnityVersion()
 		{
-			if(EditorPrefs.GetString(AC_OUTDATEDVERSION_PREFS, "") != Application.unityVersion && EditorUtility.DisplayDialog("Old Unity Version", "AirConsole recommends\n- 2020.3 LTS\n- 2021.3 LTS\n- 2022.3 LTS", "OK"))
+			if(EditorPrefs.GetString(AC_OLDVERSION_PREFS, "") != Application.unityVersion && EditorUtility.DisplayDialog("Old Unity Version", "AirConsole recommends\n- 2020.3 LTS\n- 2021.3 LTS\n- 2022.3 LTS", "OK"))
 			{
-				EditorPrefs.SetString(AC_OUTDATEDVERSION_PREFS, Application.unityVersion);
+				EditorPrefs.SetString(AC_OLDVERSION_PREFS, Application.unityVersion);
 			}
 		}
 		#endif
 		
-		
 		[MenuItem("Window/AirConsole/Clear AC Prefs")]
 		private static void ClearPrefs() {
 #if !UNITY_2020_3_OR_NEWER
-            EditorPrefs.DeleteKey(SettingWindow.AC_OUTDATEDVERSION_PREFS);
+            EditorPrefs.DeleteKey(SettingWindow.AC_OLDVERSION_PREFS);
 #endif
             EditorPrefs.DeleteKey(SettingWindow.AC_LATEST_VERSION_PREFS);
         }
@@ -388,13 +389,15 @@ namespace NDream.AirConsole.Editor {
 
 		private void DrawCustomLauncherGradleWidget(bool requiresGradleExtension)
 		{
-			if(File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED")) ||
-			   File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")))
+			bool launcherTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
+			bool disabledLauncherTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle.DISABLED"));
+			if(disabledLauncherTemplateExists || launcherTemplateExists)
 			{
-				// main gradle
-				EditorGUILayout.BeginHorizontal();
 				GUI.enabled = !Application.isPlaying &&
-				              (requiresGradleExtension || File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle")));
+				              (requiresGradleExtension || launcherTemplateExists);
+				
+				// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
+				EditorGUILayout.BeginHorizontal();
 
 				bool launcherGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "launcherTemplate.gradle"));
 				if(GUILayout.Toggle(launcherGradleEnabled, new GUIContent("Enable Custom Launcher Gradle Template", "With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
@@ -415,24 +418,27 @@ namespace NDream.AirConsole.Editor {
 						AssetDatabase.Refresh();
 					}
 				}
-				GUI.enabled = !Application.isPlaying;
 				EditorGUILayout.EndHorizontal();
-				if(!requiresGradleExtension)
+				if(!requiresGradleExtension && disabledLauncherTemplateExists && GUI.enabled)
 				{
 					GUILayout.Label("Only enable this if you have your own custom main gradle template", styleRedBold);
 				}
+				GUI.enabled = !Application.isPlaying;
 			}
 		}
 
 		private void DrawCustomMainGradleWidget(bool requiresGradleExtension)
 		{
-			if(File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED")) ||
-			   File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")))
+			
+			bool mainTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
+			bool disabledMainTemplateExists = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle.DISABLED"));
+			if(disabledMainTemplateExists || mainTemplateExists)
 			{
+				GUI.enabled = !Application.isPlaying &&
+				              (requiresGradleExtension || mainTemplateExists);
+				
 				// The Gradle Logic is based on the implementation in UnityEditor.Modules.PlayerSettingsEditorExtension
 				EditorGUILayout.BeginHorizontal();
-				GUI.enabled = !Application.isPlaying &&
-				              (requiresGradleExtension || File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle")));
 				bool mainGradleEnabled = File.Exists(Path.Combine(AndroidPluginPath, "mainTemplate.gradle"));
 				if(GUILayout.Toggle(mainGradleEnabled, new GUIContent("Enable Custom Main Gradle Template","With Unity 2021 and higher, AirConsoles custom gradle configuration is no longer required.")))
 				{
@@ -452,12 +458,12 @@ namespace NDream.AirConsole.Editor {
 						AssetDatabase.Refresh();
 					}
 				}
-				GUI.enabled = !Application.isPlaying;
 				EditorGUILayout.EndHorizontal();
-				if(!requiresGradleExtension)
+				if(!requiresGradleExtension && disabledMainTemplateExists && GUI.enabled)
 				{
 					GUILayout.Label("Only enable this if you have your own custom launcher gradle template", styleRedBold);
 				}
+				GUI.enabled = !Application.isPlaying;
 			}
 		}
 
@@ -538,9 +544,6 @@ namespace NDream.AirConsole.Editor {
 		
 		internal static void ApplyAndroidRequiredSettings()
 		{
-			// TODO: required or recommended?
-			PlayerSettings.Android.optimizedFramePacing = true;
-
 			if(PlayerSettings.Android.androidTargetDevices != AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly)
 			{
 				Debug.Log("Configure Android target devices to AndroidTV and Phones/Tablets only, removing ChromeOS");
@@ -578,7 +581,7 @@ namespace NDream.AirConsole.Editor {
 
 			if(PlayerSettingsHelper.GetAndroidGamepadSupportLevel() != AndroidGamepadSupportLevel.SupportsDPad)
 			{
-				Debug.Log("Reduce Android Gamepad Support to only DPad");
+				Debug.Log("Reduce Android Gamepad Support to minimum: DPad only");
                 PlayerSettingsHelper.SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel.SupportsDPad);
 			}
 
@@ -655,11 +658,15 @@ namespace NDream.AirConsole.Editor {
                 !EditorUserBuildSettings.exportAsGoogleAndroidProject)
 			{
 				if(EditorUtility.DisplayDialog("IMPORTANT",
-				                               "Unity 2019 requires Android Studio to use Android SDK 30 features and Gradle 5.6. We will update the Build Settings now to export an Android Studio Project",
-				                               "I understand, please build an Android Studio project",
+				                               "Unity 2019 requires Android Studio to use the required Android SDK 30 features and Gradle 5.6. We will update the Build Settings now to export an Android Studio Project",
+				                               "I understand, please update the build settings to export an Android Studio project",
 				                               "I prefer to update the project to Unity 2020.3 or newer!"))
 				{
 					EditorUserBuildSettings.exportAsGoogleAndroidProject = true;
+				}
+				else
+				{
+					throw new BuildFailedException("User aborted build");
 				}
 			}
 		}
@@ -681,6 +688,7 @@ namespace NDream.AirConsole.Editor {
 			EditorApplication.update -= Progress;
 			EditorApplication.update += Progress;
 		}
+		
 		static void Progress()
 		{
 			if (Request.IsCompleted)
@@ -856,7 +864,7 @@ namespace NDream.AirConsole.Editor {
 	// The implementation is based on the UnityEditor.PlayerSettingsEditor and its internal only aspects
 	internal static class PlayerSettingsHelper
 	{
-		public static void SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
+		internal static void SetLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
 		{
 			// Get the internal static method.
 			MethodInfo method = typeof(PlayerSettings).GetMethod("SetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
@@ -871,7 +879,7 @@ namespace NDream.AirConsole.Editor {
 			method.Invoke(null, new object[] { platformGroup, qualityLevelValue });
 		}
 		
-		public static bool GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
+		internal static bool GetIsLowLightmapEncodingQualityForPlatformGroup(BuildTargetGroup platformGroup)
 		{
 			// Get the internal static method.
 			MethodInfo method = typeof(PlayerSettings).GetMethod("GetLightmapEncodingQualityForPlatformGroup", BindingFlags.Static | BindingFlags.NonPublic);
@@ -882,14 +890,14 @@ namespace NDream.AirConsole.Editor {
 			return qualityLevel.ToString().ToLower() == "low";
 		}
 		
-		public static AndroidGamepadSupportLevel GetAndroidGamepadSupportLevel()
+		internal static AndroidGamepadSupportLevel GetAndroidGamepadSupportLevel()
 		{
 			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
 			int gamepadSupportLevel = (int)property.GetValue(null);
 			return (AndroidGamepadSupportLevel)gamepadSupportLevel;
 		}
 		
-		public static void SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel gamepadSupportLevel)
+		internal static void SetAndroidGamepadSupportLevel(AndroidGamepadSupportLevel gamepadSupportLevel)
 		{
 			PropertyInfo property = typeof(PlayerSettings.Android).GetProperty("androidGamepadSupportLevel", BindingFlags.Static | BindingFlags.NonPublic);
 			property.SetValue(null, (int)gamepadSupportLevel);
