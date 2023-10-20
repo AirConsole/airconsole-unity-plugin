@@ -3,6 +3,7 @@ using System;
 using System.Threading;
 using System.Net;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 using UnityEngine;
 
@@ -32,7 +33,25 @@ namespace NDream.AirConsole.Editor {
 				listener.Start ();
 
 				if (!listener.Prefixes.Contains (prefix)) {
-					listener.Prefixes.Add (prefix);
+					try
+					{
+						IsBlocked = false;
+						listener.Prefixes.Add(prefix);
+					}
+					catch (SocketException e)
+					{
+						IsBlocked = true;
+						try
+						{
+							listener.Stop();
+						}
+						catch (SocketException ex)
+						{
+							Debug.LogException(ex);
+						}
+						Debug.LogException(e);
+						return;
+					}
 				}
 
 				if (t != null && t.IsAlive) {
@@ -43,6 +62,8 @@ namespace NDream.AirConsole.Editor {
 				t.Start ();
 			}
 		}
+		
+		public bool IsBlocked { get; private set; }
 
 		public bool IsRunning () {
 			if (listener != null) {
