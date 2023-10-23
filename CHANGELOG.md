@@ -4,6 +4,13 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [2.13] - 2022-10-23
+
+### Fixed
+
+- Update Unity Webview to v1.0.1 to address WebGL builds
+
+
 ## [2.12] - 2023-10-10
 
 ### New Features
