@@ -1,10 +1,12 @@
 #region
 using NDream.AirConsole;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 #endregion
 
 namespace NDream.Unity
@@ -40,27 +42,50 @@ namespace NDream.Unity
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
+
+            string oldOutputPath = outputPath.Replace($"v{Settings.VERSION}", $"v{DecrementVersion(Settings.VERSION)}");
+            if(File.Exists(oldOutputPath)) File.Delete(oldOutputPath);
             
+            ProcessStartInfo startInfo = new ProcessStartInfo()
+            {
+                FileName = "git",
+                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v2.*"))}",
+            };
+            Process proc = new Process()
+            {
+                StartInfo = startInfo,
+            };
+            if(proc.Start()) {
+                proc.WaitForExit();
+            }
+            else {
+                Debug.LogError("Failed to add package to git");
+            }
+
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
-        
+
+        private static string DecrementVersion(string version) {
+            string[] versionSplit = version.Split('.');
+            if(versionSplit.Length != 2) 
+                throw new ArgumentException($"Invalid version {version}, not MAJOR.MINOR");
+            string minor = versionSplit[1];
+            if(int.TryParse(minor, out int minorVersion)) {
+                return $"{versionSplit[0]}.{(minorVersion-1)}";
+            }
+            throw new ArgumentException($"Invalid version {version}, MINOR ${minor} is not a number");
+        }
+
         // adapted from https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
         private static void CopyDirectory(string sourceDir, string destinationDir, bool recursive, Func<string, bool> include)
         {
-            // Get information about the source directory
             DirectoryInfo dir = new DirectoryInfo(sourceDir);
-
-            // Check if the source directory exists
             if (!dir.Exists)
                 throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
 
-            // Cache directories before we start copying
             DirectoryInfo[] dirs = dir.GetDirectories();
-
-            // Create the destination directory
             Directory.CreateDirectory(destinationDir);
 
-            // Get the files in the source directory and copy to the destination directory
             foreach (FileInfo file in dir.GetFiles())
             {
                 if(!include(file.FullName)) continue;
@@ -68,7 +93,6 @@ namespace NDream.Unity
                 file.CopyTo(targetFilePath);
             }
 
-            // If recursive and copying subdirectories, recursively call this method
             if (recursive)
             {
                 foreach (DirectoryInfo subDir in dirs)
