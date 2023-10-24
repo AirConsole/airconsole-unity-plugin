@@ -26,7 +26,8 @@ namespace NDream.Unity
                 Debug.LogError("Can not find airconsole webview package");
                 return;
             }
-
+            
+            EditorApplication.LockReloadAssemblies();
             string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
             if(Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
             CopyDirectory(webviewPackagePath, targetPath, true, filename => !filename.Contains(".asmdef"));
@@ -37,6 +38,8 @@ namespace NDream.Unity
             
             Directory.Delete(targetPath, true);
             AssetDatabase.Refresh();
+            EditorApplication.UnlockReloadAssemblies();
+            Debug.ClearDeveloperConsole();
             
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
