@@ -1063,6 +1063,8 @@ namespace NDream.AirConsole {
 
 		[Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
 		public StartMode browserStartMode;
+		[Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
+		public string LocalIpOverride;
 		[Tooltip("The controller html file for your game")]
 		public UnityEngine.Object controllerHtml;
 		[Tooltip("Automatically scale the game canvas")]
@@ -1695,7 +1697,9 @@ namespace NDream.AirConsole {
 
 		public static string GetUrl (StartMode mode) {
 
-            string url = Settings.AIRCONSOLE_DEV_URL;
+			bool isHttps = !string.IsNullOrEmpty(AirConsole.instance.LocalIpOverride) &&
+			               AirConsole.instance.LocalIpOverride.StartsWith("https://");
+			string url = isHttps ? Settings.AIRCONSOLE_DEV_URL : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
                 url += "simulator/";
             }
