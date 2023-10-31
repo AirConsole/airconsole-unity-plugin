@@ -1,24 +1,32 @@
-# .github/workflows/unity_build.yml
-
 name: Create Release
 
 on:
   workflow_dispatch:
-#     inputs:
-#       version:
-#         description: 'Version (vMAJOR.MINOR)'
-#         required: true
+    branches:
+      - master
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
+      max-parallel: 1
       matrix:
-        unity_version: ['2019.4.40f1', '2020.3.30f1', '2021.3.31f1', '2022.3.11f1']
-        platform: ['Android', 'WebGL']
+        unityVersion:
+          - 2019.4.40f1
+          # - 2020.3.48f1
+          # - 2021.3.31f1
+          # - 2022.3.11f1
+        platform:
+          - WebGL
+          # - Android
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        lfs: true
 
     - name: Extract Version from C# File
       id: extract_version
@@ -41,28 +49,39 @@ jobs:
         releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/airconsole/airconsole-unity-plugin/releases")
 
         # Check if a release with the extracted version exists
-        exists=$(echo "$releases" | jq -r --arg version "${{ env.version }}" '.[] | select(.tag_name == $version) | .tag_name')
+        exists=$(echo "$releases" | jq -r --arg version "v${{ env.version }}" '.[] | select(.tag_name == $version) | .tag_name')
 
         if [[ -n "$exists" ]]; then
-          echo "Release with version ${{ env.version }} exists."
+          echo "Release with version v${{ env.version }} already exists."
+          exit 1
         else
-          echo "No release with version ${{ env.version }} found."
+          echo "No release with version v${{ env.version }} found."
         fi
 
-
-    - name: Setup Unity
-      uses: game-ci/unity-setup@v2
+    - uses: actions/cache@v3
       with:
-        unity-version: ${{ matrix.unity_version }}
+        path: Library
+        key: Library-AUP-${{ matrix.platform }}
+        restore-keys: |
+          Library-AUP-
+          Library-
 
-    - name: Build Project
-      run: |
-        unity -quit -batchmode -executeMethod NDream.Unity.Builder.Build${{ matrix.platform }} -projectPath .
+    - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
+      uses: game-ci/unity-builder@v3
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: ${{ matrix.unityVersion }}
+        targetPlatform: ${{ matrix.platform }}
+        buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
+        allowDirtyBuild: true
 
 
     # - name: Validate Build
     #   run: |
-    #     filepath="Builds/${{ matrix.platform }}/release-${{ matrix.unity_version }}-v${{ env.version }}"
+    #     filepath="Builds/${{ matrix.platform }}/release-${{ matrix.unityVersion }}-v${{ env.version }}"
     #     if [ "${{ matrix.platform }}" == "Android" ]; then
     #       filepath+=".apk"
     #     elif [ "${{ matrix.platform }}" == "WebGL" ]; then
@@ -82,11 +101,30 @@ jobs:
     - name: Log Release Notes
       run: echo "Release Notes are ${{ steps.extract-release-notes.outputs.release_notes }}"
 
-    - name: Generate Release unitypacakge
-      run: |
-        unity -quit -batchmode -executeMethod NDream.Unity.Packager.Export -projectPath . # -outputPath Builds/release-${{ github.event.inputs.version }}.unitypackage
+    - name: Generate unitypackage release
+      uses: game-ci/unity-builder@v3
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == '2019.4.40f1'
+      with:
+        unityVersion: ${{ matrix.unityVersion }}
+        targetPlatform: ${{ matrix.platform }}
+        buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
+        allowDirtyBuild: true
 
-    - name: Validate Package
+    # - name: Generate Release unity package
+    #   run: |
+    #     unity -quit -batchmode -executeMethod NDream.Unity.Packager.Export -projectPath . # -outputPath Builds/release-${{ github.event.inputs.version }}.unitypackage
+
+    # Return License
+    - name: Return license
+      uses: game-ci/unity-return-license@v2
+      if: always()
+
+    - name: Validate release package
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == '2019.4.40f1'
       run: |
         filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
         if [ ! -f "$filepath" ]; then

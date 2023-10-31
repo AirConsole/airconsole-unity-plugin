@@ -7,11 +7,11 @@ namespace NDream.Unity
     {
         public static void BuildAndroid()
         {
-          Debug.LogError("Building Android");
+          Debug.Log("Building Android");
         }
 
         public static void BuildWebGL(){
-          Debug.LogError("Building WebGL");
+          Debug.Log("Building WebGL");
         }
     }
 }
