@@ -1697,11 +1697,17 @@ namespace NDream.AirConsole {
 
 		public static string GetUrl (StartMode mode) {
 
-			bool isHttps = !string.IsNullOrEmpty(AirConsole.instance.LocalIpOverride) &&
-			               AirConsole.instance.LocalIpOverride.StartsWith("https://");
+			#if UNITY_EDITOR
+			bool isHttps = !Application.isEditor || 
+			               (!string.IsNullOrEmpty(AirConsole.instance.LocalIpOverride) && AirConsole.instance.LocalIpOverride.StartsWith("https://"));
+			#else
+			bool isHttps = true;
+			#endif
 			string url = isHttps ? Settings.AIRCONSOLE_DEV_URL : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
                 url += "simulator/";
+            } else {
+	            url += "?http=1";
             }
 
             #if UnityEditor
