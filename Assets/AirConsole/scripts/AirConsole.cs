@@ -1703,10 +1703,10 @@ namespace NDream.AirConsole {
 			#else
 			bool isHttps = true;
 			#endif
-			string url = isHttps ? Settings.AIRCONSOLE_DEV_URL : Settings.AIRCONSOLE_DEV_URL_HTTP;
+			string url = isHttps ? Settings.AIRCONSOLE_DEV_URL_HTTPS : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
                 url += "simulator/";
-            } else {
+            } else if (!isHttps) {
 	            url += "?http=1";
             }
 
