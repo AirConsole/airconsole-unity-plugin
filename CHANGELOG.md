@@ -4,6 +4,12 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [2.14]
+
+### New Features
+
+- Support for custom local IPs: AirConsole now provides a field to define the IP provided to the backend, enabling the AirConsole Controller to connect to running Unity Editor instances directly.
+
 ## [2.13] - 2022-10-23
 
 ### Fixed
