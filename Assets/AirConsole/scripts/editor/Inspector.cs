@@ -56,23 +56,21 @@ namespace NDream.AirConsole.Editor {
 
 			// show default inspector property editor withouth script reference
 			serializedObject.Update ();
-			DrawPropertiesExcluding (serializedObject, new string[] { "m_Script" });
+	
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("controllerHtml"));
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
+			DrawTranslationsToggle();
+	
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidTvGameVersion"));
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("webViewLoadingSprite"));
+			
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("browserStartMode"));
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("devGameId"));
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("LocalIpOverride"));
+			
 			serializedObject.ApplyModifiedProperties ();
 
-			//translation bool
-			bool oldTranslationValue = translationValue;
-			translationValue = EditorGUILayout.Toggle("Translation", translationValue);
-			if (oldTranslationValue != translationValue) {
-				string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
-
-				if (translationValue)
-				{
-					System.IO.File.WriteAllText(path, TRANSLATION_ACTIVE);
-				}
-				else {
-					System.IO.File.WriteAllText(path, TRANSLATION_INACTIVE);
-				}
-			}
 
 			EditorGUILayout.BeginHorizontal (styleBlack);
 			// check if a port was exported
@@ -92,6 +90,21 @@ namespace NDream.AirConsole.Editor {
 			}
 
 			EditorGUILayout.EndHorizontal ();
+		}
+
+		private void DrawTranslationsToggle() {
+			//translation bool
+			bool oldTranslationValue = translationValue;
+			translationValue = EditorGUILayout.Toggle("Translation", translationValue);
+			if(oldTranslationValue != translationValue) {
+				string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
+
+				if(translationValue) {
+					System.IO.File.WriteAllText(path, TRANSLATION_ACTIVE);
+				} else {
+					System.IO.File.WriteAllText(path, TRANSLATION_INACTIVE);
+				}
+			}
 		}
 	}
 }
