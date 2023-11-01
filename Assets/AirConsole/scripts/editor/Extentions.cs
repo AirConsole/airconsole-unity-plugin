@@ -111,7 +111,7 @@ namespace NDream.AirConsole.Editor {
 
 					if (controller.browserStartMode != StartMode.NoBrowserStart) {
 
-						string url = AirConsole.GetUrl (controller.browserStartMode) + "http://" + GetLocalAddress () + ":" + Settings.webServerPort + "/";
+						string url = AirConsole.GetUrl (controller.browserStartMode) + GetLocalAddress () + "/";
 
 						// add port info if starting the unity editor version
 						if (startUpPath.Contains (Settings.WEBTEMPLATE_PATH)) {
@@ -131,6 +131,9 @@ namespace NDream.AirConsole.Editor {
 		}
 
 		public static string GetLocalAddress () {
+			if(!string.IsNullOrEmpty(AirConsole.instance.LocalIpOverride)) {
+				return AirConsole.instance.LocalIpOverride;
+			}
 			string localIP = "";
 
 			using (Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, 0)) {
@@ -138,8 +141,8 @@ namespace NDream.AirConsole.Editor {
 				IPEndPoint endPoint = socket.LocalEndPoint as IPEndPoint;
 				localIP = endPoint.Address.ToString();
 			}
-
-			return localIP;
+			localIP += ":" + Settings.webServerPort;
+			return localIP.StartsWith("http") ? localIP : $"http://{localIP}";
 		}
 	}
 }

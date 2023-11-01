@@ -1060,24 +1060,28 @@ namespace NDream.AirConsole {
 #endif
 
 		#region airconsole unity config
-
-		[Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
-		public StartMode browserStartMode;
+		
 		[Tooltip("The controller html file for your game")]
 		public UnityEngine.Object controllerHtml;
 		[Tooltip("Automatically scale the game canvas")]
 		public bool autoScaleCanvas = true;
-        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
-        public string devGameId;
-#if UNITY_ANDROID
+
+        [Header("Android Settings")]
         [Tooltip("The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
         public string androidTvGameVersion;
 		[Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
         public AndroidUIResizeMode androidUIResizeMode;
 		[Tooltip("Loading Sprite to be displayed at the start of the game.")]
         public Sprite webViewLoadingSprite;
-#endif
-
+        
+        [Header("Development Settings")]
+        [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
+        public StartMode browserStartMode;
+        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
+        public string devGameId;
+        [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
+        public string LocalIpOverride;
+        
 		#endregion
 #if !DISABLE_AIRCONSOLE
 
@@ -1695,9 +1699,17 @@ namespace NDream.AirConsole {
 
 		public static string GetUrl (StartMode mode) {
 
-            string url = Settings.AIRCONSOLE_DEV_URL;
+			#if UNITY_EDITOR
+			bool isHttps = !Application.isEditor || 
+			               (!string.IsNullOrEmpty(AirConsole.instance.LocalIpOverride) && AirConsole.instance.LocalIpOverride.StartsWith("https://"));
+			#else
+			bool isHttps = true;
+			#endif
+			string url = isHttps ? Settings.AIRCONSOLE_DEV_URL_HTTPS : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
                 url += "simulator/";
+            } else if (!isHttps) {
+	            url += "?http=1";
             }
 
             #if UnityEditor
