@@ -4,7 +4,7 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## [2.14]
+## [2.14] - 2022-11-02
 
 ### New Features
 
