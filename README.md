@@ -35,7 +35,7 @@ There are more examples on the website: <http://developers.airconsole.com/#/guid
 
 # Platforms
 
-Since the AirConsole is working with HTML5 and Javascript, you can only make use of this plugin when you switch your target build to WebGL.
+AirConsole supports WebGL and AndroidTV as targets. To make use of this plugin, you  need to make sure to switch your target to either WebGL or Android.
 
 # Support
 
