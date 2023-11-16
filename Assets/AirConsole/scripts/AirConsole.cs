@@ -8,6 +8,9 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+#if UNITY_WEBGL
+using System.Runtime.InteropServices;
+#endif
 
 namespace NDream.AirConsole {
 	public enum StartMode {
@@ -1065,6 +1068,9 @@ namespace NDream.AirConsole {
 		public UnityEngine.Object controllerHtml;
 		[Tooltip("Automatically scale the game canvas")]
 		public bool autoScaleCanvas = true;
+		[Tooltip("Enables player silencing.\nSee https://developers.airconsole.com/#!/guides/player_silencing")]
+		[SerializeField]
+		private bool _silencePlayers = false;
 
         [Header("Android Settings")]
         [Tooltip("The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
@@ -1095,7 +1101,6 @@ namespace NDream.AirConsole {
 			// always set default object name
 			// important for unity webgl communication
 			gameObject.name = "AirConsole";
-
 		#if UNITY_ANDROID
 			defaultScreenHeight = Screen.height;
 		#endif
@@ -1373,6 +1378,10 @@ namespace NDream.AirConsole {
 						this.onReady ((string)msg ["code"]);
 					}
 				});
+			}
+
+			if(_silencePlayers) {
+				EnablePlayerSilencing();
 			}
 		}
 
@@ -1930,6 +1939,26 @@ namespace NDream.AirConsole {
 #endif
 
 #endregion
+		
+#if UNITY_ANDROID || UNITY_EDITOR
+		/// <summary>
+		/// Enables player silencing
+		/// </summary>
+		private void EnablePlayerSilencing () {
+			if (!IsAirConsoleUnityPluginReady ()) {
+				throw new NotReadyException ();
+			}
+			JObject msg = new JObject {
+				{ "action", "enablePlayerSilencing" }
+			};
+
+			AllocateDeviceSlots (0);
+			wsListener.Message (msg);
+		}
+#elif UNITY_WEBGL && !UNITY_EDITOR
+		[DllImport("__Internal")]
+		private static extern void EnablePlayerSilencing();
+#endif
 
 #endif
 
