@@ -1,6 +1,6 @@
 /**
- * Copyright by N-Dream AG 2016.
- * @version 2.0
+ * Copyright by N-Dream AG 2023.
+ * @version 2.15
  */
 
 /**
