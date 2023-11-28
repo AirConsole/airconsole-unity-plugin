@@ -325,7 +325,7 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setCustomDeviceState(data.data);
     } else if (data.action == "setCustomDeviceStateProperty") {
         this.airconsole.setCustomDeviceStateProperty(data.key, data.value);
-    } else if (data.action === "enablePlayerSilencing"){
+    } else if (data.action === "enablePlayerSilencing") {
         this.airconsole.enablePlayerSilencing(true);
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
