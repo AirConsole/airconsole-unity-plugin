@@ -60,6 +60,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("controllerHtml"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
 			DrawTranslationsToggle();
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("_silencePlayers"));
 	
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidTvGameVersion"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));

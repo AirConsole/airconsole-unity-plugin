@@ -1,6 +1,6 @@
 /**
- * Copyright by N-Dream AG 2016.
- * @version 2.0
+ * Copyright by N-Dream AG 2023.
+ * @version 2.15
  */
 
 /**
@@ -325,6 +325,8 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setCustomDeviceState(data.data);
     } else if (data.action == "setCustomDeviceStateProperty") {
         this.airconsole.setCustomDeviceStateProperty(data.key, data.value);
+    } else if (data.action === "enablePlayerSilencing") {
+        this.airconsole.enablePlayerSilencing(true);
     } else if (data.action == "navigateHome") {
         this.airconsole.navigateHome();
     } else if (data.action == "navigateTo") {
@@ -373,6 +375,13 @@ App.prototype.onGameReady = function(autoScale) {
         window.addEventListener('resize', function() { me.resizeCanvas() });
         me.resizeCanvas();
     }
+};
+
+/**
+ * This is called by airconsole.jslib - enablePlayerSilencing
+ */
+App.prototype.enablePlayerSilencing = function() {
+    this.airconsole.enablePlayerSilencing(true);
 };
 
 function onGameReady(autoScale) {
