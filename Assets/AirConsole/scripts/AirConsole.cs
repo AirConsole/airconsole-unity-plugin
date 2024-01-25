@@ -948,13 +948,19 @@ namespace NDream.AirConsole {
 		/// Requests persistent data from the servers.
 		/// Will call onPersistentDataLoaded when data was received.
 		/// </summary>
-		/// <param name="uids">The uids for which you would like to request the persistent data. Default is this device.</param>
-		public void RequestPersistentData (List<string> uids = null) {
+		/// <param name="uids">The uids for which you would like to request the persistent data.</param>
+		public void RequestPersistentData(List<string> uids) {
 
 			if (!IsAirConsoleUnityPluginReady ()) {
-
 				throw new NotReadyException ();
+			}
 
+			if (uids == null) {
+				throw new ArgumentNullException("uids");
+			}
+
+			if (uids.Count < 1) {
+				throw new ArgumentException("uids must contain at least one uid");
 			}
 
 			JObject msg = new JObject ();
@@ -980,13 +986,15 @@ namespace NDream.AirConsole {
 		/// </summary>
 		/// <param name="key">The key of the data entry.</param>
 		/// <param name="value">The value of the data entry.</param>
-		/// <param name="uid">The uid for which the data should be stored. Default is this device.</param>
-		public void StorePersistentData (string key, JToken value, string uid = null) {
+		/// <param name="uid">The uid for which the data should be stored.</param>
+		public void StorePersistentData(string key, JToken value, string uid) {
 
 			if (!IsAirConsoleUnityPluginReady ()) {
-
 				throw new NotReadyException ();
+			}
 
+			if (string.IsNullOrEmpty(uid)) {
+				throw new ArgumentException("uid must not be null or empty");
 			}
 
 			JObject msg = new JObject ();

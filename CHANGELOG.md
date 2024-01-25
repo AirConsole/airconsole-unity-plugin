@@ -4,10 +4,11 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## [Unreleased]
+## [2.5.0]
 
 ### Changed
-
+- StorePersistentData's uid parameter is no longer optional.
+- RequestPersistentData's uids parameter is no longer optional.
 - Addition of version migration documentation for version migrations from 2.10 and before.
 - Updated supported platforms list.
 
