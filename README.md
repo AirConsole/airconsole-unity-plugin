@@ -13,7 +13,7 @@ You don't need to install any other webserver or services.
 
 The location of the Webview has changed in this release.
 
-When upgrading from v2.11 and before, if the Unity package import does not detect the move, please manually remove the old Webview plugin parts:
+When upgrading from v2.11 and before, you need manually remove the old Webview plugin parts:
 
 - `Assets/AirConsole/plugins/WebViewObject.cs`
 - `Assets/AirConsole/plugins/Editor/UnityWebViewPostprocessBuild.cs`
