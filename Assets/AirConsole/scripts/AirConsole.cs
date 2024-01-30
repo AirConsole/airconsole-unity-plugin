@@ -1940,26 +1940,6 @@ namespace NDream.AirConsole {
 #endif
 
 #endregion
-		
-#if UNITY_ANDROID || UNITY_EDITOR
-		/// <summary>
-		/// Enables player silencing
-		/// </summary>
-		private void EnablePlayerSilencing () {
-			if (!IsAirConsoleUnityPluginReady ()) {
-				throw new NotReadyException ();
-			}
-			JObject msg = new JObject {
-				{ "action", "enablePlayerSilencing" }
-			};
-
-			AllocateDeviceSlots (0);
-			wsListener.Message (msg);
-		}
-#elif UNITY_WEBGL && !UNITY_EDITOR
-		[DllImport("__Internal")]
-		private static extern void EnablePlayerSilencing();
-#endif
 
 #endif
 
