@@ -111,8 +111,9 @@ App.prototype.setupEditorSocket = function() {
 App.prototype.initAirConsole = function() {
     var me = this;
     var translation = window.AIRCONSOLE_TRANSLATION;
+    var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
 
-    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation });
+    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players });
 
     me.airconsole.onMessage = function (from, data) {
         me.postToUnity({

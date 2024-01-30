@@ -14,21 +14,23 @@ namespace NDream.AirConsole.Editor {
 		private SerializedProperty gameId;
 		private SerializedProperty gameVersion;
 		private bool translationValue;
+		private bool inactivePlayersSilencedValue;
 		private const string TRANSLATION_ACTIVE = "var AIRCONSOLE_TRANSLATION = true;";
 		private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
+		private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
+		private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
 
 		public void Awake()
 		{
 			string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
-			if (System.IO.File.Exists(path))
-			{
-				translationValue = System.IO.File.ReadAllText(path).Equals(TRANSLATION_ACTIVE);
+			if (System.IO.File.Exists(path)) {
+				string persistedSettings = System.IO.File.ReadAllText(path);
+				translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
+				inactivePlayersSilencedValue = persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_ACTIVE);
 			}
-
 		}
 
 		public void OnEnable () {
-
 			// get logos
 			bg = (Texture2D)Resources.Load ("AirConsoleBg");
 			logo = (Texture)Resources.Load ("AirConsoleLogoText");
@@ -60,7 +62,7 @@ namespace NDream.AirConsole.Editor {
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("controllerHtml"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
 			DrawTranslationsToggle();
-			EditorGUILayout.PropertyField(serializedObject.FindProperty("_silencePlayers"));
+			DrawPlayerSilencingToggle();
 	
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidTvGameVersion"));
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
@@ -92,20 +94,27 @@ namespace NDream.AirConsole.Editor {
 
 			EditorGUILayout.EndHorizontal ();
 		}
-
+		
 		private void DrawTranslationsToggle() {
-			//translation bool
 			bool oldTranslationValue = translationValue;
 			translationValue = EditorGUILayout.Toggle("Translation", translationValue);
 			if(oldTranslationValue != translationValue) {
 				string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
-
-				if(translationValue) {
-					System.IO.File.WriteAllText(path, TRANSLATION_ACTIVE);
-				} else {
-					System.IO.File.WriteAllText(path, TRANSLATION_INACTIVE);
-				}
+				WriteConstructorSettings(path);
 			}
+		}
+		
+		private void DrawPlayerSilencingToggle() {
+			bool oldInactivePlayersSilencedValue = inactivePlayersSilencedValue;
+			inactivePlayersSilencedValue = EditorGUILayout.Toggle("Silence Player", inactivePlayersSilencedValue);
+			if(oldInactivePlayersSilencedValue != inactivePlayersSilencedValue) {
+				string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
+				WriteConstructorSettings(path);
+			}
+		}
+
+		private void WriteConstructorSettings(string path) {
+			System.IO.File.WriteAllText(path, $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}");
 		}
 	}
 }

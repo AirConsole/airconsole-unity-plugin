@@ -1076,9 +1076,6 @@ namespace NDream.AirConsole {
 		public UnityEngine.Object controllerHtml;
 		[Tooltip("Automatically scale the game canvas")]
 		public bool autoScaleCanvas = true;
-		[Tooltip("Enables player silencing.\nSee https://developers.airconsole.com/#!/guides/player_silencing")]
-		[SerializeField]
-		private bool _silencePlayers = false;
 
         [Header("Android Settings")]
         [Tooltip("The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
@@ -1386,10 +1383,6 @@ namespace NDream.AirConsole {
 						this.onReady ((string)msg ["code"]);
 					}
 				});
-			}
-
-			if(_silencePlayers) {
-				EnablePlayerSilencing();
 			}
 		}
 

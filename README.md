@@ -9,6 +9,11 @@ You don't need to install any other webserver or services.
 
 # Upgrade Notes
 
+## Upgrading from v2.14- to v2.5.0
+
+1. The content of airconsole-unity-plugin.js has changed.
+You need to copy the correct version from `WebGLTemplates/AirConsole` for Unity 2019 and below or `WebGLTemplates/AirConsole-2020` for Unity 2020+ to the WebGLTemplate folder you use.
+
 ## Upgrading from v2.11 to v2.12+
 
 The location of the Webview has changed in this release.
