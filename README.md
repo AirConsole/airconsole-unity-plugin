@@ -14,6 +14,9 @@ You don't need to install any other webserver or services.
 1. The content of airconsole-unity-plugin.js has changed.
 You need to copy the correct version from `WebGLTemplates/AirConsole` for Unity 2019 and below or `WebGLTemplates/AirConsole-2020` for Unity 2020+ to the WebGLTemplate folder you use.
 
+2. The content of the index.html / screen.html has changed.
+Search for `<script src="translation.js"></script>` and replace it with `<script src="airconsole-settings.js"></script>`, otherwise neither Translations nor Player Silencing will work.
+
 ## Upgrading from v2.11 to v2.12+
 
 The location of the Webview has changed in this release.
