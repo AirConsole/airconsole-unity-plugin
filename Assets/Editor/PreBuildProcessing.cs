@@ -1,11 +1,12 @@
 #if UNITY_EDITOR
-using UnityEditor;
+using NDream.AirConsole;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
 public class PreBuildProcessing : IPreprocessBuildWithReport {
     public int callbackOrder => 1;
+
     public void OnPreprocessBuild(BuildReport report) {
         Debug.Log("Used Python path: " + System.Environment.GetEnvironmentVariable("EMSDK_PYTHON"));
 
@@ -16,7 +17,9 @@ public class PreBuildProcessing : IPreprocessBuildWithReport {
 
         // If you need to set the Python path manually you can use the code below, uncomment it and
         // set "EMSDK_PYTHON" to the the Python 3 (Or Python 2 for old Unity versions) path:
-        // System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", "<python-path-here>");
+#if !UNITY_2020_1_OR_NEWER
+        System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", Settings.Python2Path);
+#endif
     }
 }
 #endif

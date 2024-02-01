@@ -6,10 +6,16 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [2.5.0]
 
+### Added
+
+- Added :gift_heart:: Support for Player Silencing in the AirConsole component. For more information visit the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+- Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually installed on OSX Ventura / Sonoma! If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings window.
+- Addition of version migration documentation for version migrations from 2.10 up to 2.5.0.
+
 ### Changed
+
 - StorePersistentData's uid parameter is no longer optional.
 - RequestPersistentData's uids parameter is no longer optional.
-- Addition of version migration documentation for version migrations from 2.10 and before.
 - Updated supported platforms list.
 
 ## [2.14] - 2022-11-02
@@ -23,7 +29,6 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Fixed
 
 - Update Unity Webview to v1.0.1 to address WebGL builds
-
 
 ## [2.12] - 2023-10-10
 
