@@ -17,6 +17,11 @@ You need to copy the correct version from `WebGLTemplates/AirConsole` for Unity 
 2. The content of the index.html / screen.html has changed.
 Search for `<script src="translation.js"></script>` and replace it with `<script src="airconsole-settings.js"></script>`, otherwise neither Translations nor Player Silencing will work.
 
+3. Ensure that obsolete API devices, device_id and server_time_offset are updated:
+   1. Replace AirConsole.instance.devices with AirConsole.instance.Devices
+   2. Replace AirConsole.instance.device_id with AirConsole.instance.GetDeviceId()
+   3. Replace AirConsole.instance.server_time_offset with AirConsole.instance.GetServerTime()
+
 ## Upgrading from v2.11 to v2.12+
 
 The location of the Webview has changed in this release.

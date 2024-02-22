@@ -17,6 +17,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 - StorePersistentData's uid parameter is no longer optional.
 - RequestPersistentData's uids parameter is no longer optional.
 - Updated supported platforms list.
+- Obsolete API devices, device_id and server_time_offset have now create errors so that they can be removed in the next minor version.
 
 ## [2.14] - 2022-11-02
 
