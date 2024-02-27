@@ -62,9 +62,14 @@ namespace NDream.AirConsole {
     public delegate void OnResume();
 
     public class AirConsole : MonoBehaviour {
+
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
+        /// <summary>
+        /// Device ID of the screen
+        /// </summary>
+        public const int SCREEN = 0;
 
         /// <summary>
         /// Gets the Version string to provide it to remote addressable path.
@@ -1545,16 +1550,23 @@ namespace NDream.AirConsole {
             }
         }
 
-        [Obsolete("Please use GetServerTime(). This method will be removed in the next version.")]
+        // TODO(2.6.0): Remove this property
+        [Obsolete("Please use GetServerTime(). This method will be removed in version 2.6.0.", true)]
         public int server_time_offset => _server_time_offset;
 
-        [Obsolete("device_id is deprecated, please use GetDeviceId instead. This method will be " + "removed in the next version.")]
+        // TODO(2.6.0): Remove this property
+        [Obsolete("device_id is deprecated, please use GetDeviceId instead. This method will be " + "removed in version 2.6.0.", true)]
         public int device_id => GetDeviceId();
 
-        [Obsolete("Do not use .devices directly. Use the getter and setter functions. Devices in "
-                  + "this collection may not have loaded your game yet. This method will be removed in"
-                  + "the next version.")]
+        // TODO(2.6.0): Remove this property
+        [Obsolete("Please use .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
         public ReadOnlyCollection<JToken> devices => _devices.AsReadOnly();
+        
+        /// <summary>
+        /// Provides access to the device data of all devices in the game.
+        /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
+        /// </summary>
+        public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
 
         // private vars
         private WebSocketServer wsServer;
