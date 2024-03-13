@@ -774,12 +774,11 @@ namespace NDream.AirConsole {
         /// <param name="level_name">The name of the level.</param>
         /// <param name="level_version">The version of the level.</param>
         /// <param name="uids">An array of UIDs of the users should be included in the result. Default is all connected controllers.</param>
-        /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends". Default is ["world"].</param>
+        /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends", "partner". Default is ["world"].</param>
         /// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
         /// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
-        /// <param name="partner_specific">Request the highscore for the screens current partner only?</param>
         public void RequestHighScores(string level_name, string level_version, List<string> uids = null, List<string> ranks = null,
-            int total = -1, int top = -1, bool partner_specific = false) {
+            int total = -1, int top = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
             }
@@ -788,9 +787,6 @@ namespace NDream.AirConsole {
             msg.Add("action", "requestHighScores");
             msg.Add("level_name", level_name);
             msg.Add("level_version", level_version);
-            if (partner_specific) {
-                msg.Add("partner_specific", true);
-            }
 
             JArray uidsJArray = null;
 
