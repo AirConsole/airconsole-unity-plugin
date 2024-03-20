@@ -4,7 +4,7 @@ using System.Collections;
 namespace NDream.AirConsole {
 	public static class Settings {
 
-		public const string VERSION = "2.5.0-beta.1";
+		public const string VERSION = "2.5.0";
 		// ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
 		public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
 		public const string AIRCONSOLE_DEV_URL_HTTPS = "https://www.airconsole.com/";

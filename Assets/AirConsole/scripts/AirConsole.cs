@@ -785,8 +785,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
             
-            if(ranks.Contains("partner") && (ranks.Contains("country") || ranks.Contains("region") || ranks.Contains("city")))
-            {
+            if (ranks.Contains("partner") && (ranks.Contains("country") || ranks.Contains("region") || ranks.Contains("city"))) {
                 throw new ArgumentException("You can't request partner high scores together with country, region or city high scores.");
             }
 
