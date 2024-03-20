@@ -774,13 +774,19 @@ namespace NDream.AirConsole {
         /// <param name="level_name">The name of the level.</param>
         /// <param name="level_version">The version of the level.</param>
         /// <param name="uids">An array of UIDs of the users should be included in the result. Default is all connected controllers.</param>
-        /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends". Default is ["world"].</param>
+        /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends", "partner". Default is ["world"].</param>
         /// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
         /// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
+        /// <remarks>If rank "partner" is included, "country", "region" and "city" are not allowed.</remarks>
+        /// <exception cref="ArgumentException">Thrown when rank "partner" is specified together with "country", "region" or "city"</exception>
         public void RequestHighScores(string level_name, string level_version, List<string> uids = null, List<string> ranks = null,
             int total = -1, int top = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
+            }
+            
+            if (ranks.Contains("partner") && (ranks.Contains("country") || ranks.Contains("region") || ranks.Contains("city"))) {
+                throw new ArgumentException("You can't request partner high scores together with country, region or city high scores.");
             }
 
             JObject msg = new JObject();
