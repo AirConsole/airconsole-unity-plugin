@@ -30,7 +30,8 @@ namespace NDream.AirConsole.Editor {
             if (System.IO.File.Exists(SettingsPath)) {
                 string persistedSettings = System.IO.File.ReadAllText(SettingsPath);
                 translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
-                inactivePlayersSilencedValue = persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_ACTIVE);
+                // We want player silencing to be active by default
+                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE); 
             }
         }
 
