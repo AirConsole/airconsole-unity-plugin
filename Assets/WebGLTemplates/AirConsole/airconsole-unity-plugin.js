@@ -114,6 +114,12 @@ App.prototype.initAirConsole = function() {
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
 
     me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players });
+    
+    const version = me.airconsole.version.split('.');
+    if(version.length < 3 || version[0] < 1 || version[1] < 9) {
+        confirm('Unity AirConsole Plugin 2.5.0 requires at minimum the AirConsole API version 1.9.0. Please review the upgrade instructions');
+        window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/release/2.5.0/README.md#upgrading-from-v214--to-v250');
+    }
 
     me.airconsole.onMessage = function (from, data) {
         me.postToUnity({
