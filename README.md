@@ -7,6 +7,10 @@ You can find the Javascript API documentation here: <http://developers.airconsol
 IMPORTANT: The plugin comes with an embedded webserver / websocket-server for the communication between the AirConsole backend and the Unity-Editor.
 You don't need to install any other webserver or services.
 
+# Changelog
+
+Please see [CHANGELOGO.md](CHANGELOG.md) for the full changelog.
+
 # Upgrade Notes
 
 ## Upgrading from v2.14- to v2.5.0
