@@ -137,7 +137,26 @@ App.prototype.setupEditorSocket = function() {
       + "</div>";
 };
 
+App.prototype.validateNotLatestApi = function () {
+    const referencedAirconsoleAPIScripts = Array.prototype.slice.call(document.getElementsByTagName('script'), 0)
+        .map(it => it.src).filter(it => it.includes('api/airconsole-'));
+
+    if (referencedAirconsoleAPIScripts.length > 0) {
+        airconsoleApiVersion = referencedAirconsoleAPIScripts[0]
+            .match(new RegExp('https?://.*/api/airconsole-(.*).js'));
+        if(airconsoleApiVersion.length > 1 && airconsoleApiVersion[1] === 'latest') {
+            const url = window.location.pathname;
+            const fileName = url.substring(url.lastIndexOf('/')+1);
+            alert(`Please update ${fileName} to the latest version. airconsole-latest.js must not be referenced.`);
+            window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/master/README.md#upgrading-from-v214--to-v250');
+            throw new Error(`The usage of the AirConsole API must be updated in ${fileName}`);
+        };
+    }
+}
+
 App.prototype.initAirConsole = function() {
+    this.validateNotLatestApi();
+    
     var me = this;
     var translation = window.AIRCONSOLE_TRANSLATION;   
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
