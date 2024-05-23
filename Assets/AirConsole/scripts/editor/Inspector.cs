@@ -1,4 +1,5 @@
 ﻿#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
+using System.IO;
 using UnityEngine;
 using UnityEditor;
 
@@ -81,7 +82,7 @@ namespace NDream.AirConsole.Editor {
 
             EditorGUILayout.BeginHorizontal(styleBlack);
             // check if a port was exported
-            if (System.IO.File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
+            if (File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
                 if (GUILayout.Button("Open Exported Port", GUILayout.MaxWidth(130))) {
                     Extentions.OpenBrowser(controller, EditorPrefs.GetString("airconsolePortPath"));
                 }
@@ -94,6 +95,14 @@ namespace NDream.AirConsole.Editor {
                 window.Show();
             }
 
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal(styleBlack);
+            if (GUILayout.Button("Upgrade instructions", GUILayout.MaxWidth(130))) {
+                OpenUpgradeInstructions();
+            }
+
+            GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
         }
 
@@ -133,6 +142,14 @@ namespace NDream.AirConsole.Editor {
                 Debug.LogError($"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
                 System.IO.File.Delete(originalPath);
             }
+        }
+
+        private static string GetWebGLTemplateDirectory() {
+            return Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
+        }
+
+        private static void OpenUpgradeInstructions() {
+            Application.OpenURL("https://github.com/AirConsole/airconsole-unity-plugin/blob/master/README.md#upgrading-from-v214--to-v250");
         }
     }
 }
