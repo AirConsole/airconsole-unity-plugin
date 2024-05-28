@@ -62,10 +62,10 @@ namespace NDream.AirConsole {
     public delegate void OnResume();
 
     public class AirConsole : MonoBehaviour {
-
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
+
         /// <summary>
         /// Device ID of the screen
         /// </summary>
@@ -77,7 +77,7 @@ namespace NDream.AirConsole {
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
         public static string Version {
 #if UNITY_ANDROID
-			get { return instance.androidTvGameVersion; }
+            get { return instance.androidTvGameVersion; }
 #else
             get { return string.Empty; }
 #endif
@@ -727,7 +727,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            var result = new List<int>();
+            List<int> result = new List<int>();
             string game_url = GetGameUrl(_location);
             for (int i = 1; i < _devices.Count; ++i) {
                 JToken device = GetDevice(i);
@@ -834,7 +834,7 @@ namespace NDream.AirConsole {
         /// </summary>
         public void StoreHighScore(string level_name, string level_version, float score, string uid, JObject data = null,
             string score_string = null) {
-            var uids = new List<string>();
+            List<string> uids = new List<string>();
             uids.Add(uid);
             StoreHighScore(level_name, level_version, score, uids, data, score_string);
         }
@@ -991,7 +991,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            var result = new List<int>();
+            List<int> result = new List<int>();
 
             List<int> allControllers = GetControllerDeviceIds();
             for (int i = 0; i < allControllers.Count; ++i) {
@@ -1026,7 +1026,8 @@ namespace NDream.AirConsole {
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
         public Sprite webViewLoadingSprite;
 
-        [Header("Development Settings")] [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
+        [Header("Development Settings")]
+        [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
         public StartMode browserStartMode;
 
         [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
@@ -1050,7 +1051,7 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
-			defaultScreenHeight = Screen.height;
+            defaultScreenHeight = Screen.height;
 #endif
         }
 
@@ -1068,10 +1069,10 @@ namespace NDream.AirConsole {
             wsListener = new WebsocketListener(webViewObject);
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
-			wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
+            wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
 
-			SceneManager.sceneLoaded += OnSceneLoaded;
-			Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
 #endif
@@ -1120,10 +1121,10 @@ namespace NDream.AirConsole {
             }
 
 #if UNITY_ANDROID
-			//back button on TV remotes
-			if (Input.GetKeyDown(KeyCode.Escape)) {
-				Application.Quit();
-			}
+            //back button on TV remotes
+            if (Input.GetKeyDown(KeyCode.Escape)) {
+                Application.Quit();
+            }
 #endif
         }
 
@@ -1383,7 +1384,7 @@ namespace NDream.AirConsole {
 
         private void OnGameEnd(JObject msg) {
 #if UNITY_ANDROID
-			webViewObject.SetMargins(0, 0, 0, 0);
+            webViewObject.SetMargins(0, 0, 0, 0);
 #endif
             try {
                 if (onGameEnd != null) {
@@ -1561,7 +1562,7 @@ namespace NDream.AirConsole {
         // TODO(2.6.0): Remove this property
         [Obsolete("Please use .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
         public ReadOnlyCollection<JToken> devices => _devices.AsReadOnly();
-        
+
         /// <summary>
         /// Provides access to the device data of all devices in the game.
         /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
@@ -1573,12 +1574,12 @@ namespace NDream.AirConsole {
         private WebsocketListener wsListener;
 #if UNITY_ANDROID
         private WebViewObject webViewObject;
-		private Canvas webViewLoadingCanvas;
-		private UnityEngine.UI.Image webViewLoadingImage;
-		private UnityEngine.UI.Image webViewLoadingBG;
-		private int webViewHeight;
-		private int defaultScreenHeight;
-		private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
+        private Canvas webViewLoadingCanvas;
+        private UnityEngine.UI.Image webViewLoadingImage;
+        private UnityEngine.UI.Image webViewLoadingBG;
+        private int webViewHeight;
+        private int defaultScreenHeight;
+        private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
 #endif
         private List<JToken> _devices = new List<JToken>();
         private int _device_id;
@@ -1670,18 +1671,15 @@ namespace NDream.AirConsole {
 
 
 #if UNITY_ANDROID
-		private int GetScaledWebViewHeight(){
-			return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
-		}
+        private int GetScaledWebViewHeight() {
+            return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
+        }
 
         private void InitWebView() {
-
-            if (this.androidTvGameVersion != null && this.androidTvGameVersion != "") {
-
-                if(webViewObject == null) {
-
-                    webViewObject = (new GameObject("WebViewObject")).AddComponent<WebViewObject>();
-					GameObject.DontDestroyOnLoad(webViewObject.gameObject);
+            if (androidTvGameVersion != null && androidTvGameVersion != "") {
+                if (webViewObject == null) {
+                    webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
+                    DontDestroyOnLoad(webViewObject.gameObject);
                     webViewObject.Init((msg) => ProcessJS(msg));
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
@@ -1690,23 +1688,23 @@ namespace NDream.AirConsole {
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-                    var ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                    AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
-                    var pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
+                    AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
 
                     url += "&bundle-version=" + pInfo.Get<int>("versionCode");
 #endif
 
                     url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + this.androidTvGameVersion;
+                    url += "&game-version=" + androidTvGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
-					webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
+                    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
                     webViewObject.SetVisibility(true);
                     webViewObject.LoadURL(url);
 
-					//Display loading Screen
-					webViewLoadingCanvas = (new GameObject("WebViewLoadingCanvas")).AddComponent<Canvas>();
+                    //Display loading Screen
+                    webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
 
 
 #if !UNITY_EDITOR
@@ -1728,112 +1726,120 @@ namespace NDream.AirConsole {
 					}
 #endif
                 }
-
             } else {
                 if (Settings.debug.error) {
-                    Debug.LogError("AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
+                    Debug.LogError(
+                        "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
                 }
             }
         }
 
         private void OnLaunchApp(JObject msg) {
             Debug.Log("onLaunchApp");
-			string gameId = (string)msg ["game_id"];
-			string gameVersion = (string)msg ["game_version"];
+            string gameId = (string)msg["game_id"];
+            string gameVersion = (string)msg["game_version"];
 
-			if (gameId != Application.identifier || gameVersion != AirConsole.instance.androidTvGameVersion) {
-				bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
+            if (gameId != Application.identifier || gameVersion != instance.androidTvGameVersion) {
+                bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
-				if (msg["quit_after_launch_intent"] != null) {
-					quitAfterLaunchIntent = msg.SelectToken("quit_after_launch_intent").Value<bool>();
-				}
+                if (msg["quit_after_launch_intent"] != null) {
+                    quitAfterLaunchIntent = msg.SelectToken("quit_after_launch_intent").Value<bool>();
+                }
 
-				// Quit the Unity Player first and give it the time to close all the threads (Default)
-				if (!quitAfterLaunchIntent) {
-					Application.Quit();
-					System.Threading.Thread.Sleep(2000);
-				}
+                // Quit the Unity Player first and give it the time to close all the threads (Default)
+                if (!quitAfterLaunchIntent) {
+                    Application.Quit();
+                    System.Threading.Thread.Sleep(2000);
+                }
 
-				// Start the main AirConsole App
-				AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
-				AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
-				AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
-				AndroidJavaObject launchIntent = null;
-				try {
-					launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", gameId);
-				} catch (Exception) {
-					Debug.Log("getLeanbackLaunchIntentForPackage for " + gameId + " failed");
-				}
-				if (launchIntent == null) {
-					try {
-						launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", gameId);
-					} catch (Exception) {
-						Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
-					}
-				}
-				if (launchIntent != null && gameId != Application.identifier) {
-					ca.Call("startActivity", launchIntent);
-				} else {
-					Application.OpenURL("market://details?id=" + gameId);
-				}
-				up.Dispose();
-				ca.Dispose();
-				packageManager.Dispose();
-				launchIntent.Dispose();
+                // Start the main AirConsole App
+                AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
+                AndroidJavaObject launchIntent = null;
+                try {
+                    launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", gameId);
+                } catch (Exception) {
+                    Debug.Log("getLeanbackLaunchIntentForPackage for " + gameId + " failed");
+                }
 
-				// Quitting after launch intent was the pre v2.5 way
-				if (quitAfterLaunchIntent) {
-					Application.Quit();
-				}
-			}
+                if (launchIntent == null) {
+                    try {
+                        launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", gameId);
+                    } catch (Exception) {
+                        Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
+                    }
+                }
+
+                if (launchIntent != null && gameId != Application.identifier) {
+                    ca.Call("startActivity", launchIntent);
+                } else {
+                    Application.OpenURL("market://details?id=" + gameId);
+                }
+
+                up.Dispose();
+                ca.Dispose();
+                packageManager.Dispose();
+                launchIntent.Dispose();
+
+                // Quitting after launch intent was the pre v2.5 way
+                if (quitAfterLaunchIntent) {
+                    Application.Quit();
+                }
+            }
         }
 
         private void OnUnityWebviewResize(JObject msg) {
-			Debug.Log("OnUnityWebviewResize");
-			if (_devices.Count > 0) {
-				Debug.Log("screen device data: " + _devices[0].ToString());
-			}
+            Debug.Log("OnUnityWebviewResize");
+            if (_devices.Count > 0) {
+                Debug.Log("screen device data: " + _devices[0].ToString());
+            }
 
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
                 h = (int)msg["top_bar_height"] * 2;
-				webViewHeight = h;
-			}
+                webViewHeight = h;
+            }
 
-			webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
-			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-				Camera.main.pixelRect = new Rect (0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
-			}
+            webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+            }
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
-			webViewObject.SetMargins(0, 0, 0, 0);
-		}
+            webViewObject.SetMargins(0, 0, 0, 0);
+        }
 
-		private void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
-			if (instance != this) {
-				return;
-			}
+        private void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
+            if (instance != this) {
+                return;
+            }
 
-			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera  || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-				Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
-			}
+            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+            }
 
-			if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-				UnityEngine.UI.CanvasScaler[] allCanvasScalers = GameObject.FindObjectsOfType<UnityEngine.UI.CanvasScaler> ();
+            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
 
-				for (int i = 0; i < allCanvasScalers.Length; ++i) {
-					if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {
-						continue;
-					}
+                for (int i = 0; i < allCanvasScalers.Length; ++i) {
+                    if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {
+                        continue;
+                    }
 
-					allCanvasScalers[i].referenceResolution =
- new Vector2 (allCanvasScalers[i].referenceResolution.x, allCanvasScalers[i].referenceResolution.y / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight()) * allCanvasScalers[i].referenceResolution.y);
-					fixedCanvasScalers.Add(allCanvasScalers[i]);
-				}
-			}
-		}
+                    allCanvasScalers[i].referenceResolution =
+                        new Vector2(allCanvasScalers[i].referenceResolution.x,
+                            allCanvasScalers[i].referenceResolution.y
+                            / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight())
+                            * allCanvasScalers[i].referenceResolution.y);
+                    fixedCanvasScalers.Add(allCanvasScalers[i]);
+                }
+            }
+        }
 #endif
 
         #endregion
