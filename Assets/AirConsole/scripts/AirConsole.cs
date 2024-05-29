@@ -92,7 +92,7 @@ namespace NDream.AirConsole {
             get {
                 if (_instance == null) {
                     _instance = FindObjectOfType<AirConsole>();
-                    if (_instance != null) {
+                    if (_instance != null && Application.isPlaying) {
                         DontDestroyOnLoad(_instance.gameObject);
                     }
                 }
