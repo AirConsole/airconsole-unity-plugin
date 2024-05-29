@@ -1522,7 +1522,12 @@ namespace NDream.AirConsole {
         private void OnPause(JObject msg) {
             try {
                 if (onPause != null) {
-                    onPause();
+                    eventQueue.Enqueue(delegate () {
+                        if (onPause != null)
+                        {
+                            onPause();
+                        }
+                    });
                 }
 
                 if (Settings.debug.info) {
@@ -1538,7 +1543,12 @@ namespace NDream.AirConsole {
         private void OnResume(JObject msg) {
             try {
                 if (onResume != null) {
-                    onResume();
+                    eventQueue.Enqueue(delegate () {
+                        if (onResume != null)
+                        {
+                            onResume();
+                        }
+                    });
                 }
 
                 if (Settings.debug.info) {
