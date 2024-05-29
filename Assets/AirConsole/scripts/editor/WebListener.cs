@@ -14,35 +14,36 @@ namespace NDream.AirConsole.Editor {
 		private string startUpPath;
 		private string prefix;
 		private HttpListenerContext request;
-		private Thread t;
+		private Thread listenerThread;
 
 		public void SetPath (string path) {
 			startUpPath = path;
 		}
 
-		public void Start () {
+		public void Start ()
+        {
+            if (listener == null)
+            {
+				listener = new HttpListener();
+            }
 
-			if (listener == null) {
-				listener = new HttpListener ();
-			}
+            if (listener.IsListening) return;
+            listener.Start();
 
-			prefix = string.Format ("http://*:{0}/", Settings.webServerPort.ToString ());
+            prefix = $"http://*:{Settings.webServerPort}/";
+            if (!listener.Prefixes.Contains(prefix))
+            {
+                listener.Prefixes.Add(prefix);
+            }
 
-			if (!listener.IsListening) {
-				listener.Start ();
+            if (listenerThread != null && listenerThread.IsAlive)
+            {
+                listenerThread.Abort();
+            }
 
-				if (!listener.Prefixes.Contains (prefix)) {
-					listener.Prefixes.Add (prefix);
-				}
-
-				if (t != null && t.IsAlive) {
-					t.Abort ();
-				}
-
-				t = new Thread (new ThreadStart (ClientListener));
-				t.Start ();
-			}
-		}
+            listenerThread = new Thread(ClientListener);
+            listenerThread.Start();
+        }
 
 		public bool IsRunning () {
 			if (listener != null) {
@@ -139,16 +140,6 @@ namespace NDream.AirConsole.Editor {
 			default:
 				return "application/octet-stream";
 			}
-		}
-
-		public void Stop () {
-			t.Abort ();
-			listener.Stop ();
-		}
-
-		public void Restart () {
-			Stop ();
-			Start ();
 		}
 	}
 }

@@ -84,7 +84,7 @@ namespace NDream.AirConsole.Editor {
             // check if a port was exported
             if (File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
                 if (GUILayout.Button("Open Exported Port", GUILayout.MaxWidth(130))) {
-                    Extentions.OpenBrowser(controller, EditorPrefs.GetString("airconsolePortPath"));
+                    Extensions.OpenBrowser(controller, EditorPrefs.GetString("airconsolePortPath"));
                 }
             }
 
