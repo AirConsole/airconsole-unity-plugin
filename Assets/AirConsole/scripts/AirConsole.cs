@@ -1556,11 +1556,11 @@ namespace NDream.AirConsole {
         public int server_time_offset => _server_time_offset;
 
         // TODO(2.6.0): Remove this property
-        [Obsolete("device_id is deprecated, please use GetDeviceId instead. This method will be " + "removed in version 2.6.0.", true)]
+        [Obsolete("device_id is deprecated, please use GetDeviceId() instead.\nThis method will be removed in version 2.6.0.", true)]
         public int device_id => GetDeviceId();
 
         // TODO(2.6.0): Remove this property
-        [Obsolete("Please use .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
+        [Obsolete("Please use getter .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
         public ReadOnlyCollection<JToken> devices => _devices.AsReadOnly();
 
         /// <summary>
