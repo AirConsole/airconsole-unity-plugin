@@ -75,6 +75,7 @@ namespace NDream.AirConsole.Editor {
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("browserStartMode"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("devGameId"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("devLanguage"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("LocalIpOverride"));
 
             serializedObject.ApplyModifiedProperties();

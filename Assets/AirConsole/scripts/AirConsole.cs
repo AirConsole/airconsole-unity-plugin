@@ -1033,6 +1033,9 @@ namespace NDream.AirConsole {
         [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
         public string devGameId;
 
+        [Tooltip("Language used in the simulator during play mode.")]
+        public string devLanguage;
+
         [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
         public string LocalIpOverride;
 
@@ -1616,9 +1619,17 @@ namespace NDream.AirConsole {
                 url += "?http=1";
             }
 
-#if UnityEditor
-			if (AirConsole.instance.devGameId != "") {
+#if UNITY_EDITOR
+            var hasDevGameId = instance.devGameId.Length > 0;
+            var hasDevLanguage = instance.devLanguage.Length > 0;
+            if (hasDevGameId)
+            {
                 url += "?dev-game-id=" + AirConsole.instance.devGameId;
+
+                if (hasDevLanguage)
+                {
+                    url += $"&language={instance.devLanguage}";
+                }
             }
 #endif
 
