@@ -21,7 +21,7 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 - Added :gift_heart:: New capability: Player Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
   - Support for Player Silencing in the AirConsole component. For more information visit the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings window.
-- Addition of version migration documentation for version migrations from 2.10 up to 2.5.0 to [README.md](./README.md).
+- Addition of version migration documentation for version migrations from 2.10 up to 2.5.0 in [Assets/AirConsole/Upgrade_Plugin_Version.md](./Assets/AirConsole/Upgrade_Plugin_Version.md).
 
 ### Changed
 
