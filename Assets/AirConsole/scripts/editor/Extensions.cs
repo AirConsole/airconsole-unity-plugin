@@ -8,20 +8,13 @@ using System.Net.Sockets;
 
 namespace NDream.AirConsole.Editor {
 	[InitializeOnLoad]
-	class Extentions {
+	class Extensions {
 
 		public static WebListener webserver = new WebListener ();
 
-		static Extentions () {
-
+		static Extensions () {
 			InitSettings ();
-
-			if (webserver != null) {
-				webserver.Start ();
-			}
-
 			PlayMode.PlayModeChanged += OnPlayModeStateChanged;
-
 		}
 
 		[MenuItem("Assets/Create/AirConsole")]
