@@ -4,7 +4,9 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEditor.PackageManager;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #endregion
@@ -43,8 +45,7 @@ namespace NDream.Unity
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
 
-            string oldOutputPath = outputPath.Replace($"v{Settings.VERSION}", $"v{DecrementVersion(Settings.VERSION)}");
-            if(File.Exists(oldOutputPath)) File.Delete(oldOutputPath);
+            DeleteOldUnityPackages(outputPath, Settings.VERSION);
             
             ProcessStartInfo startInfo = new ProcessStartInfo()
             {
@@ -65,15 +66,13 @@ namespace NDream.Unity
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
 
-        private static string DecrementVersion(string version) {
-            string[] versionSplit = version.Split('.');
-            if(versionSplit.Length != 2) 
-                throw new ArgumentException($"Invalid version {version}, not MAJOR.MINOR");
-            string minor = versionSplit[1];
-            if(int.TryParse(minor, out int minorVersion)) {
-                return $"{versionSplit[0]}.{(minorVersion-1)}";
+        private static void DeleteOldUnityPackages(string outputPath, string newVersion) {
+            string[] files = Directory.GetFiles(Path.GetDirectoryName(outputPath), "airconsole-unity-plugin-*.*");
+            foreach (string file in files) {
+                if (!file.Contains(newVersion)) {
+                    File.Delete(file);
+                }
             }
-            throw new ArgumentException($"Invalid version {version}, MINOR ${minor} is not a number");
         }
 
         // adapted from https://learn.microsoft.com/en-us/dotnet/standard/io/how-to-copy-directories
