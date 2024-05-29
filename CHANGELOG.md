@@ -4,7 +4,7 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## [2.5.0]
+## [2.5.0] - 2024-05-29
 
 With version 2.5.0, AirConsole Unity Plugin adds a consistent system to handle situations where players can not join in the middle of
 related capabilities. This is supported by the controller, informing new joining players that they can not join at the moment but can do so
