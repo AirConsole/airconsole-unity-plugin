@@ -14,6 +14,7 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 
 ### Added
 
+- Added :gift_heart:: Developers can now set the language to test with when running games in the editor. (Kudos to @bbeinder contributing #71)
 - Added :gift_heart:: Partner specific highscore
   - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
@@ -29,6 +30,13 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 - RequestPersistentData's uids parameter is no longer optional for screens.
 - Updated supported platforms list.
 - Obsolete API devices, device_id and server_time_offset will now create errors with instruction on their replacement. They will be removed in version 2.6.0.
+
+
+### Fixed
+
+- OnPause and OnResume are now called on the MainThread on all platform and the editor (Kudos to @bbeinder contributing #73)
+- The devGameId is now correctly applied when using Unity PlayMode, removing the nagging language confirmation popups in the browser (Kudos to @bbeinder contributing #71)
+- Using `Open Exported Port` no longer creates InvalidOperationException (Kudos to @bbeinder contributing #72)
 
 ## [2.14] - 2022-11-02
 

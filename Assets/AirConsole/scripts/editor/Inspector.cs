@@ -28,11 +28,11 @@ namespace NDream.AirConsole.Editor {
         }
 
         public void Awake() {
-            if (System.IO.File.Exists(SettingsPath)) {
-                string persistedSettings = System.IO.File.ReadAllText(SettingsPath);
+            if (File.Exists(SettingsPath)) {
+                string persistedSettings = File.ReadAllText(SettingsPath);
                 translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
                 // We want player silencing to be active by default
-                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE); 
+                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
             }
         }
 
@@ -126,31 +126,28 @@ namespace NDream.AirConsole.Editor {
         }
 
         private void WriteConstructorSettings(string path) {
-            System.IO.File.WriteAllText(path,
+            File.WriteAllText(path,
                 $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}");
         }
 
         private static void MigrateVersion250(string originalPath, string newPath) {
-            if (!System.IO.File.Exists(originalPath)) {
+            if (!File.Exists(originalPath)) {
                 return;
             }
 
-            if (!System.IO.File.Exists(newPath)) {
+            if (!File.Exists(newPath)) {
                 Debug.LogWarning("Update settings file to new version, renaming from translation.js to game-settings.js");
-                System.IO.File.Move(originalPath, newPath);
-                System.IO.File.AppendAllText(newPath, $"\n{INACTIVE_PLAYERS_SILENCED_INACTIVE}");
+                File.Move(originalPath, newPath);
+                File.AppendAllText(newPath, $"\n{INACTIVE_PLAYERS_SILENCED_INACTIVE}");
             } else {
                 Debug.LogError($"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
-                System.IO.File.Delete(originalPath);
+                File.Delete(originalPath);
             }
         }
 
-        private static string GetWebGLTemplateDirectory() {
-            return Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
-        }
-
         private static void OpenUpgradeInstructions() {
-            Application.OpenURL("https://github.com/AirConsole/airconsole-unity-plugin/blob/master/README.md#upgrading-from-v214--to-v250");
+            Application.OpenURL(
+                "https://github.com/AirConsole/airconsole-unity-plugin/blob/master/Assets/AirConsole/Upgrade_Plugin_Version.md");
         }
     }
 }
