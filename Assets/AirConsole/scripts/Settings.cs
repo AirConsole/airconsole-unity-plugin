@@ -7,8 +7,8 @@ namespace NDream.AirConsole {
 		public const string VERSION = "2.5.1";
 		// ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
 		public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
-		public const string AIRCONSOLE_DEV_URL_HTTPS = "https://www.airconsole.com/";
-		public const string AIRCONSOLE_DEV_URL_HTTP = "http://http.airconsole.com/";
+		public const string AIRCONSOLE_DEV_URL_HTTPS = "https://ci-daniel-native-game-sizing-dot-airconsole.appspot.com/"; // "https://www.airconsole.com/";
+		public const string AIRCONSOLE_DEV_URL_HTTP = "https://ci-daniel-native-game-sizing-dot-airconsole.appspot.com/"; // "http://http.airconsole.com/";
 
 		public const string AIRCONSOLE_PROFILE_PICTURE_URL = "https://www.airconsole.com/api/profile-picture?uid=";
 		public const string WEBSOCKET_PATH = "/api";
@@ -22,12 +22,19 @@ namespace NDream.AirConsole {
 		public static readonly string WEBTEMPLATE_PATH;
 
 		static Settings() {
+			string templateName = "";
 			// For Unity 2020 and up
 			if (Application.unityVersion.Substring(0, 3) == "202") {
-				WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole-2020";
+				templateName = "AirConsole-2020";
 			} else {
-				WEBTEMPLATE_PATH = "/WebGLTemplates/AirConsole";
+				templateName = "AirConsole";  
 			}
+
+			WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
+
+#if UNITY_EDITOR
+			UnityEditor.PlayerSettings.WebGL.template = $"PROJECT:{templateName}";
+#endif
 		}
 	}
 }

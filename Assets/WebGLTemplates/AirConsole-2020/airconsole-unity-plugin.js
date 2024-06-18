@@ -185,9 +185,17 @@ App.prototype.initAirConsole = function() {
             "devices": me.airconsole.devices,
             "server_time_offset": me.airconsole.server_time_offset,
             "location": document.location.href,
-            "translations": me.airconsole.translations
+            "translations": me.airconsole.translations,
+            gameSafeArea: me.airconsole.gameSafeArea
         });
     };
+    
+    me.airconsole.onSetSafeArea = function (safeArea) {
+        me.postToUnity({
+            "action": "onSetSafeArea",
+            "safeArea": safeArea
+        });
+    }
 
     me.airconsole.onDeviceStateChange = function (device_id, device_data) {
         me.postToUnity({
