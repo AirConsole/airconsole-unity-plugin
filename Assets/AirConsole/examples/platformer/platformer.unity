@@ -194,11 +194,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controllerHtml: {fileID: 4900000, guid: ab5a57d187e074ea3b7285d1c90e187d, type: 3}
   autoScaleCanvas: 1
-  androidTvGameVersion: 2024-06-18-15-31-18
+  androidTvGameVersion: 2024-06-19-14-33-34
   androidUIResizeMode: 2
   webViewLoadingSprite: {fileID: 0}
   browserStartMode: 0
-  devGameId: com.airconsole.performancelegacy
+  devGameId: com.airconsole.eng.androidnative
   devLanguage: 
   LocalIpOverride: 
 --- !u!4 &245589325

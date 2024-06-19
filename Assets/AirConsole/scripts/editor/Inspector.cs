@@ -147,7 +147,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void OpenUpgradeInstructions() {
             Application.OpenURL(
-                "https://github.com/AirConsole/airconsole-unity-plugin/blob/master/Assets/AirConsole/Upgrade_Plugin_Version.md");
+                "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version");
         }
     }
 }

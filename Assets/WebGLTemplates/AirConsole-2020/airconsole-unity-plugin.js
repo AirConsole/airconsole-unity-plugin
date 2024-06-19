@@ -164,9 +164,9 @@ App.prototype.initAirConsole = function() {
     me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players });
     
     const version = me.airconsole.version.split('.');
-    if(version.length < 3 || version[0] < 1 || version[1] < 9) {
-        confirm('Unity AirConsole Plugin 2.5.0 requires at minimum the AirConsole API version 1.9.0. Please review the upgrade instructions');
-        window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/release/2.5.0/README.md#upgrading-from-v214--to-v250');
+    if(version.length < 3 || parseInt(version[0]) < 1 || parseInt(version[1]) < 10) {
+        confirm('Unity AirConsole Plugin 2.6.0 requires at minimum the AirConsole API version 1.10.0. Please review the upgrade instructions');
+        window.open('https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version');
     }
 
     me.airconsole.onMessage = function (from, data) {
@@ -192,8 +192,8 @@ App.prototype.initAirConsole = function() {
     
     me.airconsole.onSetSafeArea = function (safeArea) {
         me.postToUnity({
-            "action": "onSetSafeArea",
-            "safeArea": safeArea
+            action: 'onSetSafeArea',
+            safeArea: safeArea
         });
     }
 

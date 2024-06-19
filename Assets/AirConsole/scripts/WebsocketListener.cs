@@ -141,10 +141,9 @@ namespace NDream.AirConsole {
 
 				// parse json string
 				JObject msg = JObject.Parse (data);
+				string action = msg.SelectToken("action")?.Value<string>();
 
-				string action = (string)msg["action"];
-
-				if ((string)msg ["action"] == "onReady") {
+				if (action == "onReady") {
 					this.isReady = true;
 
 					if (this.onReady != null) {
@@ -154,85 +153,84 @@ namespace NDream.AirConsole {
 					if (Settings.debug.info) {
 						Debug.Log ("AirConsole: Connections are ready!");
 					}
-				} else if ((string)msg ["action"] == "onMessage") {
+				} else if (action == "onMessage") {
 					if (this.onMessage != null) {
 						this.onMessage (msg);
 					}
-				} else if ((string)msg ["action"] == "onDeviceStateChange") {
+				} else if (action == "onDeviceStateChange") {
 					if (this.onDeviceStateChange != null) {
 						this.onDeviceStateChange (msg);
 					}
-				} else if ((string)msg ["action"] == "onConnect") {
+				} else if (action == "onConnect") {
 					if (this.onConnect != null) {
 						this.onConnect (msg);
 					}
-				} else if ((string)msg ["action"] == "onDisconnect") {
+				} else if (action == "onDisconnect") {
 					if (this.onDisconnect != null) {
 						this.onDisconnect (msg);
 					}
-				} else if ((string)msg ["action"] == "onCustomDeviceStateChange") {
+				} else if (action == "onCustomDeviceStateChange") {
 					if (this.onCustomDeviceStateChange != null) {
 						this.onCustomDeviceStateChange (msg);
 					}
-				} else if ((string)msg ["action"] == "onDeviceProfileChange") {
+				} else if (action == "onDeviceProfileChange") {
 					if (this.onDeviceProfileChange != null) {
 						this.onDeviceProfileChange (msg);
 					}
-				} else if ((string)msg ["action"] == "onAdShow") {
+				} else if (action == "onAdShow") {
 					if (this.onAdShow != null) {
 						this.onAdShow (msg);
 					}
-				} else if ((string)msg ["action"] == "onAdComplete") {
+				} else if (action == "onAdComplete") {
 					if (this.onAdComplete != null) {
 						this.onAdComplete (msg);
 					}
-				} else if ((string)msg ["action"] == "onGameEnd") {
+				} else if (action == "onGameEnd") {
 					if (this.onGameEnd != null) {
 						this.onGameEnd (msg);
 					}
-				} else if ((string)msg ["action"] == "onHighScores") {
+				} else if (action == "onHighScores") {
 					if (this.onHighScores != null) {
 						this.onHighScores (msg);
 					}
-				} else if ((string)msg ["action"] == "onHighScoreStored") {
+				} else if (action == "onHighScoreStored") {
 					if (this.onHighScoreStored != null) {
 						this.onHighScoreStored (msg);
 					}
-				} else if ((string)msg ["action"] == "onPersistentDataStored") {
+				} else if (action == "onPersistentDataStored") {
 					if (this.onPersistentDataStored != null) {
 						this.onPersistentDataStored (msg);
 					}
-				} else if ((string)msg ["action"] == "onPersistentDataLoaded") {
+				} else if (action == "onPersistentDataLoaded") {
 
 					if (this.onPersistentDataLoaded != null) {
 						this.onPersistentDataLoaded (msg);
 					}
-				} else if ((string)msg ["action"] == "onPremium") {
+				} else if (action == "onPremium") {
 					if (this.onPremium != null) {
 						this.onPremium (msg);
 					}
-				} else if ((string)msg ["action"] == "onPause") {
+				} else if (action == "onPause") {
 				  if (this.onPause != null) {
 					this.onPause (msg);
 				  }
-				} else if ((string)msg ["action"] == "onResume") {
+				} else if (action == "onResume") {
 				  if (this.onResume != null) {
 					this.onResume (msg);
 				  }
-				} else if ((string)msg ["action"] == "onLaunchApp") {
+				} else if (action == "onLaunchApp") {
 					if (this.onLaunchApp != null) {
 						this.onLaunchApp (msg);
 					}
-				} else if ((string)msg ["action"] == "onUnityWebviewResize") {
+				} else if (action == "onUnityWebviewResize") {
 					if (this.onUnityWebviewResize != null) {
 						this.onUnityWebviewResize (msg);
 					}
-				} else if ((string)msg ["action"] == "onUnityWebviewPlatformReady") {
+				} else if (action == "onUnityWebviewPlatformReady") {
 					if (this.onUnityWebviewPlatformReady != null) {
 						this.onUnityWebviewPlatformReady (msg);
 					}
 				} else if (action == "onSetSafeArea") {
-					Debug.LogError($"AC OnSetSafeArea: {msg}");
 					this.OnSetSafeArea.Invoke(msg);
 				}
 			} catch (Exception e) {

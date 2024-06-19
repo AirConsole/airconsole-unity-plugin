@@ -1060,7 +1060,7 @@ namespace NDream.AirConsole {
 
         private void Start() {
             // application has to run in background
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if !UNITY_EDITOR
             Application.runInBackground = false;
 #else
             Application.runInBackground = true;
@@ -1073,13 +1073,13 @@ namespace NDream.AirConsole {
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
-            wsListener.OnSetSafeArea += OnSetSafeArea;
 
             SceneManager.sceneLoaded += OnSceneLoaded;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
 #endif
+            wsListener.OnSetSafeArea += OnSetSafeArea;
             wsListener.onReady += OnReady;
             wsListener.onClose += OnClose;
             wsListener.onMessage += OnMessage;
@@ -1118,29 +1118,38 @@ namespace NDream.AirConsole {
             }
         }
 
-        #if UNITY_ANDROID
+#if UNITY_ANDROID
         private void OnSetSafeArea(JObject msg) {
-            JObject safeAreaObj = msg["safeArea"] as JObject;
-            Rect safeArea = new () {
-                y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0),
-                height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1),
-                x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0),
-                width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1)
-            }; 
-            
+            Debug.Log($"OnSetSafeArea with message: {msg}");
+            JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
+            if (safeAreaObj == null) {
+                Debug.LogError($"OnSetSafeArea without safeArea in the message object: {msg.ToString()}");
+                return;
+            }
+
             eventQueue.Enqueue(delegate() {
+                Rect safeArea = new() {
+                    y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0),
+                    height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1),
+                    x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0),
+                    width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1)
+                };
+                _gameSafeArea = safeArea;
+                
                 // Will be null in the editor
-                webViewObject?.SetMargins(0, 0, 0, 0);
                 if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                     || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                    Debug.LogError($"AC Automotive: Set camera pixelRect to {safeArea.x}x{safeArea.y} > {safeArea.width}x{safeArea.height}");
+                    Debug.Log($"AC OnSetSafeArea: Set camera pixelRect to {safeArea.x}x{safeArea.y} > {safeArea.width}x{safeArea.height}");
                     Camera.main.pixelRect = safeArea;
                 }
-
-                _gameSafeArea = safeArea;
+                
+                webViewObject?.SetMargins((int)(safeArea.x + safeArea.width),
+                    (int)(safeArea.y + safeArea.height),
+                    (int)(Screen.width - safeArea.width),
+                    (int)(Screen.height - safeArea.height));
             });
         }
-        #endif
+#endif
 
         private void Update() {
             // dispatch event queue on main unity thread
@@ -1723,15 +1732,22 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            if (androidTvGameVersion != null && androidTvGameVersion != "") {
+            if (!string.IsNullOrEmpty(androidTvGameVersion)) {
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
                     // webViewObject.Init((msg) => ProcessJS(msg), true);
-                    webViewObject.Init((msg) => ProcessJS(msg), true, 
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36", 
+                    // TODO: Airconsole webview
+                    // webViewObject.Init((msg) => ProcessJS(msg), true, 
+                    //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                    //     err => Debug.LogError($"AC WebView Error: {err}"),
+                    //     httpError => Debug.LogError($"AC WebView HttpError: {httpError}"));
+                    // TODO: Gree webview
+                    webViewObject.Init((msg) => ProcessJS(msg), 
                         err => Debug.LogError($"AC WebView Error: {err}"),
-                        httpError => Debug.LogError($"AC WebView Http Error: {httpError}"));
+                        httpError => Debug.LogError($"AC WebView HttpError: {httpError}"),
+                        null, null, null, null, true, false, 
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
@@ -1749,10 +1765,13 @@ namespace NDream.AirConsole {
                     url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + androidTvGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
-                    // url += "&role=screen"; // HACK(Marc): should not exist
 
+#if UNITY_ANDROID // TODO(marc): && AC_ANDROID_AUTOMOTIVE
                     webViewObject.SetMargins(0, 0, 0, 0);
-                    webViewObject.SetVisibility(true);
+#else
+                    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
+#endif
+                    webViewObject.SetVisibility(!Application.isEditor);
                     webViewObject.LoadURL(url);
 
                     //Display loading Screen
@@ -1788,6 +1807,7 @@ namespace NDream.AirConsole {
 
         private void OnLaunchApp(JObject msg) {
             Debug.Log("onLaunchApp");
+            Debug.Log($"AC OnLaunchApp for {msg}");
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
@@ -1893,7 +1913,6 @@ namespace NDream.AirConsole {
             }
         }
 #endif
-
 
         private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) {
             return !string.IsNullOrEmpty((string)msg[name])

@@ -1,12 +1,5 @@
 {
   "dependencies": {
-    "com.airconsole.webview": {
-      "version": "https://github.com/AirConsole/airconsole-unity-webview.git?path=/package#v1.0.1",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "f211f383293eee56c8b2c55d3278e5b344967287"
-    },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
       "depth": 0,
@@ -65,6 +58,13 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "net.gree.unity-webview": {
+      "version": "https://github.com/gree/unity-webview.git?path=/dist/package-nofragment",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "323d5d3611c92632f259d2d2cdadc9bbbb0e9014"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
