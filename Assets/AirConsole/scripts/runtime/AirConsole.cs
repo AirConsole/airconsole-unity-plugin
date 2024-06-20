@@ -1131,7 +1131,7 @@ namespace NDream.AirConsole {
             Debug.Log($"OnSetSafeArea with message: {msg}");
             JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
             if (safeAreaObj == null) {
-                throw new UnityException($"OnSetSafeArea without safeArea in the message object: {msg.ToString()}");
+                throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
             }
 
             eventQueue.Enqueue(delegate() {
