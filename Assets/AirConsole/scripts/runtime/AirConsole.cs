@@ -210,6 +210,11 @@ namespace NDream.AirConsole {
         /// Gets called when the game should be resumed.
         /// </summary>
         public event OnResume onResume;
+        
+        /// <summary>
+        /// Is invoked when the SafeArea of the device changes through the platform.
+        /// </summary>
+        public event Action<Rect> OnSafeAreaChanged;
 
         /// <summary>
         /// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -1118,23 +1123,25 @@ namespace NDream.AirConsole {
             }
         }
 
-#if UNITY_ANDROID
         private void OnSetSafeArea(JObject msg) {
+            SetSafeArea(msg);
+        }
+        
+        protected void SetSafeArea(JObject msg) {
             Debug.Log($"OnSetSafeArea with message: {msg}");
             JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
             if (safeAreaObj == null) {
-                Debug.LogError($"OnSetSafeArea without safeArea in the message object: {msg.ToString()}");
-                return;
+                throw new UnityException($"OnSetSafeArea without safeArea in the message object: {msg.ToString()}");
             }
 
             eventQueue.Enqueue(delegate() {
-                Rect safeArea = new() {
+                Rect safeArea = new Rect() {
                     y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0),
                     height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1),
                     x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0),
                     width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1)
                 };
-                _gameSafeArea = safeArea;
+                SafeArea = safeArea;
                 
                 // Will be null in the editor
                 if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
@@ -1143,15 +1150,14 @@ namespace NDream.AirConsole {
                     Camera.main.pixelRect = safeArea;
                 }
                 
-                webViewObject?.SetMargins((int)(safeArea.x + safeArea.width),
-                    (int)(safeArea.y + safeArea.height),
-                    (int)(Screen.width - safeArea.width),
-                    (int)(Screen.height - safeArea.height));
+                // TODO(marc): Enable this once the correct platform frontend is delivered.
+                // webViewObject?.SetMargins(0,0,0,0);
+                
+                this.OnSafeAreaChanged?.Invoke(SafeArea);
             });
         }
-#endif
 
-        private void Update() {
+        protected void Update() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
@@ -1616,6 +1622,11 @@ namespace NDream.AirConsole {
         /// </summary>
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
 
+        /// <summary>
+        /// The currently valid safe area for cameras to render in.
+        /// </summary>
+        public Rect SafeArea { get; private set; } = new Rect(0,0,Screen.width,Screen.height);
+        
         // private vars
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
@@ -1632,11 +1643,11 @@ namespace NDream.AirConsole {
         private int _device_id;
         private int _server_time_offset;
         private string _location;
-        private Rect _gameSafeArea;
         private Dictionary<string, string> _translations;
         private List<int> _players = new List<int>();
         private readonly Queue<Action> eventQueue = new Queue<Action>();
 
+        
         // unity singleton handling
         private static AirConsole _instance;
 
