@@ -1,0 +1,119 @@
+
+<html>
+<head>
+  <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.8.0.js"></script>
+
+  <style type=text/css>
+
+  .button{
+   background: #3B3B3B;
+   color: white;
+   font-family: Arial;
+   font-size: 14px;
+   padding: 5px 10px 5px 10px;
+   border: solid #1f1f1f 2px;
+   -webkit-border-radius: 11;
+   -moz-border-radius: 11;
+   border-radius: 6px;
+   width: 100%;
+   text-align: left;
+   box-sizing: border-box;
+  }
+
+  .button-half{
+   width: 49%;
+   display: inline-block;
+  }
+
+  #content{
+   position:absolute;
+   font-family: Arial;
+   color: white;
+   bottom: 5%;
+  }
+
+  #profile-pic{
+   position:absolute;
+   background-size: cover;
+   width: 50px;
+   height: 50px;
+   right: 5%;
+   bottom: 5%;
+  }
+
+  </style>
+
+  <script type="text/javascript">
+
+    var airconsole;
+    /**
+     * Sets up the communication to the screen.
+     */
+    function App() {
+      var me = this;
+      me.airconsole = new AirConsole({"orientation": "portrait", "synchronize_time" : "true"});
+      me.airconsole.onMessage = function(from, data) {
+        console.log("onMessage", from, data);
+        document.getElementById("content").innerHTML = "device " + from + " says: " + data;
+      };
+
+      me.airconsole.onReady = function(code) {
+        console.log("onReady", code);
+      };
+
+      me.airconsole.onDeviceStateChange = function(device_id, device_data) {
+        console.log("onDeviceStateChange", device_id, device_data);
+      };
+
+      /**
+       * Here we are adding support for mouse events manually.
+       * WE STRONGLY ENCOURAGE YOU TO USE THE AIRCONSOLE CONTROLS LIBRARY
+       * WHICH IS EVEN BETTER (BUT WE DONT WANT TO BLOAT THE CODE HERE).
+       * https://github.com/AirConsole/airconsole-controls/
+       *
+       * NO MATTER WHAT YOU DECIDE, DO NOT USE ONCLICK HANDLERS.
+       * THEY HAVE A 200MS DELAY!
+       */
+      if (!("ontouchstart" in document.createElement("div"))) {
+        var elements = document.getElementsByTagName("*");
+        for (var i = 0; i < elements.length; ++i) {
+          var element = elements[i];
+          var ontouchstart = element.getAttribute("ontouchstart");
+          if (ontouchstart) {
+            element.setAttribute("onmousedown", ontouchstart);
+          }
+          var ontouchend = element.getAttribute("ontouchend");
+          if (ontouchend) {
+            element.setAttribute("onmouseup", ontouchend);
+          }
+        }
+      }
+    }
+    
+    App.prototype.setFullscreen = function(value) {
+        this.airconsole.message(AirConsole.SCREEN, {action: 'fullscreen', value}); 
+    }
+    
+    App.prototype.toggleScreenFullscreenMode = function() {
+        this.airconsole.message(AirConsole.SCREEN, {action: 'fullscreenMode'});
+    }
+
+    App.prototype.toggleAndroidUIResizeMode = function() {
+        this.airconsole.message(AirConsole.SCREEN, {action: 'androidUIResizeMode'});
+    }
+    
+
+  </script>
+
+</head>
+<body onload="window.app = new App()">
+    <div style="margin-top:50px">
+        <div class="button" ontouchstart="window.app.setFullscreen(true)">setFullscreen(true)</div>
+        <div class="button" ontouchstart="window.app.setFullscreen(false)">setFullscreen(false)</div>
+        <div class="button" ontouchstart="window.app.toggleScreenFullscreenMode()">toggleScreenFullscreenMode()</div>
+        <div class="button" ontouchstart="window.app.toggleAndroidUIResizeMode()">toggleAndroidUIResizeMode()</div>
+    </div>
+    <div id="content"><!--Incoming messages get displayed in this container--></div>
+</body>
+</html>
