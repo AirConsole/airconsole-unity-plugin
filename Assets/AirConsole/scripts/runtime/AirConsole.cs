@@ -1135,11 +1135,16 @@ namespace NDream.AirConsole {
             }
 
             eventQueue.Enqueue(delegate() {
-                Rect safeArea = new Rect() {
-                    y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0),
-                    height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1),
-                    x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0),
-                    width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1)
+                float y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0);
+                float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
+                float height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1);
+                float width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1);
+                
+                Rect safeArea = new() {
+                    y = Screen.height - height,
+                    height = Screen.height - y,
+                    x = x, 
+                    width = width
                 };
                 SafeArea = safeArea;
                 
@@ -1158,6 +1163,12 @@ namespace NDream.AirConsole {
         }
 
         protected void Update() {
+#if UNITY_ANDROID
+            if (!Screen.fullScreen) {
+                Screen.fullScreen = true;
+            }
+#endif
+            
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();

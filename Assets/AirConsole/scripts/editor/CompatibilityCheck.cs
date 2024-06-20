@@ -51,14 +51,12 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.stripEngineCode = true;
             }
         }
-
+        
         [InitializeOnLoadMethod]
         private static void CheckAndroidPlayerSettings() {
             EnforceAndroidPlayerSettings();
         }
-        
-        
-#if UNITY_ANDROID
+
         private static void EnforceAndroidPlayerSettings() {
             const int requiredAndroidTargetSdk = 34;
             
@@ -88,7 +86,6 @@ namespace NDream.AirConsole.Editor {
                 Debug.LogWarning("AirConsole Unity Plugin requires 'Managed Stripping Level' to be enabled in Player Settings. Switching stripping level to lown.");
                 PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
             }
-#endif
         }
     }
 }
