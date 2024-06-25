@@ -231,7 +231,7 @@ namespace NDream.AirConsole {
 						this.onUnityWebviewPlatformReady (msg);
 					}
 				} else if (action == "onSetSafeArea") {
-					this.OnSetSafeArea.Invoke(msg);
+					this.OnSetSafeArea?.Invoke(msg);
 				}
 			} catch (Exception e) {
 				if (Settings.debug.error) {

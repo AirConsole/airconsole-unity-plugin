@@ -1128,7 +1128,6 @@ namespace NDream.AirConsole {
         }
         
         protected void SetSafeArea(JObject msg) {
-            Debug.Log($"OnSetSafeArea with message: {msg}");
             JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
             if (safeAreaObj == null) {
                 throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
@@ -1766,8 +1765,8 @@ namespace NDream.AirConsole {
                     //     httpError => Debug.LogError($"AC WebView HttpError: {httpError}"));
                     // TODO: Gree webview
                     webViewObject.Init((msg) => ProcessJS(msg), 
-                        err => Debug.LogError($"AC WebView Error: {err}"),
-                        httpError => Debug.LogError($"AC WebView HttpError: {httpError}"),
+                        err => Debug.LogError($"AirConsole web error: {err}"),
+                        httpError => Debug.LogError($"AirConsole HttpError: {httpError}"), 
                         null, null, null, null, true, false, 
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
