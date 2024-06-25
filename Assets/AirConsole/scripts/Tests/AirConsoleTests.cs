@@ -65,7 +65,7 @@ namespace NDream.AirConsole.Tests {
             public bool IsTestFinished => frameCount > 10;
 
             private void Awake() {
-                androidTvGameVersion = "1";
+                androidGameVersion = "1";
             }
 
             private void Update() {

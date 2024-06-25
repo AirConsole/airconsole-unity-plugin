@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using NDream.AirConsole;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -59,10 +61,31 @@ public class ScreenTestComponent : MonoBehaviour {
             sb.AppendLine($"Cutout {i}: {Screen.cutouts[i]}");
         }
 
+        sb.AppendLine($"URL: {AirConsole.instance.WebViewUrl}");
+        sb.AppendLine($"URL Client: {GetUrlParam(AirConsole.instance.WebViewUrl, "client")}");
+        sb.AppendLine($"URL ID: {GetUrlParam(AirConsole.instance.WebViewUrl, "id")}");
+        sb.AppendLine($"MainCam Pixel: {Camera.main.pixelRect}");
         sb.AppendLine($"SafeArea: {Screen.safeArea}");
         sb.AppendLine($"AC SafeArea: {AirConsole.instance.SafeArea}");
-        sb.AppendLine($"MainCam Pixel: {Camera.main.pixelRect}");
         return sb.ToString();
+    }
+
+    private static string GetUrlParam(string url, string parameterName, string defaultValue = "NONE") {
+        if (string.IsNullOrEmpty(url)) {
+            return defaultValue;
+        }
+
+        url = url.ToLower();
+        string[] urlSplit = url.Split('?');
+        string[] parameters = urlSplit[1].Split('#')[0].Split('&');
+        foreach (string param in parameters) {
+            string[] keyValue = param.Split('=');
+            if (keyValue[0] == parameterName) {
+                return keyValue[1];
+            }
+        }
+        
+        return defaultValue;
     }
 
     private FullScreenMode _fullscreenMode;

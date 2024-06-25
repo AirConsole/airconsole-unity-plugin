@@ -4,6 +4,19 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [2.6.0]
+
+### Added
+
+- AirConsole now uses Assembly Definition files. For Runtime usage, you need to reference _AirConsole.Runtime_ in your own Assembly Definitions.
+- Added support for Android Automotive SafeArea. You can subscribe to the `OnSafeAreaChanged` event and adjust your camera pixelSize and UI reference resolution accordingly to meet your games needs in case it is not fully responsive.
+- The AirConsole component now exposes an array of cameras that are automatically adjusted to the SafeArea.
+
+### Removed
+
+The previously deprecated fields `AirConsole.instance.devices`, `AirConsole.instance.device_id` and `AirConsole.instance.server_time_offset` have been removed.
+
+
 ## [2.5.1] - 2024-05-29
 
 Adds game developer experience bugfixes as well as a pending fix that was lost in 2.5.0 for devGameId in Unity PlayMode.

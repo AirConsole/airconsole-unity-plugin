@@ -1,7 +1,10 @@
 ﻿#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
     [CustomEditor(typeof(AirConsole))]
@@ -19,6 +22,8 @@ namespace NDream.AirConsole.Editor {
         private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
 
+        
+        private string[] androidScriptingDefines = { };
 
         private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
 
@@ -37,6 +42,9 @@ namespace NDream.AirConsole.Editor {
         }
 
         public void OnEnable() {
+            
+            PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android, out androidScriptingDefines);
+            
             // get logos
             bg = (Texture2D)Resources.Load("AirConsoleBg");
             logo = (Texture)Resources.Load("AirConsoleLogoText");
@@ -49,6 +57,10 @@ namespace NDream.AirConsole.Editor {
             styleBlack.margin.bottom = 5;
             styleBlack.padding.right = 2;
             styleBlack.padding.bottom = 2;
+        }
+
+        private void OnDisable() {
+            androidScriptingDefines = new string[] { }; 
         }
 
         public override void OnInspectorGUI() {
@@ -69,8 +81,43 @@ namespace NDream.AirConsole.Editor {
             DrawTranslationsToggle();
             DrawPlayerSilencingToggle();
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidTvGameVersion"));
+            
+            bool isAndroidAutomotive = androidScriptingDefines.Contains("AIRCONSOLE_AUTOMOTIVE");
+
+#if UNITY_ANDROID
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Android Automotive", GUILayout.MaxWidth(145));
+            bool newIsAndroidAutomotive = EditorGUILayout.Toggle(isAndroidAutomotive);
+            if (isAndroidAutomotive != newIsAndroidAutomotive) {
+                if (newIsAndroidAutomotive) {
+                    PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Android,
+                        androidScriptingDefines.Append("AIRCONSOLE_AUTOMOTIVE").ToArray());
+                } else {
+                    PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Android,
+                        androidScriptingDefines.Where(s => s != "AIRCONSOLE_AUTOMOTIVE").ToArray());
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+#else
+            bool newIsAndroidAutomotive = false;
+#endif
+            
+            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
+#if UNITY_ANDROID
+            string androidGameVersion = serializedObject.FindProperty("androidGameVersion").stringValue;
+            if (string.IsNullOrEmpty(androidGameVersion) 
+                || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
+                EditorGUILayout.HelpBox("Please enter a valid Game Version for Android", MessageType.Error);
+            }
+#endif
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
+            if(newIsAndroidAutomotive && serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > 1) {
+                EditorGUILayout.HelpBox("Android Automotive uses SafeAreas.\n"
+                                        + "It does not support UI Reference Resolution Scaling.\n"
+                                        + "Use the event OnSafeAreaChanged to control this yourself.", MessageType.Warning);
+            }
             EditorGUILayout.PropertyField(serializedObject.FindProperty("webViewLoadingSprite"));
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("browserStartMode"));

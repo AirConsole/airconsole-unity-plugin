@@ -7,6 +7,8 @@
 2. Upgrade Process
    1. Delete Assets/scripts!
    2. Import the new version!
+   1. Delete the directory `Assets/scripts` 
+   2. Import the new version of the plugin: `airconsole-2.6.0.unitypackage`
 ## Upgrading from v2.14- to v2.5.0
 
 1. The content of airconsole-unity-plugin.js has changed.

@@ -8,6 +8,7 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 #if UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
@@ -77,7 +78,7 @@ namespace NDream.AirConsole {
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
         public static string Version {
 #if UNITY_ANDROID
-            get { return instance.androidTvGameVersion; }
+            get { return instance.androidGameVersion; }
 #else
             get { return string.Empty; }
 #endif
@@ -214,6 +215,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Is invoked when the SafeArea of the device changes through the platform.
         /// </summary>
+        /// <remarks>On Android Automotive targets, this event must be used to drive changes to Unity GUI / UIElement reference resolutions where necessary.</remarks>
         public event Action<Rect> OnSafeAreaChanged;
 
         /// <summary>
@@ -1020,12 +1022,14 @@ namespace NDream.AirConsole {
         [Tooltip("Automatically scale the game canvas")]
         public bool autoScaleCanvas = true;
 
+        [FormerlySerializedAs("androidTvGameVersion")]
         [Header("Android Settings")]
         [Tooltip(
             "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
-        public string androidTvGameVersion;
+        public string androidGameVersion;
 
-        [Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        [Tooltip("Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+                 + "On Android Automotive please use OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1079,7 +1083,7 @@ namespace NDream.AirConsole {
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
 
-            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneLoaded += OnAndroidSceneLoaded;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
@@ -1139,6 +1143,7 @@ namespace NDream.AirConsole {
                 float height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1);
                 float width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1);
                 
+                // TODO(Marc) Update when we send width / height that are no longer bottom / right
                 Rect safeArea = new() {
                     y = Screen.height - height,
                     height = Screen.height - y,
@@ -1147,22 +1152,22 @@ namespace NDream.AirConsole {
                 };
                 SafeArea = safeArea;
                 
-                // Will be null in the editor
                 if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                     || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                    Debug.Log($"AC OnSetSafeArea: Set camera pixelRect to {safeArea.x}x{safeArea.y} > {safeArea.width}x{safeArea.height}");
                     Camera.main.pixelRect = safeArea;
                 }
                 
                 // TODO(marc): Enable this once the correct platform frontend is delivered.
                 // webViewObject?.SetMargins(0,0,0,0);
                 
-                this.OnSafeAreaChanged?.Invoke(SafeArea);
+                OnSafeAreaChanged?.Invoke(SafeArea);
             });
         }
 
         protected void Update() {
-#if UNITY_ANDROID
+#if UNITY_ANDROID && AIRCONSOLE_AUTOMOTIVE
+            // TODO(Marc): Does this need to be shielded by a AIRCONSOLE_AUTOMOTIVE define with the original UNITY_ANDROID potentially bound to a UNITY_ANDROID && !AIRCONSOLE_AUTOMOTIVE define?
+            
             if (!Screen.fullScreen) {
                 Screen.fullScreen = true;
             }
@@ -1637,6 +1642,8 @@ namespace NDream.AirConsole {
         /// </summary>
         public Rect SafeArea { get; private set; } = new Rect(0,0,Screen.width,Screen.height);
         
+        public string WebViewUrl { get; private set; }
+        
         // private vars
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
@@ -1753,7 +1760,7 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            if (!string.IsNullOrEmpty(androidTvGameVersion)) {
+            if (!string.IsNullOrEmpty(androidGameVersion)) {
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
@@ -1767,7 +1774,7 @@ namespace NDream.AirConsole {
                     webViewObject.Init((msg) => ProcessJS(msg), 
                         err => Debug.LogError($"AirConsole web error: {err}"),
                         httpError => Debug.LogError($"AirConsole HttpError: {httpError}"), 
-                        null, null, null, null, true, false, 
+                        url => WebViewUrl = url, null, null, null, true, false, 
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
@@ -1784,7 +1791,7 @@ namespace NDream.AirConsole {
 #endif
 
                     url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + androidTvGameVersion;
+                    url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
 #if UNITY_ANDROID // TODO(marc): && AC_ANDROID_AUTOMOTIVE
@@ -1832,7 +1839,7 @@ namespace NDream.AirConsole {
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
-            if (gameId != Application.identifier || gameVersion != instance.androidTvGameVersion) {
+            if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
                 if (msg["quit_after_launch_intent"] != null) {
@@ -1906,16 +1913,27 @@ namespace NDream.AirConsole {
             webViewObject.SetMargins(0, 0, 0, 0);
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
+#if UNITY_ANDROID
+        private void OnAndroidSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
             if (instance != this) {
                 return;
             }
 
-            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
-                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+#if !AIRCONSOLE_AUTOMOTIVE
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
             }
 
+            AdaptUGuiLayout();
+#else
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                Camera.main.pixelRect = new Rect(SafeArea.x, SafeArea.y, SafeArea.width, SafeArea.height);
+            }
+#endif
+        }
+#endif
+
+        private void AdaptUGuiLayout() {
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
 
@@ -1933,6 +1951,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
+        
 #endif
 
         private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) {
