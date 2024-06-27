@@ -1064,15 +1064,18 @@ namespace NDream.AirConsole {
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
             defaultScreenHeight = Screen.height;
+
 #endif
         }
 
         private void Start() {
             // application has to run in background
-#if !UNITY_EDITOR
-            Application.runInBackground = false;
+#if UNITY_EDITOR
+            runtimeConfigurator = new EditorRuntimeConfigurator(); 
+#elif AIRCONSOLE_AUTOMOTIVE
+            runtimeConfigurator = new AutomotiveRuntimeConfigurator();
 #else
-            Application.runInBackground = true;
+            runtimeConfigurator = new DefaultRuntimeConfigurator();
 #endif
 
             // register all incoming events
@@ -1109,8 +1112,8 @@ namespace NDream.AirConsole {
             wsListener.onResume += OnResume;
 
 
-            // check if game is running in webgl build
-            if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
+            // if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
+            if (Application.isEditor) {
                 // start websocket connection
                 wsServer = new WebSocketServer(Settings.webSocketPort);
                 wsServer.AddWebSocketService<WebsocketListener>(Settings.WEBSOCKET_PATH, () => wsListener);
@@ -1122,6 +1125,7 @@ namespace NDream.AirConsole {
             } else {
                 if (Application.platform == RuntimePlatform.WebGLPlayer) {
                     // call external javascript init function
+                    // TODO(Marc): Upgrade to unity jslib approach for webgl
                     Application.ExternalCall("onGameReady", autoScaleCanvas);
                 }
             }
@@ -1140,17 +1144,19 @@ namespace NDream.AirConsole {
             eventQueue.Enqueue(delegate() {
                 float y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0);
                 float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
-                float height = Screen.height * GetFloatFromMessage(safeAreaObj, "bottom", 1);
-                float width = Screen.width * GetFloatFromMessage(safeAreaObj, "right", 1);
+                float height = Screen.height * GetFloatFromMessage(safeAreaObj, "height", 1);
+                float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
                 
                 // TODO(Marc) Update when we send width / height that are no longer bottom / right
                 Rect safeArea = new() {
                     y = Screen.height - height,
-                    height = Screen.height - y,
+                    height = Screen.height,
                     x = x, 
                     width = width
                 };
                 SafeArea = safeArea;
+                
+                Debug.LogWarning($"Safe Area is {safeArea} from message {safeAreaObj}");
                 
                 if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                     || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
@@ -1158,26 +1164,20 @@ namespace NDream.AirConsole {
                 }
                 
                 // TODO(marc): Enable this once the correct platform frontend is delivered.
-                // webViewObject?.SetMargins(0,0,0,0);
+                webViewObject?.SetMargins(0,0,0,0);
                 
                 OnSafeAreaChanged?.Invoke(SafeArea);
             });
         }
 
         protected void Update() {
-#if UNITY_ANDROID && AIRCONSOLE_AUTOMOTIVE
-            // TODO(Marc): Does this need to be shielded by a AIRCONSOLE_AUTOMOTIVE define with the original UNITY_ANDROID potentially bound to a UNITY_ANDROID && !AIRCONSOLE_AUTOMOTIVE define?
-            
-            if (!Screen.fullScreen) {
-                Screen.fullScreen = true;
-            }
-#endif
-            
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
 
+            runtimeConfigurator?.RefreshConfiguration();
+            
 #if UNITY_ANDROID
             //back button on TV remotes
             if (Input.GetKeyDown(KeyCode.Escape)) {
@@ -1664,6 +1664,7 @@ namespace NDream.AirConsole {
         private List<int> _players = new List<int>();
         private readonly Queue<Action> eventQueue = new Queue<Action>();
 
+        private IRuntimeConfigurator runtimeConfigurator;
         
         // unity singleton handling
         private static AirConsole _instance;
@@ -1671,6 +1672,7 @@ namespace NDream.AirConsole {
         private void StopWebsocketServer() {
             if (wsServer != null) {
                 wsServer.Stop();
+                wsServer = null;
             }
         }
 
@@ -1800,6 +1802,7 @@ namespace NDream.AirConsole {
                     webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
 #endif
                     webViewObject.SetVisibility(!Application.isEditor);
+                    Debug.LogWarning($"Initial URL: {url}");
                     webViewObject.LoadURL(url);
 
                     //Display loading Screen
