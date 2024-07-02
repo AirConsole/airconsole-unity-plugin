@@ -1910,13 +1910,23 @@ namespace NDream.AirConsole {
                 h = (int)msg["top_bar_height"] * 2;
                 webViewHeight = h;
             }
+            
 #if UNITY_ANDROID && !AIRCONSOLE_AUTOMOTIVE
             webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
 #endif
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+                Camera.main.pixelRect = GetCameraPixelRect();
             }
+        }
+
+        private Rect GetCameraPixelRect() {
+#if AIRCONSOLE_AUTOMOTIVE
+            return SafeArea;
+#elif UNITY_ANDROID
+            return new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+#endif
+            return Camera.main.pixelRect;
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
@@ -1929,20 +1939,17 @@ namespace NDream.AirConsole {
                 return;
             }
 
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                Camera.main.pixelRect = GetCameraPixelRect();
+            }
+            
 #if !AIRCONSOLE_AUTOMOTIVE
-            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
-            }
-
             AdaptUGuiLayout();
-#else
-            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                Camera.main.pixelRect = new Rect(SafeArea.x, SafeArea.y, SafeArea.width, SafeArea.height);
-            }
 #endif
         }
 #endif
 
+#if UNITY_ANDROID
         private void AdaptUGuiLayout() {
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
@@ -1961,7 +1968,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
-        
+#endif
 #endif
 
         private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) {
