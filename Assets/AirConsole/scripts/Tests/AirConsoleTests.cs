@@ -11,7 +11,7 @@ namespace NDream.AirConsole.Tests {
         [TearDown]
         public void TearDown() {
            if(target != null) {
-               Object.Destroy(target.gameObject);
+               Object.DestroyImmediate(target.gameObject);
            } 
         }
         
@@ -22,9 +22,9 @@ namespace NDream.AirConsole.Tests {
             JObject expectedMessage = JObject.FromObject(
                 new {
                     action = "onSetSafeArea",
-                    safeArea = JObject.FromObject(new { left = 0.2f, top = 0.1f, bottom = 0.9f, right = 0.8f })
+                    safeArea = JObject.FromObject(new { left = 0.2f, top = 0.1f, width = 0.6f, height = 0.8f })
                 });
-            Rect expectedRect = new(0.2f * Screen.width, 0.1f * Screen.height, 0.8f * Screen.width, 0.9f * Screen.height);
+            Rect expectedRect = new(0.2f * Screen.width, (1-0.1f) * Screen.height, 0.6f * Screen.width, 0.8f * Screen.height);
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.OnSafeAreaChanged += rect => {
                 Assert.AreEqual(expectedRect, rect);
@@ -33,6 +33,7 @@ namespace NDream.AirConsole.Tests {
             };
 
             target.SetSafeArea(expectedMessage);
+            target.Update();
 
             while (!testIsDone) {
                 yield return null;
@@ -68,12 +69,12 @@ namespace NDream.AirConsole.Tests {
                 androidGameVersion = "1";
             }
 
-            private void Update() {
+           public new void Update() {
                 frameCount++;
                 base.Update();
             }
 
-            internal void SetSafeArea(JObject message) {
+            internal new void SetSafeArea(JObject message) {
                 base.SetSafeArea(message);
             }
         }
