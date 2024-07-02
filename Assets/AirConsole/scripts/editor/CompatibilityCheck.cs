@@ -1,3 +1,4 @@
+#if !DISABLE_AIRCONSOLE
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
@@ -208,3 +209,4 @@ namespace NDream.AirConsole.Editor {
         }
     }
 }
+#endif

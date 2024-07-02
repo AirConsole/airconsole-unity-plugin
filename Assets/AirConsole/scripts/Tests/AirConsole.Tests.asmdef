@@ -1,10 +1,11 @@
 {
-    "name": "Tests",
+    "name": "AirConsole.Tests",
     "rootNamespace": "NDream.AirConsole.Test",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "AirConsole.Runtime"
+        "AirConsole.Runtime",
+        "AirConsole.Editor"
     ],
     "includePlatforms": [
         "Editor"
