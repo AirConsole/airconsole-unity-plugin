@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿#if !UNITY_ANDROID
+#undef AIRCONSOLE_AUTOMOTIVE
+#endif
+
+using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -1149,8 +1153,8 @@ namespace NDream.AirConsole {
                 
                 // TODO(Marc) Update when we send width / height that are no longer bottom / right
                 Rect safeArea = new() {
-                    y = Screen.height - height,
-                    height = Screen.height,
+                    y = Screen.height - y,
+                    height = height,
                     x = x, 
                     width = width
                 };
@@ -1162,9 +1166,6 @@ namespace NDream.AirConsole {
                     || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                     Camera.main.pixelRect = safeArea;
                 }
-                
-                // TODO(marc): Enable this once the correct platform frontend is delivered.
-                webViewObject?.SetMargins(0,0,0,0);
                 
                 OnSafeAreaChanged?.Invoke(SafeArea);
             });
@@ -1416,8 +1417,12 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdComplete(JObject msg) {
-#if UNITY_ANDROID && !UNITY_EDITOR
-		webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+#if !UNITY_EDITOR
+#if AIRCONSOLE_AUTOMOTIVE
+            webViewObject.SetMargins(0, 0, 0, 0);
+#elif UNITY_ANDROID
+		    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+#endif
 #endif
             try {
                 bool adWasShown = (bool)msg["ad_was_shown"];
@@ -1638,9 +1643,10 @@ namespace NDream.AirConsole {
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
 
         /// <summary>
-        /// The currently valid safe area for cameras to render in.
+        /// The currently valid safe area in camera coordinates. Valid pixelRect for cameras to render in.
         /// </summary>
-        public Rect SafeArea { get; private set; } = new Rect(0,0,Screen.width,Screen.height);
+        /// <remarks>Can be directly assigned to the camera.pixelRect</remarks>
+        public Rect SafeArea { get; private set; } = new(0,0,Screen.width,Screen.height);
         
         public string WebViewUrl { get; private set; }
         
@@ -1796,9 +1802,9 @@ namespace NDream.AirConsole {
                     url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
-#if UNITY_ANDROID // TODO(marc): && AC_ANDROID_AUTOMOTIVE
+#if AIRCONSOLE_AUTOMOTIVE 
                     webViewObject.SetMargins(0, 0, 0, 0);
-#else
+#elif UNITY_ANDROID
                     webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
 #endif
                     webViewObject.SetVisibility(!Application.isEditor);
@@ -1904,8 +1910,9 @@ namespace NDream.AirConsole {
                 h = (int)msg["top_bar_height"] * 2;
                 webViewHeight = h;
             }
-
+#if UNITY_ANDROID && !AIRCONSOLE_AUTOMOTIVE
             webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+#endif
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
