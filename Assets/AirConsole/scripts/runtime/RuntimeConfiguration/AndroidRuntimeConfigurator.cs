@@ -1,14 +1,19 @@
+#if !DISABLE_AIRCONSOLE
+#if !UNITY_ANDROID
+#undef AIRCONSOLE_AUTOMOTIVE
+#endif
 using UnityEngine;
-using UnityEngine.Android;
 using Screen = UnityEngine.Device.Screen;
 
 namespace NDream.AirConsole {
-    public class DefaultRuntimeConfigurator : IRuntimeConfigurator {
-        public DefaultRuntimeConfigurator() {
+    // Used in AirConsole.cs based on #if directives
+    // ReSharper disable once UnusedType.Global
+    public class AndroidRuntimeConfigurator : IRuntimeConfigurator {
+        public AndroidRuntimeConfigurator() {
             Application.runInBackground = false;
             Screen.fullScreen = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Application.targetFrameRate = Application.platform == RuntimePlatform.WebGLPlayer ? -1 : 0;
+            Application.targetFrameRate = 0;
         }
         
         public void RefreshConfiguration() {
@@ -16,3 +21,4 @@ namespace NDream.AirConsole {
         }
     }
 }
+#endif

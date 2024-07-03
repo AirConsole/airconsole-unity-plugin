@@ -3,16 +3,15 @@
 #endif
 
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System;
-using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
-using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
+#if UNITY_ANDROID
+using UnityEngine.SceneManagement;
+#endif
 #if UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
@@ -1075,11 +1074,13 @@ namespace NDream.AirConsole {
         private void Start() {
             // application has to run in background
 #if UNITY_EDITOR
-            runtimeConfigurator = new EditorRuntimeConfigurator(); 
+            runtimeConfigurator = new EditorRuntimeConfigurator();
 #elif AIRCONSOLE_AUTOMOTIVE
             runtimeConfigurator = new AutomotiveRuntimeConfigurator();
+#elif UNITY_ANDROID
+            runtimeConfigurator = new AndroidRuntimeConfigurator();
 #else
-            runtimeConfigurator = new DefaultRuntimeConfigurator();
+            runtimeConfigurator = new WebGLRuntimeConfigurator();
 #endif
 
             // register all incoming events
@@ -1781,8 +1782,8 @@ namespace NDream.AirConsole {
                     // TODO: Gree webview
                     webViewObject.Init((msg) => ProcessJS(msg), 
                         err => Debug.LogError($"AirConsole web error: {err}"),
-                        httpError => Debug.LogError($"AirConsole HttpError: {httpError}"), 
-                        url => WebViewUrl = url, null, null, null, true, false, 
+                        httpError => Debug.LogError($"AirConsole HttpError: {httpError}"),
+                        url => { WebViewUrl = url; Debug.LogError($"Loaded URL {url}"); }, null, null, null, true, false, 
                         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;

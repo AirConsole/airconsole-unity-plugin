@@ -1,7 +1,10 @@
+#if !DISABLE_AIRCONSOLE
+#if !UNITY_ANDROID
+#undef AIRCONSOLE_AUTOMOTIVE
+#endif
 using System.Collections.Generic;
 using NDream.AirConsole.Editor;
 using NUnit.Framework;
-using UnityEngine.TestTools;
 
 namespace NDream.AirConsole.Tests {
     public class ProjectDependencyValidatorTest {
@@ -50,3 +53,4 @@ namespace NDream.AirConsole.Tests {
         }
     }
 }
+#endif

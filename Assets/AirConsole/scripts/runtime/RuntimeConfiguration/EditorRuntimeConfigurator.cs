@@ -1,5 +1,8 @@
+#if !DISABLE_AIRCONSOLE
+#if !UNITY_ANDROID
+#undef AIRCONSOLE_AUTOMOTIVE
+#endif
 using UnityEngine;
-using UnityEngine.Android;
 
 namespace NDream.AirConsole {
     public class EditorRuntimeConfigurator : IRuntimeConfigurator {
@@ -13,3 +16,4 @@ namespace NDream.AirConsole {
         }
     }
 }
+#endif
