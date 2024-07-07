@@ -46,6 +46,8 @@ namespace NDream.AirConsole.Editor {
                 default:
                     throw new UnityException($"AirConsole Plugin does not support platform {report.summary.platform}");
             }
+            
+            Debug.Log("AirConsole Plugin configuration checks completed successfully.");
         }
 
         [InitializeOnLoadMethod]

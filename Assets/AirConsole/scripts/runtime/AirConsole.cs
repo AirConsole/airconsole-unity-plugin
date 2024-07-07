@@ -1776,15 +1776,18 @@ namespace NDream.AirConsole {
                     // webViewObject.Init((msg) => ProcessJS(msg), true);
                     // TODO: Airconsole webview
                     // webViewObject.Init((msg) => ProcessJS(msg), true, 
-                    //     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+                    //     null, //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
                     //     err => Debug.LogError($"AC WebView Error: {err}"),
                     //     httpError => Debug.LogError($"AC WebView HttpError: {httpError}"));
                     // TODO: Gree webview
-                    webViewObject.Init((msg) => ProcessJS(msg), 
+                    webViewObject.Init((msg) => ProcessJS(msg),
                         err => Debug.LogError($"AirConsole web error: {err}"),
                         httpError => Debug.LogError($"AirConsole HttpError: {httpError}"),
-                        url => { WebViewUrl = url; Debug.LogError($"Loaded URL {url}"); }, null, null, null, true, false, 
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                        url => {
+                            WebViewUrl = url;
+                            Debug.LogError($"Loaded URL {url}");
+                        }, null, null, null, true, false,
+                        null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + Settings.VERSION;
@@ -1811,6 +1814,9 @@ namespace NDream.AirConsole {
                     webViewObject.SetVisibility(!Application.isEditor);
                     Debug.LogWarning($"Initial URL: {url}");
                     webViewObject.LoadURL(url);
+                    
+                    // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
+                    webViewObject.EnableWebviewDebugging(true);
 
                     //Display loading Screen
                     webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
@@ -1926,8 +1932,9 @@ namespace NDream.AirConsole {
             return SafeArea;
 #elif UNITY_ANDROID
             return new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
-#endif
+#else
             return Camera.main.pixelRect;
+#endif
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
