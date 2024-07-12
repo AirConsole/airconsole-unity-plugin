@@ -1696,6 +1696,11 @@ namespace NDream.AirConsole {
             return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
         }
 
+        private string ComputeUrlVersion(string version) {
+            var split = version.Split('.');
+            return $"{split[0]}.{split[1]}{split[2]}";
+        }
+
         private void InitWebView() {
             if (androidTvGameVersion != null && androidTvGameVersion != "") {
                 if (webViewObject == null) {
@@ -1704,7 +1709,7 @@ namespace NDream.AirConsole {
                     webViewObject.Init((msg) => ProcessJS(msg));
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
-                    url += "client?id=androidunity-" + Settings.VERSION;
+                    url += "client?id=androidunity-" + ComputeUrlVersion(Settings.VERSION);
 
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
