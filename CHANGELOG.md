@@ -9,6 +9,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Fixed
 
 - Fixed an issue impacting Unity Android builds of 2.5.0 and 2.5.1 preventing the WebView from initializing correctly.
+- Automatically include PreBuildProcessing in packages
 
 ### IMPORTANT
 
