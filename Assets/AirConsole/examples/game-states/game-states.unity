@@ -150,10 +150,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e37d83ebce05ad74683fd3228dde9e7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  browserStartMode: 0
   controllerHtml: {fileID: 4900000, guid: c4a33a98dbad440d98fc8f9e7062d62c, type: 3}
   autoScaleCanvas: 1
+  androidTvGameVersion: 2018-10-15-08-58-18
+  androidUIResizeMode: 0
+  webViewLoadingSprite: {fileID: 0}
+  browserStartMode: 0
   devGameId: com.airconsole.plugin.unity
+  devLanguage: 
+  LocalIpOverride: 
 --- !u!4 &32034848
 Transform:
   m_ObjectHideFlags: 0
