@@ -4,11 +4,23 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## [2.5.2] - 2024-07-12
+## [2.5.2] - 2024-07-17
+
+**IMPORTANT** The Unity Plugin versions of the 2.5.x series are the last versions to support Unity 2019 LTS and 2020 LTS.
+Starting with version 2.6.0, the plugin will only support **Unity 2021 LTS and newer**.
+
+### Added
+
+- All example scenes are now setup to work on Unity Android with game id and game version set.
 
 ### Fixed
 
 - Fixed an issue impacting Unity Android builds of 2.5.0 and 2.5.1 preventing the WebView from initializing correctly.
+- Automatically include PreBuildProcessing in packages
+
+### Removed
+
+- The custom gradle files `launcherTemplate.gradle` and `mainTemplate.gradle` have been removed as they are no longer required for Unity 2019.4 LTS and newer.
 
 ### IMPORTANT
 
