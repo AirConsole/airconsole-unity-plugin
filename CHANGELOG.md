@@ -22,11 +22,6 @@ Starting with version 2.6.0, the plugin will only support **Unity 2021 LTS and n
 
 - The custom gradle files `launcherTemplate.gradle` and `mainTemplate.gradle` have been removed as they are no longer required for Unity 2019.4 LTS and newer.
 
-### IMPORTANT
-
-The Unity Plugin versions of the 2.5.x series are the last versions to support Unity 2019 LTS and 2020 LTS.
-Starting with version 2.6.0, the plugin will only support **Unity 2021 LTS and newer**.
-
 ## [2.5.1] - 2024-05-29
 
 Adds game developer experience bugfixes as well as a pending fix that was lost in 2.5.0 for devGameId in Unity PlayMode.
