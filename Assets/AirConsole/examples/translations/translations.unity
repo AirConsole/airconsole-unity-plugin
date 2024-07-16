@@ -268,7 +268,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: '{{new_things}}'
+  m_Text: '{{center}}'
 --- !u!222 &341934329
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -793,7 +793,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: '{{test2}}'
+  m_Text: '{{left}}'
 --- !u!222 &1909913346
 CanvasRenderer:
   m_ObjectHideFlags: 0
