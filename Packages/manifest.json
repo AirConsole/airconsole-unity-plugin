@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.0",
     "com.unity.ext.nunit": "2.0.5",
     "com.unity.ide.rider": "3.0.31",
     "com.unity.ide.vscode": "1.2.5",
@@ -7,7 +8,6 @@
     "com.unity.test-framework": "1.1.33",
     "com.unity.textmeshpro": "3.0.9",
     "com.unity.ugui": "1.0.0",
-    "net.gree.unity-webview": "https://github.com/gree/unity-webview.git?path=/dist/package-nofragment",
     "com.unity.modules.ai": "1.0.0",
     "com.unity.modules.androidjni": "1.0.0",
     "com.unity.modules.animation": "1.0.0",

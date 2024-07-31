@@ -1,5 +1,12 @@
 {
   "dependencies": {
+    "com.airconsole.unity-webview": {
+      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "d965441a427a20f9d3623d2828860721d1f5d13c"
+    },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
       "depth": 0,
@@ -58,13 +65,6 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
-    },
-    "net.gree.unity-webview": {
-      "version": "https://github.com/gree/unity-webview.git?path=/dist/package-nofragment",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "323d5d3611c92632f259d2d2cdadc9bbbb0e9014"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",
