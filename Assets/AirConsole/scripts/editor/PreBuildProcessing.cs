@@ -23,7 +23,7 @@ public class PreBuildProcessing : IPreprocessBuildWithReport {
 
         // If you need to set the Python path manually you can use the code below, uncomment it and
         // set "EMSDK_PYTHON" to the the Python 3 (Or Python 2 for old Unity versions) path:
-#if !UNITY_2020_1_OR_NEWER
+#if !UNITY_2020_1_OR_NEWER && UNITY_EDITOR_OSX
         System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", Settings.Python2Path);
 #endif
     }
