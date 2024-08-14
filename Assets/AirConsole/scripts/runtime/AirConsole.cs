@@ -1167,7 +1167,8 @@ namespace NDream.AirConsole {
                     || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                     Camera.main.pixelRect = safeArea;
                 }
-                
+
+                _safeAreaWasSet = true;
                 OnSafeAreaChanged?.Invoke(SafeArea);
             });
         }
@@ -1419,11 +1420,11 @@ namespace NDream.AirConsole {
 
         private void OnAdComplete(JObject msg) {
 #if !UNITY_EDITOR
-#if AIRCONSOLE_AUTOMOTIVE
-            webViewObject.SetMargins(0, 0, 0, 0);
-#elif UNITY_ANDROID
-		    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
-#endif
+            if (_safeAreaWasSet) {
+                webViewObject.SetMargins(0, 0, 0, 0);
+            } else {
+                webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+            }
 #endif
             try {
                 bool adWasShown = (bool)msg["ad_was_shown"];
@@ -1670,6 +1671,7 @@ namespace NDream.AirConsole {
         private Dictionary<string, string> _translations;
         private List<int> _players = new List<int>();
         private readonly Queue<Action> eventQueue = new Queue<Action>();
+        private bool _safeAreaWasSet = false;
 
         private IRuntimeConfigurator runtimeConfigurator;
         
@@ -1811,11 +1813,14 @@ namespace NDream.AirConsole {
                     url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
-#if AIRCONSOLE_AUTOMOTIVE 
-                    webViewObject.SetMargins(0, 0, 0, 0);
-#elif UNITY_ANDROID
-                    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
+#if UNITY_ANDROID
+                    if (_safeAreaWasSet) {
+                        webViewObject.SetMargins(0, 0, 0, 0);
+                    } else {
+                        webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
+                    }
 #endif
+
                     webViewObject.SetVisibility(!Application.isEditor);
                     Debug.LogWarning($"Initial URL: {url}");
                     webViewObject.LoadURL(url);
@@ -1922,20 +1927,25 @@ namespace NDream.AirConsole {
                 h = (int)msg["top_bar_height"] * 2;
                 webViewHeight = h;
             }
-            
-#if UNITY_ANDROID && !AIRCONSOLE_AUTOMOTIVE
-            webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+
+#if UNITY_ANDROID 
+            if (!_safeAreaWasSet) {
+                webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+            }
 #endif
-            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+            
+        if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
         }
 
         private Rect GetCameraPixelRect() {
-#if AIRCONSOLE_AUTOMOTIVE
-            return SafeArea;
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+            if (_safeAreaWasSet) {
+                return SafeArea;
+            }
+
             return new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
 #else
             return Camera.main.pixelRect;
