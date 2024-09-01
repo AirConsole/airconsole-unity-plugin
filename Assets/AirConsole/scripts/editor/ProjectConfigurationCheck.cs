@@ -106,9 +106,21 @@ namespace NDream.AirConsole.Editor {
                     $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
                     + $"We are updating the Android settings now.");
             }
-
+            
+            // TODO(android-native): this is a test to see if this help with the incorrect resolution when the bottom bar comes in and goes out again in fullscreen windowed mode.
+            PlayerSettings.resetResolutionOnWindowResize = true;
+            PlayerSettings.Android.renderOutsideSafeArea = true; // required for the webview
+            
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
+            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel22;
 
+            // TODO(android-native): At this point we do not have reason to assume that APK expansion files will be supported on car, but how can we deal with this between car and tv?
+#if AIRCONSOLE_AUTOMOTIVE
+            PlayerSettings.Android.useAPKExpansionFiles = false;
+            PlayerSettings.use32BitDisplayBuffer = true;
+#endif
+
+            
             PlayerSettings.Android.ARCoreEnabled = false;
             PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
             PlayerSettings.Android.androidIsGame = true;
