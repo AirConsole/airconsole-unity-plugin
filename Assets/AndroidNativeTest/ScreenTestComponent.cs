@@ -77,14 +77,16 @@ public class ScreenTestComponent : MonoBehaviour {
 
         url = url.ToLower();
         string[] urlSplit = url.Split('?');
-        string[] parameters = urlSplit[1].Split('#')[0].Split('&');
-        foreach (string param in parameters) {
-            string[] keyValue = param.Split('=');
-            if (keyValue[0] == parameterName) {
-                return keyValue[1];
+        string[] parameters = urlSplit.Length < 1 ? Array.Empty<string>() : urlSplit[1].Split('#')?[0].Split('&');
+        if (parameters != null) {
+            foreach (string param in parameters) {
+                string[] keyValue = param.Split('=');
+                if (keyValue.Length > 0 && keyValue[0] == parameterName) {
+                    return keyValue[1];
+                }
             }
         }
-        
+
         return defaultValue;
     }
 
