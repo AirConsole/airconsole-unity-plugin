@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System;
+using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.Serialization;
@@ -1663,6 +1664,7 @@ namespace NDream.AirConsole {
         private int webViewHeight;
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
+        private ClientConfiguration _clientConfiguration;
 #endif
         private List<JToken> _devices = new List<JToken>();
         private int _device_id;
@@ -1777,6 +1779,8 @@ namespace NDream.AirConsole {
 
         private void InitWebView() {
             if (!string.IsNullOrEmpty(androidGameVersion)) {
+                _clientConfiguration = DataProviderPlugin.QueryClientData();
+                
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
@@ -1797,8 +1801,7 @@ namespace NDream.AirConsole {
                         null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
-                    url += "client?id=androidunity-" + ComputeUrlVersion(Settings.VERSION);
-
+                    url += $"client?id={_clientConfiguration.Id}&platform={_clientConfiguration.Platform}";
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
