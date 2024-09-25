@@ -4,26 +4,66 @@ using UnityEngine;
 
 namespace NDream.AirConsole.Android.Plugin {
     public class DataProviderPlugin {
-        // Import the Java class method using JNI
-        public static ClientConfiguration QueryClientData() {
-            ClientConfiguration result = new();
-#if UNITY_ANDROID && !UNITY_EDITOR || true
+        private AndroidJavaObject dataProviderHelper;
+
+        public DataProviderPlugin() {
+#if UNITY_ANDROID && ! UNITY_EDITOR 
             // Get the current Android activity context
             AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
             AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
 
             // Create an instance of your Java plugin class
             AndroidJavaObject dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
+#elif UNITY_ANDROID
+            // Do we need to do anything
+#else
+            throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
+#endif
+        }
 
-            // Call the method and get the result
-            String jsonResponse = dataProviderHelper.Call<string>("queryClientData");
-            result = JsonConvert.DeserializeObject<ClientConfiguration>(jsonResponse);
+        // Import the Java class method using JNI
+        public ClientConfiguration QueryClientData() {
+            ClientConfiguration result = new();
+#if UNITY_ANDROID && !UNITY_EDITOR 
+
+            if (dataProviderHelper != null) {
+                // Call the method and get the result
+                String jsonResponse = dataProviderHelper.Call<string>("queryClientData");
+                result = JsonConvert.DeserializeObject<ClientConfiguration>(jsonResponse);
+            }
 #elif UNITY_ANDROID
             // Do we need to do anything?            
 #else
             throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
 #endif
             return result;
+        }
+
+        public String GetLocalConfiguration(string key, string defaultValue) {
+            string result = defaultValue;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (dataProviderHelper != null) {
+                // Call the method and get the result
+                result  = dataProviderHelper.Call<string>("getLocalConfig", key, defaultValue);
+            }
+#elif UNITY_ANDROID
+            // Do we need to do anything?            
+#else
+            throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
+#endif
+            return result;
+        }
+
+        public void SetLocalConfiguration(string key, string value) {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (dataProviderHelper != null) {
+                dataProviderHelper.Call<string>("setLocalConfig", key, value);
+            }
+#elif UNITY_ANDROID
+            // Do we need to do anything?            
+#else
+            throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
+#endif
         }
     }
 
@@ -33,7 +73,7 @@ namespace NDream.AirConsole.Android.Plugin {
 
         [JsonProperty("clientPlatform")]
         public string Platform { get; private set; } = "androidunity";
-        
+
         [JsonProperty("premiumId")]
         public string PremiumId { get; private set; }
 

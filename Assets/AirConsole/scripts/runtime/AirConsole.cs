@@ -1779,19 +1779,17 @@ namespace NDream.AirConsole {
 
         private void InitWebView() {
             if (!string.IsNullOrEmpty(androidGameVersion)) {
-                _clientConfiguration = DataProviderPlugin.QueryClientData();
+                DataProviderPlugin dataProviderPlugin = new();
+                _clientConfiguration = dataProviderPlugin.QueryClientData();
+                string localConfig = dataProviderPlugin.GetLocalConfiguration("partner_id", "unity no know");
+                Debug.LogWarning($"Received local config is {localConfig}");
                 
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
-                    // webViewObject.Init((msg) => ProcessJS(msg), true);
-                    // TODO: Airconsole webview
-                    // webViewObject.Init((msg) => ProcessJS(msg), true, 
-                    //     null, //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-                    //     err => Debug.LogError($"AC WebView Error: {err}"),
-                    //     httpError => Debug.LogError($"AC WebView HttpError: {httpError}"));
-                    // TODO: Gree webview
-                    webViewObject.Init((msg) => ProcessJS(msg),
+                    // webViewObject.Init(ProcessJS, transparent: true, zoom: false);
+                    // TODO(automotive-native): Use the above call once the implementation is finished)
+                    webViewObject.Init(ProcessJS,
                         err => Debug.LogError($"AirConsole web error: {err}"),
                         httpError => Debug.LogError($"AirConsole HttpError: {httpError}"),
                         url => {
