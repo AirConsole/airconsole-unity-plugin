@@ -4,7 +4,7 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
-## 2.5.3 - 2024-09-27
+## [2.5.3] - 2024-09-27
 
 This release fixes a high impact bug for Android TV builds done with Unity Plugin 2.5.2.
 If you use Unity 2019, you need to use 'Export Project' and build with Android Studio as Unity 2019s Gradle Version does support `<queries>`.
