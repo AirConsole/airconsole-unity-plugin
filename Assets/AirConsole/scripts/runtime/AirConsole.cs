@@ -1780,9 +1780,8 @@ namespace NDream.AirConsole {
         private void InitWebView() {
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 DataProviderPlugin dataProviderPlugin = new();
-                _clientConfiguration = dataProviderPlugin.QueryClientData();
-                string localConfig = dataProviderPlugin.GetLocalConfiguration("partner_id", "unity no know");
-                Debug.LogWarning($"Received local config is {localConfig}");
+                string connectionUrl = dataProviderPlugin.GetConnectionBaseUrl();
+                Debug.LogWarning($"Received connection url {connectionUrl}");
                 
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
@@ -1799,7 +1798,7 @@ namespace NDream.AirConsole {
                         null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
-                    url += $"client?id={_clientConfiguration.Id}&platform={_clientConfiguration.Platform}";
+                    url += connectionUrl; 
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
