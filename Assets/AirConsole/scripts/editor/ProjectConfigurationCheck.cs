@@ -14,17 +14,20 @@ namespace NDream.AirConsole.Editor {
     public abstract class UnityVersionCheck {
         [InitializeOnLoadMethod]
         private static void CheckUnityVersions() {
-#if !UNITY_2021_3_OR_NEWER && !UNITY_2022_3_OR_NEWER
-            EditorUtility.DisplayDialog("Unsupported", $"AirConsole {Settings.VERSION} requires Unity 2021.3 or 2022.3",
+            if (IsSupportedUnityVersion()) {
+                return;
+            }
+
+            EditorUtility.DisplayDialog("Unsupported", $"AirConsole {Settings.VERSION} requires Unity 2021.3 or newer",
                 "I understand");
             EditorApplication.isPlaying = false;
-#endif
+        }
 
-#if UNITY_6 || UNITY_6_OR_NEWER
-            EditorUtility.DisplayDialog("Unity 6 and newer are not allowed",
-                $"AirConsole {Settings.VERSION} does not allow games to be built with Unity 6", "I understand");
-            EditorApplication.isPlaying = false;
+    public static bool IsSupportedUnityVersion() {
+#if !UNITY_2021_3_OR_NEWER && !UNITY_2022_3_OR_NEWER
+            return false; 
 #endif
+            return true;
         }
     }
 
@@ -52,6 +55,11 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void CheckGeneralPlayerSettings() {
+            if (!UnityVersionCheck.IsSupportedUnityVersion()) {
+                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2021.3 LTS or newer");
+                throw new UnityException("Unity Version " + Application.unityVersion);
+            }
+            
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
             if (PlayerSettings.runInBackground != shouldRunInBackground) {
                 Debug.Log(
@@ -112,7 +120,10 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.renderOutsideSafeArea = true; // required for the webview
             
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
-            PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel22;
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel23) {
+                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
+            }
+                
 
             // TODO(android-native): At this point we do not have reason to assume that APK expansion files will be supported on car, but how can we deal with this between car and tv?
 #if AIRCONSOLE_AUTOMOTIVE

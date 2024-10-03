@@ -30,8 +30,7 @@ namespace NDream.AirConsole.Editor {
             { "com.unity.purchasing", "Unity IAP is not allowed" },
             { "com.unity.purchasing.udp", "Unity IAP is not allowed" },
             { "com.unity.xr.arcore", "ARCore must not be present for Android builds" },
-            { "com.unity.adaptiveperformance", "Adaptive Performance is not allowed on AirConsole" },
-            { "com.unity.modules.unityanalytics", "Unity Analytics are not allowed on automotive for security reasons" }
+            { "com.unity.adaptiveperformance", "Adaptive Performance is not allowed on AirConsole" }
         };
 
         protected static List<string> blockedPackages = new() {
@@ -48,7 +47,6 @@ namespace NDream.AirConsole.Editor {
         };
 
         protected static List<string> blockedPackagesAndroidAutomotive = new() {
-            "com.unity.modules.unityanalytics"
         };
 
         protected static List<string> blockedPackagesWebGL = new() { };
