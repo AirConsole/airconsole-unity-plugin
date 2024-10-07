@@ -1,7 +1,4 @@
-﻿using UnityEngine;
-using System.Collections;
-
-namespace NDream.AirConsole {
+﻿namespace NDream.AirConsole {
 	public class DebugLevel {
 		public const bool DEFAULT_INFO = false;
 		public const bool DEFAULT_WARNING = true;
