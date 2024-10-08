@@ -4,6 +4,27 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [Unreleased]
+
+This release moves up the supported Unity versions to the currently supported Unity LTS versions.
+This is to ensure correct and consistent behavior on all target web platforms and Android versions.
+
+We highly recommend to update your game to Unity 2022.3.18 or newer. Especially if you create web games,
+you will want to make use of it as Unity 2022 supports to configure the Web builds with a fixed amount of memory.
+Doing so significantly improves stability on mobile and automotive platforms.
+
+### Added
+
+- Support for Unity 6 was added
+
+### Deprecated
+
+- Support for Unity 2021 LTS is deprecated. Unity 2021 LTS support will be removed in Q2 2025.
+
+### Removed
+
+- Support for Unity 2019 LTS and Unity 2020 LTS was removed.
+
 ## [2.5.3] - 2024-09-27
 
 This release fixes a high impact bug for Android TV builds done with Unity Plugin 2.5.2.
