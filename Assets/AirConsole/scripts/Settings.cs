@@ -2,7 +2,7 @@
 
 namespace NDream.AirConsole {
     public static class Settings {
-        public const string VERSION = "2.5.4";
+        public const string VERSION = "2.6.0";
 
         // ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
         public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
