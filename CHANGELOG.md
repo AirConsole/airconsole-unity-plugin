@@ -7,11 +7,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 This release moves up the supported Unity versions to the currently supported Unity LTS versions.
-This is to ensure correct and consistent behavior on all target web platforms and Android versions.
+This ensures more stable and consistent behavior on all target web platforms and Android versions.
 
-We highly recommend to update your game to Unity 2022.3.18 or newer. Especially if you create web games,
-you will want to make use of it as Unity 2022 supports to configure the Web builds with a fixed amount of memory.
-Doing so significantly improves stability on mobile and automotive platforms.
+We highly recommend to update your game to Unity 2022.3.18 or newer as soon as possible.
+If you create web games, you want to make use of Unity 2022s ability to configure the Web builds with a fixed amount of memory.
+This significantly improves stability on mobile and automotive platforms.
 
 ### Added
 
