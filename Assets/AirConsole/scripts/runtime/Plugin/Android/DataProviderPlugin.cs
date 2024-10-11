@@ -14,7 +14,7 @@ namespace NDream.AirConsole.Android.Plugin {
 
             // Create an instance of your Java plugin class
             dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
-            dataProviderHelper.Call("init");
+            dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL);
 #endif
 #else
             throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
@@ -30,12 +30,14 @@ namespace NDream.AirConsole.Android.Plugin {
 #if !UNITY_EDITOR
             if (dataProviderHelper != null) {
                 return $"client?{dataProviderHelper.Call<string>("getConnectionUrl")}&unityPluginVersion={ComputeUrlVersion(Settings.VERSION)}";
+            } else {
+              Debug.Log("DataProviderPlugin is not initialized");
             }
 #else
-            return $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=androidunity&unityPluginVersion={ComputeUrlVersion(Settings.VERSION)}";
+            return $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android&unityPluginVersion={ComputeUrlVersion(Settings.VERSION)}";
 #endif
 #endif
-            return $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=androidunity&unityPluginVersion={ComputeUrlVersion(Settings.VERSION)}";
+            throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
         }
 
         private static string ComputeUrlVersion(string version) {
