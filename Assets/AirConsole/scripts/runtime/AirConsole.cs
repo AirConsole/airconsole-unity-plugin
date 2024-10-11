@@ -327,7 +327,7 @@ namespace NDream.AirConsole {
                 _players.Add(device_ids[i]);
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "setActivePlayers");
             msg.Add("max_players", max_players);
 
@@ -1147,31 +1147,40 @@ namespace NDream.AirConsole {
                 throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
             }
 
-            eventQueue.Enqueue(delegate() {
-                float y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0);
-                float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
-                float height = Screen.height * GetFloatFromMessage(safeAreaObj, "height", 1);
-                float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
+            eventQueue.Enqueue(delegate {
+                _lastSafeAreaParameters = safeAreaObj;
+                RefreshSafeArea(_lastSafeAreaParameters);
+            });
+        }
+
+        private void RefreshSafeArea(JObject safeAreaObj) {
+            float y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0);
+            float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
+            float height = Screen.height * GetFloatFromMessage(safeAreaObj, "height", 1);
+            float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
                 
-                // TODO(Marc) Update when we send width / height that are no longer bottom / right
-                Rect safeArea = new() {
-                    y = Screen.height - y,
-                    height = height,
-                    x = x, 
-                    width = width
-                };
-                SafeArea = safeArea;
+            // TODO(Marc) Update when we send width / height that are no longer bottom / right
+            Rect safeArea = new() {
+                y = Screen.height - y,
+                height = height,
+                x = x, 
+                width = width
+            };
+            SafeArea = safeArea;
                 
                 Debug.LogWarning($"Safe Area is {safeArea} from message {safeAreaObj}");
                 
-                if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
-                    || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                    Camera.main.pixelRect = safeArea;
-                }
+            if ((androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution)
+                && Camera.main != null) {
+                Camera.main.pixelRect = safeArea;
+            }
 
-                _safeAreaWasSet = true;
-                OnSafeAreaChanged?.Invoke(SafeArea);
-            });
+            _lastScreenHeight = (int)safeArea.height;
+            _lastScreenWidth = (int)safeArea.width;
+            _safeAreaWasSet = true;
+            // TODO(android-native): we want to have the check for subscriptions to do event queuing and to inform the user if the settings for game sizing and the registrations don't match.
+            OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
         protected void Update() {
@@ -1179,6 +1188,18 @@ namespace NDream.AirConsole {
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
+
+#if UNITY_ANDROID
+            if (Screen.currentResolution.width != _lastScreenWidth || Screen.currentResolution.height != _lastScreenHeight) {
+                if (_lastSafeAreaParameters != null) {
+                    // TODO(android-native): We need to ensure to only do this, when the safe area feature is used
+                    RefreshSafeArea(_lastSafeAreaParameters);
+                } else {
+                    // TODO(android-native): Otherwise the topbar margin needs to be updated
+                    Debug.Log("AirConsole: The WebView margins should have been updated");
+                }
+            }
+#endif
 
             runtimeConfigurator?.RefreshConfiguration();
             
@@ -1420,7 +1441,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdComplete(JObject msg) {
-#if !UNITY_EDITOR
+#if !UNITY_EDITOR && UNITY_ANDROID
             if (_safeAreaWasSet) {
                 webViewObject.SetMargins(0, 0, 0, 0);
             } else {
@@ -1664,7 +1685,6 @@ namespace NDream.AirConsole {
         private int webViewHeight;
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
-        private ClientConfiguration _clientConfiguration;
 #endif
         private List<JToken> _devices = new List<JToken>();
         private int _device_id;
@@ -1674,6 +1694,9 @@ namespace NDream.AirConsole {
         private List<int> _players = new List<int>();
         private readonly Queue<Action> eventQueue = new Queue<Action>();
         private bool _safeAreaWasSet = false;
+        private JObject _lastSafeAreaParameters; 
+        private int _lastScreenWidth = Screen.width;
+        private int _lastScreenHeight = Screen.height;
 
         private IRuntimeConfigurator runtimeConfigurator;
         
@@ -1789,13 +1812,18 @@ namespace NDream.AirConsole {
                     // webViewObject.Init(ProcessJS, transparent: true, zoom: false);
                     // TODO(automotive-native): Use the above call once the implementation is finished)
                     webViewObject.Init(ProcessJS,
-                        err => Debug.LogError($"AirConsole web error: {err}"),
-                        httpError => Debug.LogError($"AirConsole HttpError: {httpError}"),
+                        err => Debug.LogError($"AirConsole WebView error: {err}"),
+                        httpError => Debug.LogError($"AirConsole WebView HttpError: {httpError}"),
                         url => {
                             WebViewUrl = url;
-                            Debug.LogError($"Loaded URL {url}");
-                        }, null, null, null, true, false,
-                        null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                            Debug.LogError($"AirConsole WebView Loaded URL {url}");
+                        },
+                        started => Debug.LogError($"AirConsole WebView started: {started}"),
+                        hooked => Debug.LogError($"AirConsole WebView hooked: {hooked}"), 
+                        cookies => Debug.LogError($"AirConsole WebView cookies: {cookies}"),
+                        true);
+                        // , false,
+                        // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += connectionUrl; 
