@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.8.0.js"></script>
+  <script type="text/javascript" src="https://www.airconsole.com/api/airconsole-1.9.0.js"></script>
 
   <style type=text/css>
 
@@ -42,6 +42,50 @@
    bottom: 5%;
   }
 
+  .form-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center; /* Center the form horizontally */
+      gap: 10px; /* Space between input and button */
+      flex-wrap: nowrap; /* Prevent wrapping to the next line */
+  }
+
+  #userInput {
+      flex: 1; /* Allow the input to grow and fill available space */
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+  }
+
+  button[type="submit"] {
+      padding: 10px 20px;
+      font-size: 16px;
+      border: none;
+      background-color: #007BFF;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+  }
+
+  button[type="submit"]:hover {
+      background-color: #0056b3;
+  }
+
+  /* Responsive adjustments for smaller screens */
+  @media (max-width: 480px) {
+      .form-container {
+          flex-direction: column;
+          align-items: stretch;
+      }
+
+      button[type="submit"] {
+          width: 100%;
+      }
+  }
+  
   </style>
 
   <script type="text/javascript">
@@ -103,6 +147,26 @@
         this.airconsole.message(AirConsole.SCREEN, {action: 'androidUIResizeMode'});
     }
     
+    App.prototype.sendCommand = function(command) {
+        this.airconsole.message(AirConsole.SCREEN, {action: 'command', command });
+    }
+
+    function handleSubmit(ev) {
+        ev.preventDefault(); // Prevents the default form submission behavior
+
+        const userInput = document.getElementById('userInput').value;
+        if(typeof userInput === 'string' && userInput.length > 3) {
+            window.app.sendCommand(userInput);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the form by its ID
+        const form = document.getElementById('formCustomCommand');
+
+        // Attach the handleSubmit function to the form's submit event
+        form.addEventListener('submit', handleSubmit);
+    });
 
   </script>
 
@@ -113,6 +177,12 @@
         <div class="button" ontouchstart="window.app.setFullscreen(false)">setFullscreen(false)</div>
         <div class="button" ontouchstart="window.app.toggleScreenFullscreenMode()">toggleScreenFullscreenMode()</div>
         <div class="button" ontouchstart="window.app.toggleAndroidUIResizeMode()">toggleAndroidUIResizeMode()</div>
+        <h1>Custom command</h1>
+        <form id="formCustomCommand" class="form-container">
+            <label for="userInput" class="visually-hidden">Enter something:</label>
+            <input type="text" id="userInput" name="userInput" placeholder="Custom command to send" required>
+            <button type="submit">Submit</button>
+        </form>
     </div>
     <div id="content"><!--Incoming messages get displayed in this container--></div>
 </body>

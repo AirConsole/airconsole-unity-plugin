@@ -1,7 +1,6 @@
 using System;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using NDream.AirConsole;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
@@ -25,12 +24,11 @@ public class ScreenTestComponent : MonoBehaviour {
     private void OnDestroy() {
         if (AirConsole.instance != null) {
             AirConsole.instance.onMessage -= OnMessage;
-        } 
+        }
     }
 
     // Update is called once per frame
-    void Update()
-    {
+    void Update() {
         _textField.text = GetScreenDataText();
 
         if (Input.touchCount > 0 && Input.touches.Any(t => t.phase == TouchPhase.Ended)) {
@@ -42,15 +40,16 @@ public class ScreenTestComponent : MonoBehaviour {
         StringBuilder sb = new();
         sb.AppendLine(
             $"Initial Screen Configuration: {_currentResolution.width}x{_currentResolution.height}@{_currentResolution.refreshRate:N0}Hz");
-        sb.AppendLine($"Current Screen Configuration: {Screen.currentResolution.width}x{Screen.currentResolution.height}@{Screen.currentResolution.refreshRate:N0}Hz");
-        
+        sb.AppendLine(
+            $"Current Screen Configuration: {Screen.currentResolution.width}x{Screen.currentResolution.height}@{Screen.currentResolution.refreshRate:N0}Hz");
+
         // UnityEngine.Device.Screen.GetDisplayLayout(list);
         // list.ForEach(di => sb.AppendLine($"DI {di.name}: {di.width}x{di.height}@{di.refreshRate.value:N0}Hz; Area {di.workArea}"));
         int index = 0;
         foreach (Display display in Display.displays) {
             sb.AppendLine(
                 $"DI {index++}: {display.systemWidth}x{display.systemHeight} -> {display.renderingWidth}x{display.renderingHeight}");
-        } 
+        }
 
         sb.AppendLine("----------------------------------------");
         sb.AppendLine($"Screen Height: {Screen.height}");
@@ -62,8 +61,9 @@ public class ScreenTestComponent : MonoBehaviour {
         }
 
         sb.AppendLine($"URL: {AirConsole.instance.WebViewUrl}");
-        sb.AppendLine($"URL Client: {GetUrlParam(AirConsole.instance.WebViewUrl, "client")}");
-        sb.AppendLine($"URL ID: {GetUrlParam(AirConsole.instance.WebViewUrl, "id")}");
+        sb.AppendLine($"URL id: {GetUrlParam(AirConsole.instance.WebViewUrl, "id")}");
+        sb.AppendLine($"URL runtimePlatform: {GetUrlParam(AirConsole.instance.WebViewUrl, "runtimePlatform")}");
+        sb.AppendLine($"URL unityPluginVersion: {GetUrlParam(AirConsole.instance.WebViewUrl, "unityPluginVersion")}");
         sb.AppendLine($"MainCam Pixel: {Camera.main.pixelRect}");
         sb.AppendLine($"SafeArea: {Screen.safeArea}");
         sb.AppendLine($"AC SafeArea: {AirConsole.instance.SafeArea}");
@@ -75,13 +75,14 @@ public class ScreenTestComponent : MonoBehaviour {
             return defaultValue;
         }
 
+        string queryParameter = parameterName.ToLower();
         url = url.ToLower();
         string[] urlSplit = url.Split('?');
-        string[] parameters = urlSplit.Length < 1 ? Array.Empty<string>() : urlSplit[1].Split('#')?[0].Split('&');
+        string[] parameters = urlSplit.Length < 1 ? Array.Empty<string>() : urlSplit[1].Split('&');
         if (parameters != null) {
             foreach (string param in parameters) {
                 string[] keyValue = param.Split('=');
-                if (keyValue.Length > 0 && keyValue[0] == parameterName) {
+                if (keyValue.Length > 0 && keyValue[0] == queryParameter) {
                     return keyValue[1];
                 }
             }
@@ -91,10 +92,10 @@ public class ScreenTestComponent : MonoBehaviour {
     }
 
     private FullScreenMode _fullscreenMode;
+
     void OnMessage(int from, JToken data) {
         switch ((string)data["action"]) {
             case "fullscreen": {
-                
                 Screen.fullScreen = (bool)data["value"];
                 break;
             }
@@ -106,10 +107,101 @@ public class ScreenTestComponent : MonoBehaviour {
             }
 
             case "androidUIResizeMode": {
-                
                 AirConsole.instance.androidUIResizeMode = (AndroidUIResizeMode)(((int)AirConsole.instance.androidUIResizeMode + 1) % 3);
                 break;
             }
+
+            case "command": {
+                string command = (string)data["command"];
+                if (!string.IsNullOrEmpty(command)) {
+                    command = command.ToLower();
+                    Debug.unityLogger.Log($"Command received: {command}");
+                    ExecuteCommand(command);
+                }
+                break;
+            }
         }
+    }
+
+    private void ExecuteCommand(string command) {
+        switch (command) {
+            case "toggleab": {
+                if (IsActionBarShowing()) {
+                    HideActionBar();
+                } else {
+                    ShowActionBar();
+                }
+                break;
+            }
+        }
+    }
+
+
+    private bool IsActionBarShowing() {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaObject actionBar = activity.Call<AndroidJavaObject>("getActionBar");
+            if (actionBar != null)
+            {
+                bool isShowing = actionBar.Call<bool>("isShowing");
+                Debug.Log($"IsActionBarShowing: actionBar is showing: {isShowing}");
+                return isShowing;
+            } else {
+                Debug.LogWarning("IsActionBarShowing: actionBar is null but we expected to find it");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+        }
+#endif
+        return false;
+    }
+
+    private void HideActionBar() {
+#if UNITY_ANDROID && !UNITY_EDITOR 
+        try
+        {
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaObject actionBar = activity.Call<AndroidJavaObject>("getActionBar");
+            if (actionBar != null)
+            {
+                Debug.Log("HideActionBar: executed");
+                actionBar.Call("hide");
+            } else {
+                Debug.LogWarning("HideActionBar: actionBar is null but we expected to find it");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+        }
+#endif
+    }
+
+    private void ShowActionBar() {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            AndroidJavaClass unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaObject actionBar = activity.Call<AndroidJavaObject>("getActionBar");
+            if (actionBar != null)
+            {
+                Debug.Log("ShowActionBar: executed");
+                actionBar.Call("show");
+            } else {
+                Debug.LogWarning("ShowActionBar: actionBar is null but we expected to find it");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogException(e);
+        }
+#endif
     }
 }
