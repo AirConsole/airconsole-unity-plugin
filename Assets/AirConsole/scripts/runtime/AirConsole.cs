@@ -1161,7 +1161,7 @@ namespace NDream.AirConsole {
                 
             // TODO(Marc) Update when we send width / height that are no longer bottom / right
             Rect safeArea = new() {
-                y = Screen.height - y,
+                y = y,
                 height = height,
                 x = x, 
                 width = width
@@ -1171,6 +1171,7 @@ namespace NDream.AirConsole {
             if ((androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution)
                 && Camera.main != null) {
+                AirConsoleLogger.LogDevelopment($"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
                 Camera.main.pixelRect = safeArea;
             }
 
