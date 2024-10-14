@@ -1167,18 +1167,18 @@ namespace NDream.AirConsole {
                 width = width
             };
             SafeArea = safeArea;
-                
-                Debug.LogWarning($"Safe Area is {safeArea} from message {safeAreaObj}");
-                
+
             if ((androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution)
                 && Camera.main != null) {
                 Camera.main.pixelRect = safeArea;
             }
 
-            _lastScreenHeight = (int)safeArea.height;
-            _lastScreenWidth = (int)safeArea.width;
+            _lastSafeAreaHeight = (int)safeArea.height;
+            _lastSafeAreaWidth = (int)safeArea.width;
             _safeAreaWasSet = true;
+            _webViewManager.ActivateSafeArea();
+            AirConsoleLogger.LogDevelopment($"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
             // TODO(android-native): we want to have the check for subscriptions to do event queuing and to inform the user if the settings for game sizing and the registrations don't match.
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
@@ -1190,15 +1190,16 @@ namespace NDream.AirConsole {
             }
 
 #if UNITY_ANDROID
-            if (Screen.currentResolution.width != _lastScreenWidth || Screen.currentResolution.height != _lastScreenHeight) {
-                if (_lastSafeAreaParameters != null) {
-                    // TODO(android-native): We need to ensure to only do this, when the safe area feature is used
-                    RefreshSafeArea(_lastSafeAreaParameters);
-                } else {
-                    // TODO(android-native): Otherwise the topbar margin needs to be updated
-                    Debug.Log("AirConsole: The WebView margins should have been updated");
-                }
-            }
+            // TODO(android-native): Decide when the camera rect no longer matches the safe area and needs updating
+            // if (Screen.currentResolution.width != _lastSafeAreaWidth || Screen.currentResolution.height != _lastSafeAreaHeight) {
+            //     if (_lastSafeAreaParameters != null) {
+            //         // TODO(android-native): We need to ensure to only do this, when the safe area feature is used
+            //         RefreshSafeArea(_lastSafeAreaParameters);
+            //     } else {
+            //         // TODO(android-native): Otherwise the topbar margin needs to be updated
+            //         AirConsoleLogger.LogDevelopment("The WebView margins should have been updated");
+            //     }
+            // }
 #endif
 
             runtimeConfigurator?.RefreshConfiguration();
@@ -1346,6 +1347,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnReady(JObject msg) {
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.Hidden); 
+           
 #if UNITY_ANDROID && !UNITY_EDITOR
 			if (webViewLoadingCanvas != null){
 				GameObject.Destroy (webViewLoadingCanvas.gameObject);
@@ -1418,9 +1421,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdShow(JObject msg) {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.SetMargins(0, 0, 0, 0);
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
+            
             try {
                 if (onAdShow != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1441,13 +1443,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdComplete(JObject msg) {
-#if !UNITY_EDITOR && UNITY_ANDROID
-            if (_safeAreaWasSet) {
-                webViewObject.SetMargins(0, 0, 0, 0);
-            } else {
-                webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
-            }
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
+            
             try {
                 bool adWasShown = (bool)msg["ad_was_shown"];
 
@@ -1470,9 +1467,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnGameEnd(JObject msg) {
-#if UNITY_ANDROID
-            webViewObject.SetMargins(0, 0, 0, 0);
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
+            
             try {
                 if (onGameEnd != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1695,8 +1691,9 @@ namespace NDream.AirConsole {
         private readonly Queue<Action> eventQueue = new Queue<Action>();
         private bool _safeAreaWasSet = false;
         private JObject _lastSafeAreaParameters; 
-        private int _lastScreenWidth = Screen.width;
-        private int _lastScreenHeight = Screen.height;
+        private int _lastSafeAreaWidth = Screen.width;
+        private int _lastSafeAreaHeight = Screen.height;
+        private WebViewManager _webViewManager;
 
         private IRuntimeConfigurator runtimeConfigurator;
         
@@ -1791,6 +1788,7 @@ namespace NDream.AirConsole {
 
 
 #if UNITY_ANDROID
+        // TODO(android-native): This approach is most likely the missing piece in the webview - android tablet taskbar handling issue.
         private int GetScaledWebViewHeight() {
             return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
         }
@@ -1840,20 +1838,15 @@ namespace NDream.AirConsole {
                     url += "&game-id=" + Application.identifier;
                     url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
-
-#if UNITY_ANDROID
-                    if (_safeAreaWasSet) {
-                        webViewObject.SetMargins(0, 0, 0, 0);
-                    } else {
-                        webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
-                    }
-#endif
-
+                    
+                    _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
+                    
                     webViewObject.SetVisibility(!Application.isEditor);
                     Debug.LogWarning($"Initial URL: {url}");
                     webViewObject.LoadURL(url);
                     
                     // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
+                    // TODO(android-native): Replace it with the above line once the implementation is finished
                     webViewObject.EnableWebviewDebugging(true);
 
                     //Display loading Screen
@@ -1954,13 +1947,10 @@ namespace NDream.AirConsole {
             if (msg["top_bar_height"] != null) {
                 h = (int)msg["top_bar_height"] * 2;
                 webViewHeight = h;
+                _webViewManager.SetWebViewHeight(h);
             }
 
-#if UNITY_ANDROID 
-            if (!_safeAreaWasSet) {
-                webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
-            }
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
             
         if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
@@ -1981,7 +1971,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
-            webViewObject.SetMargins(0, 0, 0, 0);
+            AirConsoleLogger.LogDevelopment($"OnUnityWebviewPlatformReady {msg}");
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
         }
 
 #if UNITY_ANDROID

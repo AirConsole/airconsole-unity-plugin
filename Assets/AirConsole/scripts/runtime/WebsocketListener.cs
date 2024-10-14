@@ -144,6 +144,7 @@ namespace NDream.AirConsole {
 				string action = msg.SelectToken("action")?.Value<string>();
 
 				if (action == "onReady") {
+					AirConsoleLogger.LogDevelopment($"onReady: {msg}");
 					this.isReady = true;
 
 					if (this.onReady != null) {
@@ -227,6 +228,7 @@ namespace NDream.AirConsole {
 						this.onUnityWebviewResize (msg);
 					}
 				} else if (action == "onUnityWebviewPlatformReady") {
+					AirConsoleLogger.LogDevelopment($"UnityWebviewPlatformReady: {msg}");
 					if (this.onUnityWebviewPlatformReady != null) {
 						this.onUnityWebviewPlatformReady (msg);
 					}

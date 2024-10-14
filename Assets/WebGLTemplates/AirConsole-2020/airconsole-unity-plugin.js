@@ -179,6 +179,7 @@ App.prototype.initAirConsole = function() {
     };
 
     me.airconsole.onReady = function (code) {
+        console.info(`AC UNITYJS DEVELOPMENT: onReady ${code}`);
         me.postToUnity({
             "action": "onReady",
             "code": code,
