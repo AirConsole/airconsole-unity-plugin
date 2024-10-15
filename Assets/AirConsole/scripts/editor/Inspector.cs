@@ -17,10 +17,13 @@ namespace NDream.AirConsole.Editor {
         private SerializedProperty gameVersion;
         private bool translationValue;
         private bool inactivePlayersSilencedValue;
+        private bool _inactiveNativeGameSizingValue;
         private const string TRANSLATION_ACTIVE = "var AIRCONSOLE_TRANSLATION = true;";
         private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
         private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
+        private const string ANDROID_NATIVE_GAME_SIZING_ACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = true;";
+        private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
 
         
         private string[] androidScriptingDefines = { };
@@ -38,6 +41,7 @@ namespace NDream.AirConsole.Editor {
                 translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
                 // We want player silencing to be active by default
                 inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+                _inactiveNativeGameSizingValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
             }
         }
 
@@ -80,6 +84,7 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
             DrawTranslationsToggle();
             DrawPlayerSilencingToggle();
+            DrawAndroidNativeGameSizingToggle();
 
             
             bool isAndroidAutomotive = androidScriptingDefines.Contains("AIRCONSOLE_AUTOMOTIVE");
@@ -172,9 +177,20 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
+        private void DrawAndroidNativeGameSizingToggle() {
+            bool oldNativeGameSizingValue = _inactiveNativeGameSizingValue;
+            _inactiveNativeGameSizingValue = EditorGUILayout.Toggle("Native Game Sizing", _inactiveNativeGameSizingValue);
+            if (oldNativeGameSizingValue != _inactiveNativeGameSizingValue) {
+                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
+                WriteConstructorSettings(path);
+            }
+        }
+
         private void WriteConstructorSettings(string path) {
             File.WriteAllText(path,
-                $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}");
+                $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
+                + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
+                + $"{(_inactiveNativeGameSizingValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
         }
 
         private static void MigrateVersion250(string originalPath, string newPath) {
