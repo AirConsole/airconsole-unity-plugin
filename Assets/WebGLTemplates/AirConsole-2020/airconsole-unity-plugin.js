@@ -1,6 +1,6 @@
 /**
- * Copyright by N-Dream AG 2023.
- * @version 2.15
+ * Copyright by N-Dream AG 2024.
+ * @version 2.6.0
  */
 
 /**
@@ -149,7 +149,7 @@ App.prototype.validateNotLatestApi = function () {
             const url = window.location.pathname;
             const fileName = url.substring(url.lastIndexOf('/')+1);
             alert(`Please update ${fileName} to the latest version. airconsole-latest.js must not be referenced.`);
-            window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/master/README.md#upgrading-from-v214--to-v250');
+            window.open('https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version');
             throw new Error(`The usage of the AirConsole API must be updated in ${fileName}`);
         };
     }
