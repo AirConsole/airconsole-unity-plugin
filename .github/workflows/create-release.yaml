@@ -1,10 +1,12 @@
 name: Create Release
 
 on:
-  workflow_dispatch:
-    branches:
-      - master
+  push:
+    # branches:
+    # - 'master'
 
+env:
+  LOWEST_UNITY_VERSION: 2019.4.40f1
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -14,16 +16,17 @@ jobs:
       matrix:
         unityVersion:
           - 2019.4.40f1
-          # - 2020.3.48f1
-          # - 2021.3.31f1
-          # - 2022.3.11f1
+          - 2020.3.48f1
+          - 2021.3.45f1
+          - 2022.3.51f1
+          - 6000.0.24f1
         platform:
           - WebGL
-          # - Android
+          - Android
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         lfs: true
@@ -37,8 +40,8 @@ jobs:
 
     - name: Validate Version
       run: |
-        if [[ ! "${{ env.version }}" =~ ^[0-9]+\.[0-9]+$ ]]; then
-          echo "Invalid version format. Must be MAJOR.MINOR"
+        if [[ ! "${{ env.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid version format. Must be MAJOR.MINOR.PATCH"
           exit 1
         fi
 
@@ -58,25 +61,23 @@ jobs:
           echo "No release with version v${{ env.version }} found."
         fi
 
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       with:
         path: Library
-        key: Library-AUP-${{ matrix.platform }}
+        key: Library-AUP-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.platform }}-${{ matrix.unityVersion }}
         restore-keys: |
           Library-AUP-
           Library-
 
-    - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
-      uses: game-ci/unity-builder@v3
-      env:
-        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      with:
-        unityVersion: ${{ matrix.unityVersion }}
-        targetPlatform: ${{ matrix.platform }}
-        buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
-        allowDirtyBuild: true
+    # - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
+    #   uses: game-ci/unity-test-runner@v4
+    #   env:
+    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+    #   with:
+    #     githubToken: ${{ secrets.GITHUB_TOKEN }}
+    #     unityVersion: ${{ matrix.unityVersion }}
 
 
     # - name: Validate Build
@@ -94,29 +95,38 @@ jobs:
 
     - name: Extract release notes
       id: extract-release-notes
-      uses: ffurrer2/extract-release-notes@v1
+      uses: ffurrer2/extract-release-notes@v2
       with:
         changelog_file: CHANGELOG.md
+        prerelease: true
 
     - name: Log Release Notes
-      run: echo "Release Notes are ${{ steps.extract-release-notes.outputs.release_notes }}"
+      run: echo "Release Notes are ${{ steps.extract-release-notes.outputs.release_notes }}\nUnity Version ${{matrix.unityVersion}} == ${{env.LOWEST_UNITY_VERSION}}"
 
-    - name: Generate unitypackage release
-      uses: game-ci/unity-builder@v3
+    - name: Build project for ${{ matrix.platform }} in ${{ matrix.unityVersion }}
+      uses: game-ci/unity-builder@v4
       env:
         UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
         UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
         UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-      if: matrix.platform == 'WebGL' && matrix.unityVersion == '2019.4.40f1'
       with:
         unityVersion: ${{ matrix.unityVersion }}
         targetPlatform: ${{ matrix.platform }}
         buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
         allowDirtyBuild: true
 
-    # - name: Generate Release unity package
-    #   run: |
-    #     unity -quit -batchmode -executeMethod NDream.Unity.Packager.Export -projectPath . # -outputPath Builds/release-${{ github.event.inputs.version }}.unitypackage
+    - name: Generate package if ${{ matrix.platform }} is WebGL and Unity version is ${{ env.LOWEST_UNITY_VERSION }}
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == ${{ env.LOWEST_UNITY_VERSION }}
+      uses: game-ci/unity-builder@v4
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: ${{ matrix.unityVersion }}
+        targetPlatform: ${{ matrix.platform }}
+        buildMethod: NDream.Unity.Packager.Export
+        allowDirtyBuild: true
 
     # Return License
     - name: Return license
@@ -124,7 +134,7 @@ jobs:
       if: always()
 
     - name: Validate release package
-      if: matrix.platform == 'WebGL' && matrix.unityVersion == '2019.4.40f1'
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == ${{ env.LOWEST_UNITY_VERSION }}
       run: |
         filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
         if [ ! -f "$filepath" ]; then
