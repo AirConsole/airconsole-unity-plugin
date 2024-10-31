@@ -4,6 +4,8 @@ on:
   push:
     # branches:
     # - 'master'
+    # tags:
+    #   - 'v[0-9].[0-9].[0-9](.[0-9])+'
 
 env:
   LOWEST_UNITY_VERSION: 2019.4.40f1
@@ -12,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      max-parallel: 1
+      max-parallel: 5
       matrix:
         unityVersion:
           - 2019.4.40f1
@@ -68,6 +70,10 @@ jobs:
         restore-keys: |
           Library-AUP-
           Library-
+
+    - name: Cleanup Docker
+    run: |
+      docker system prune -af --volumes
 
     # - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
     #   uses: game-ci/unity-test-runner@v4
