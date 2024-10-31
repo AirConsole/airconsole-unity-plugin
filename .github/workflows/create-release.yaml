@@ -66,7 +66,7 @@ jobs:
     - uses: actions/cache@v4
       with:
         path: Library
-        key: Library-AUP-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.platform }}-${{ matrix.unityVersion }}
+        key: Library-AUP-${{ matrix.platform }}-${{ matrix.unityVersion }}
         restore-keys: |
           Library-AUP-
           Library-
