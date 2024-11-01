@@ -69,23 +69,26 @@ jobs:
         key: Library-AUP-${{ matrix.platform }}-${{ matrix.unityVersion }}
         restore-keys: |
           Library-AUP-
-          Library-
-
-    - name: Clear Unity Package Cache
-      run: |
-        rm -rf ~/.cache/unity3d/packages
 
     - name: Cache Packages
       uses: actions/cache@v4
       with:
-        path: ~/.cache/unity3d/packages
-        key: Packages-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.platform }}-${{ matrix.unityVersion }}
+        path: $HOME/.cache/unity3d/packages
+        key: Packages-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.unityVersion }}
         restore-keys: |
           Packages-
 
-    - name: Cleanup Docker
-      run: |
-        docker system prune -af --volumes
+    - name: Cache Packages
+      uses: actions/cache@v4
+      with:
+        path: /var/lib/docker/
+        key: Docker-Images
+        restore-keys: |
+          Docker-Images
+
+    # - name: Cleanup Docker
+    #   run: |
+    #     docker system prune -af --volumes
 
     # - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
     #   uses: game-ci/unity-test-runner@v4
