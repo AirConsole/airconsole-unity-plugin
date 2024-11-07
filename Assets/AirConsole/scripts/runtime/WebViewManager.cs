@@ -29,6 +29,9 @@ namespace NDream.AirConsole {
 
         internal void SetWebViewHeight(int webViewHeight) {
             _webViewHeight = webViewHeight;
+#if WEBVIEWMANAGER_ACTIVE
+            UpdateWebView();
+#endif
         }
 
         internal void ActivateSafeArea() {
@@ -36,8 +39,7 @@ namespace NDream.AirConsole {
 #if WEBVIEWMANAGER_ACTIVE
             _isSafeAreaActive = true;
             _currentState = WebViewState.SafeAreaBased;
-
-            UpdateViewView();
+            UpdateWebView();
 #endif
         }
 
@@ -52,7 +54,7 @@ namespace NDream.AirConsole {
 
             _currentState = newState;
             Debug.Log($"WebViewManager.RequestStateTransition({newState}) => {_currentState}");
-            UpdateViewView();
+            UpdateWebView();
 #endif
         }
 
