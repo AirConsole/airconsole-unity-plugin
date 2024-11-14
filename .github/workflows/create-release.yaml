@@ -13,8 +13,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-      fail-fast: false
-      max-parallel: 5
+      fail-fast: true
+      max-parallel: 10
       matrix:
         unityVersion:
           - 2019.4.40f1
@@ -66,9 +66,9 @@ jobs:
     - uses: actions/cache@v4
       with:
         path: Library
-        key: Library-AUP-${{ matrix.platform }}-${{ matrix.unityVersion }}
+        key: Library-${{ matrix.platform }}-${{ matrix.unityVersion }}
         restore-keys: |
-          Library-AUP-
+          Library-${{ matrix.platform }}-${{ matrix.unityVersion }}
 
     - name: Cache Packages
       uses: actions/cache@v4
@@ -76,15 +76,15 @@ jobs:
         path: $HOME/.cache/unity3d/packages
         key: Packages-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.unityVersion }}
         restore-keys: |
-          Packages-
+          Packages-${{ hashFiles('Packages/packages-lock.json') }}-${{ matrix.unityVersion }}
 
     - name: Cache Packages
       uses: actions/cache@v4
       with:
         path: /var/lib/docker/
-        key: Docker-Images
+        key: Docker-Images-${{ matrix.platform }}-${{ matrix.unityVersion }}
         restore-keys: |
-          Docker-Images
+          Docker-Images-${{ matrix.platform }}-${{ matrix.unityVersion }}
 
     # - name: Cleanup Docker
     #   run: |
