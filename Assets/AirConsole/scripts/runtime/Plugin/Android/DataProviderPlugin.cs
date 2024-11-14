@@ -26,6 +26,10 @@ namespace NDream.AirConsole.Android.Plugin {
         /// </summary>
         /// <returns>The connection base url to append to the backend service base url</returns>
         public String GetConnectionBaseUrl() {
+            // return "client?id=bmw-idc-23&runtimePlatform=android&unityPluginVersion=2.6.0";
+            // return "client?id=androidunity-4.0&runtimePlatform=android&unityPluginVersion=2.6.0";
+            // but should be
+            //      return "client?id=androidunity-2.60&runtimePlatform=android&unityPluginVersion=2.6.0";
 #if UNITY_ANDROID
 #if !UNITY_EDITOR
             if (dataProviderHelper != null) {
@@ -34,7 +38,8 @@ namespace NDream.AirConsole.Android.Plugin {
               Debug.Log("DataProviderPlugin is not initialized");
             }
 #else
-            return $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android&unityPluginVersion={ComputeUrlVersion(Settings.VERSION)}";
+            string urlVersion = ComputeUrlVersion(Settings.VERSION);
+            return $"client?id=androidunity-{urlVersion}&runtimePlatform=android&unityPluginVersion={urlVersion}";
 #endif
 #endif
             throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
