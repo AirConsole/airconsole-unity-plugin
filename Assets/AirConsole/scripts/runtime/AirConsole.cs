@@ -1068,7 +1068,7 @@ namespace NDream.AirConsole {
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
             defaultScreenHeight = Screen.height;
-
+            _androidImmersiveService = new AndroidImmersiveService(); // todo(android-native): Integrating this automatically gets us back to immersive mode.
 #endif
         }
 
@@ -1680,6 +1680,8 @@ namespace NDream.AirConsole {
         private int webViewHeight;
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
+
+        private AndroidImmersiveService _androidImmersiveService;
 #endif
         private List<JToken> _devices = new List<JToken>();
         private int _device_id;
