@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.unity3d.player" xmlns:tools="http://schemas.android.com/tools" android:installLocation="preferExternal">
   <supports-screens android:smallScreens="true" android:normalScreens="true" android:largeScreens="true" android:xlargeScreens="true" android:anyDensity="true" />
-  <queries tools:node="remove">
+  <queries>
     <intent>
       <action android:name="android.intent.action.MAIN" />
       <data android:mimeType="application/airconsole" />
@@ -13,8 +13,8 @@
               android:screenOrientation="fullSensor" 
               android:launchMode="singleTask" 
               android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density"
-              android:hardwareAccelerated="true">
-<!--      android:resizeableActivity="false"-->
+              android:hardwareAccelerated="true"
+              android:theme="@style/UnityThemeSelector">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
@@ -32,8 +32,8 @@
   </application>
   <uses-feature android:glEsVersion="0x00020000" />
   <uses-permission android:name="android.permission.INTERNET" />
-  <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
   <uses-feature android:name="android.software.leanback" android:required="true" />
+  <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
   <uses-feature android:name="android.hardware.touchscreen.multitouch" android:required="false" />
   <uses-feature android:name="android.hardware.touchscreen.multitouch.distinct" android:required="false" />
 </manifest>
