@@ -1348,8 +1348,6 @@ namespace NDream.AirConsole {
         }
 
         private void OnReady(JObject msg) {
-            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.Hidden); 
-           
 #if UNITY_ANDROID && !UNITY_EDITOR
 			if (webViewLoadingCanvas != null){
 				GameObject.Destroy (webViewLoadingCanvas.gameObject);
@@ -1951,9 +1949,13 @@ namespace NDream.AirConsole {
                 _webViewManager.SetWebViewHeight(h);
             }
 
-            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
-            
-        if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+            if (webViewHeight > 0) {
+                _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
+            } else {
+                _webViewManager.RequestStateTransition(WebViewManager.WebViewState.Hidden);
+            }
+
+            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
