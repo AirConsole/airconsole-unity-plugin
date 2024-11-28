@@ -21,7 +21,7 @@ public class Racket : MonoBehaviour {
 			}
 
 			Vector2 dir = new Vector2 (hitDir, hitPos).normalized;
-			col.gameObject.GetComponent<Rigidbody2D> ().velocity = dir * logic.ballSpeed;
+			col.gameObject.GetComponent<Rigidbody2D> ().linearVelocity = dir * logic.ballSpeed;
 
 		}
 	}

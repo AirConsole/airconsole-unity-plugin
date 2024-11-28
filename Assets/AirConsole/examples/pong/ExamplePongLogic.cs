@@ -67,10 +67,10 @@ public class ExamplePongLogic : MonoBehaviour {
 		int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber (device_id);
 		if (active_player != -1) {
 			if (active_player == 0) {
-				this.racketLeft.velocity = Vector3.up * (float)data ["move"];
+				this.racketLeft.linearVelocity = Vector3.up * (float)data ["move"];
 			}
 			if (active_player == 1) {
-				this.racketRight.velocity = Vector3.up * (float)data ["move"];
+				this.racketRight.linearVelocity = Vector3.up * (float)data ["move"];
 			}
 		}
 	}
@@ -91,9 +91,9 @@ public class ExamplePongLogic : MonoBehaviour {
 		// push the ball in a random direction
 		if (move) {
 			Vector3 startDir = new Vector3 (Random.Range (-1, 1f), Random.Range (-0.1f, 0.1f), 0);
-			this.ball.velocity = startDir.normalized * this.ballSpeed;
+			this.ball.linearVelocity = startDir.normalized * this.ballSpeed;
 		} else {
-			this.ball.velocity = Vector3.zero;
+			this.ball.linearVelocity = Vector3.zero;
 		}
 	}
 
