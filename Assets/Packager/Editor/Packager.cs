@@ -20,7 +20,7 @@ namespace NDream.Unity
             Debug.Log($"Exporting to {outputPath}");
 
             string packageCache = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "PackageCache"));
-            string webviewPackagePath = Directory.GetDirectories(packageCache).FirstOrDefault(d => d.Contains("com.airconsole.unity-webview"));
+            string webviewPackagePath = Directory.GetDirectories(packageCache).FirstOrDefault(d => d.Contains("com.airconsole.webview"));
 
             if(!Directory.Exists(webviewPackagePath))
             {
