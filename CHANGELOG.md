@@ -4,6 +4,14 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [Unreleased]
+
+This release introduces the support for Unity 6.
+
+### Added
+
+- Support for Unity 6 was added
+
 ## [2.5.3] - 2024-09-27
 
 This release fixes a high impact bug for Android TV builds done with Unity Plugin 2.5.2.
