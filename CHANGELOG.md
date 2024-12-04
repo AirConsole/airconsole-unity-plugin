@@ -6,7 +6,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-This release introduces the support for Unity 6.
+This release introduces the support for Unity 6 and extends the plugin with project configuration checks.
 
 ### Added
 
