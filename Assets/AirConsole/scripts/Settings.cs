@@ -1,5 +1,4 @@
-﻿using UnityEditor;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace NDream.AirConsole {
     public static class Settings {
@@ -21,26 +20,26 @@ namespace NDream.AirConsole {
 
         public static readonly string WEBTEMPLATE_PATH;
 
+        private const string TEMPLATE_NAME = "AirConsole";
+        private const string TEMPLATE_NAME_2020 = "AirConsole-2020";
+        private const string TEMPLATE_NAME_U6 = "AirConsole-U6";
+
+        public static readonly string[] TEMPLATE_NAMES = { TEMPLATE_NAME, TEMPLATE_NAME_2020, TEMPLATE_NAME_U6 };
+
         static Settings() {
             string templateName;
             if (IsUnity6OrHigher()) {
-                templateName = "AirConsole-U6";
+                templateName = TEMPLATE_NAME_U6;
             } else if (Application.unityVersion.Substring(0, 3) == "202") {
-                templateName = "AirConsole-2020";
+                templateName = TEMPLATE_NAME_2020;
             } else {
-                templateName = "AirConsole";  
+                templateName = TEMPLATE_NAME;  
             }
 
             WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
-
-#if UNITY_EDITOR
-            string[] templateUri = UnityEditor.PlayerSettings.WebGL.template.Split(":");
-            
-            if (templateUri.Length != 2 || templateUri[0].ToUpper() == "APPLICATION:" || templateUri[1] != templateName) {
-                Debug.LogError($"Unity version <b>{Application.unityVersion}</b> needs the AirConsole WebGL template <b>{templateName}</b> to work.\nPlease change the WebGL template in your Project Settings under Player > Resolution and Presentation > WebGL Template.");
-            }
-#endif
         }
+        
+        
 
         private static bool IsUnity6OrHigher() {
             return int.Parse(Application.unityVersion.Split('.')[0]) >= 6000;

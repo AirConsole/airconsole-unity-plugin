@@ -1,14 +1,10 @@
 #if !DISABLE_AIRCONSOLE
-#if !UNITY_ANDROID
-#undef AIRCONSOLE_AUTOMOTIVE
-#endif
-
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
-using UnityEngine.Rendering;
+using Debug = UnityEngine.Debug;
 
 namespace NDream.AirConsole.Editor {
     public abstract class UnityVersionCheck {
@@ -40,14 +36,32 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
+#if UNITY_WEBGL
         [InitializeOnLoadMethod]
+#endif
         private static void CheckWebGLPlayerSettings() {
             if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC) {
-                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for WebGL builds for improved automotive performance.");
+                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for WebGL builds for improved mobile performance.");
+            }
+            
+            string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
+            string[] templateUri = PlayerSettings.WebGL.template.Split(":");
+            
+            if (templateUri.Length != 2 || templateUri[0].ToUpper() == "APPLICATION" || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
+                string incompatibleTemplateMessage =
+                    $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
+                Debug.LogError(incompatibleTemplateMessage);
+                
+                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings", "Cancel"))
+                {
+                    SettingsService.OpenProjectSettings("Project/Player");
+                }
             }
         }
-
+        
+#if UNITY_ANDROID
         [InitializeOnLoadMethod]
+#endif
         private static void CheckAndroidPlayerSettings() {
             EnforceAndroidPlayerSettings();
             EnforceAndroidTVSettings();
@@ -79,7 +93,7 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
 
             if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC) {
-                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for Android builds for improved automotive performance.");
+                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for Android builds for improved mobile performance.");
             }
         }
 
@@ -88,9 +102,6 @@ namespace NDream.AirConsole.Editor {
 
             SerializedProperty filterTouchesProperty = playerSettings.FindProperty("AndroidFilterTouchesWhenObscured");
             filterTouchesProperty.boolValue = false;
-
-            SerializedProperty sustainedPerformanceProperty = playerSettings.FindProperty("AndroidEnableSustainedPerformanceMode");
-            sustainedPerformanceProperty.boolValue = true;
 
             SerializedProperty androidGamePadSupportLevel = playerSettings.FindProperty("androidGamepadSupportLevel");
             androidGamePadSupportLevel.intValue = 0;
