@@ -45,7 +45,7 @@ namespace NDream.AirConsole.Editor {
             }
             
             string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
-            string[] templateUri = PlayerSettings.WebGL.template.Split(":");
+            string[] templateUri = PlayerSettings.WebGL.template.Split(':');
             
             if (templateUri.Length != 2 || templateUri[0].ToUpper() == "APPLICATION" || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
                 string incompatibleTemplateMessage =
@@ -98,7 +98,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         private static void UpdateAndroidPlayerSettings() {
-            SerializedObject playerSettings = new(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+            SerializedObject playerSettings = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
 
             SerializedProperty filterTouchesProperty = playerSettings.FindProperty("AndroidFilterTouchesWhenObscured");
             filterTouchesProperty.boolValue = false;
