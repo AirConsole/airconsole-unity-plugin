@@ -9,7 +9,7 @@ You don't need to install any other webserver or services.
 
 # Changelog
 
-Please see [CHANGELOGO.md](CHANGELOG.md) for the full changelog.
+Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
 # Upgrade your installation 
 
