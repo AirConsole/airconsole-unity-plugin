@@ -4,6 +4,16 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [Unreleased]
+
+This release introduces the support for Unity 6 and extends the plugin with project configuration checks.
+
+### Added
+
+- Support for Unity 6 was added.
+- Added project configuration checks to assist adjusting settings for AirConsole.
+- Added minimal AndroidManifest.xml upgrade logic for Unity 6
+
 ## [2.5.3] - 2024-09-27
 
 This release fixes a high impact bug for Android TV builds done with Unity Plugin 2.5.2.

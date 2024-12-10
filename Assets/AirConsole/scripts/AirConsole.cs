@@ -82,7 +82,7 @@ namespace NDream.AirConsole {
             get { return string.Empty; }
 #endif
         }
-
+        
         /// <summary>
         /// AirConsole Singleton Instance.
         /// This is your direct access to the AirConsole API.
@@ -91,7 +91,7 @@ namespace NDream.AirConsole {
         public static AirConsole instance {
             get {
                 if (_instance == null) {
-                    _instance = FindObjectOfType<AirConsole>();
+                    _instance = ACFindObjectOfType<AirConsole>();
                     if (_instance != null && Application.isPlaying) {
                         DontDestroyOnLoad(_instance.gameObject);
                     }
@@ -1138,6 +1138,15 @@ namespace NDream.AirConsole {
 
         private void OnDisable() {
             StopWebsocketServer();
+        }
+        
+        public static T ACFindObjectOfType<T>() where T : UnityEngine.Object
+        {
+#if !UNITY_6000_0_OR_NEWER
+            return UnityEngine.Object.FindObjectOfType<T>();
+#else
+            return UnityEngine.Object.FindFirstObjectByType<T>();
+#endif
         }
 
         #endregion

@@ -28,7 +28,7 @@ namespace NDream.AirConsole.Editor {
 		[MenuItem("GameObject/Create Other/AirConsole")]
 		static void CreateAirConsoleObject () {
 
-			AirConsole airConsole = GameObject.FindObjectOfType<AirConsole> ();
+			AirConsole airConsole = AirConsole.ACFindObjectOfType<AirConsole> ();
 
 			if (airConsole == null) {
 
@@ -47,7 +47,7 @@ namespace NDream.AirConsole.Editor {
 			if (currentMode == PlayModeState.Stopped && changedMode == PlayModeState.Playing ||
 				currentMode == PlayModeState.AboutToPlay && changedMode == PlayModeState.Playing) {
 
-				AirConsole controller = GameObject.FindObjectOfType<AirConsole> ();
+				AirConsole controller = AirConsole.ACFindObjectOfType<AirConsole>();
 				OpenBrowser (controller, Application.dataPath + Settings.WEBTEMPLATE_PATH);
 			}
 		}

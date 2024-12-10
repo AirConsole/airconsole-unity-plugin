@@ -3,9 +3,7 @@ using NDream.AirConsole;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEditor.PackageManager;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #endregion
@@ -17,6 +15,7 @@ namespace NDream.Unity
         [MenuItem("Tools/AirConsole/Package Plugin")]
         public static void Export()
         {
+            Debug.ClearDeveloperConsole();
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             Debug.Log($"Exporting to {outputPath}");
 
@@ -29,10 +28,12 @@ namespace NDream.Unity
                 Debug.LogError("Can not find airconsole webview package");
                 return;
             }
+          
+            string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview")); 
+            DeleteAssetDatabaseDirectory(targetPath); 
+            AssetDatabase.Refresh();
             
             EditorApplication.LockReloadAssemblies();
-            string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
-            if(Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
             Directory.Move(webviewPackagePath, targetPath);
             AssetDatabase.Refresh();
             
@@ -40,6 +41,7 @@ namespace NDream.Unity
                                         outputPath, ExportPackageOptions.Recurse | ExportPackageOptions.IncludeDependencies);
            
             Directory.Move(targetPath, webviewPackagePath); 
+            DeleteAssetDatabaseDirectory(targetPath);
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
@@ -63,6 +65,13 @@ namespace NDream.Unity
             }
 
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
+        }
+
+        private static void DeleteAssetDatabaseDirectory(string targetPath) {
+            if (Directory.Exists(targetPath)) {
+                File.Delete(targetPath + ".meta");
+                Directory.Delete(targetPath);
+            }
         }
 
         private static void DeleteOldUnityPackages(string outputPath, string newVersion) {
