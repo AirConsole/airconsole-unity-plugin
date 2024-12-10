@@ -100,7 +100,7 @@ namespace NDream.AirConsole.Editor
             else
             {
                 throw new UnityException(
-                    $"{ANDROID_MANIFEST_PATH} does not exist. AirConsole requires certain permissions and configuration to correctly run on Android.");
+                    $"{ANDROID_MANIFEST_PATH} does not exist. AirConsole for Android TV requires specific settings. Please reimport the AirConsole package to recreate the correct AndroidManifest.");
             }
         }
 

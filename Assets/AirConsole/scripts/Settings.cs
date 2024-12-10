@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if !DISABLE_AIRCONSOLE
+using UnityEngine;
 
 namespace NDream.AirConsole {
     public static class Settings {
@@ -28,14 +29,13 @@ namespace NDream.AirConsole {
 
         static Settings() {
             string templateName;
-            if (IsUnity6OrHigher()) {
-                templateName = TEMPLATE_NAME_U6;
-            } else if (Application.unityVersion.Substring(0, 3) == "202") {
-                templateName = TEMPLATE_NAME_2020;
-            } else {
-                templateName = TEMPLATE_NAME;  
-            }
-
+#if UNITY_6000_0_OR_NEWER
+            templateName = TEMPLATE_NAME_U6;
+#elif !UNITY_2020_0_OR_NEWER
+            templateName = TEMPLATE_NAME;
+#else
+            templateName = TEMPLATE_NAME_2020;
+#endif
             WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
         }
         
@@ -46,3 +46,4 @@ namespace NDream.AirConsole {
         }
     }
 }
+#endif
