@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace NDream.AirConsole {
     public static class Settings {
-        public const string VERSION = "2.5.4";
+        public const string VERSION = "2.5.5";
 
         // ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
         public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
@@ -31,7 +31,7 @@ namespace NDream.AirConsole {
             string templateName;
 #if UNITY_6000_0_OR_NEWER
             templateName = TEMPLATE_NAME_U6;
-#elif !UNITY_2020_0_OR_NEWER
+#elif !UNITY_2020_1_OR_NEWER
             templateName = TEMPLATE_NAME;
 #else
             templateName = TEMPLATE_NAME_2020;
