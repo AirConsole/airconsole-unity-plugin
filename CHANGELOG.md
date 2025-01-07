@@ -7,6 +7,15 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 
+## [2.5.5] - 2025-01-07
+
+This release patches a bug introduced in version 2.5.4
+
+### Fixed
+
+- We fixed the AirConsole settings to use the correct Unity WebGL template with Unity versions before Unity 6 and after Unity 2020.1.
+
+
 ## [2.5.4] - 2024-12-10
 
 This release introduces the support for Unity 6 and extends the plugin with project configuration checks.
