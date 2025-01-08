@@ -1,11 +1,11 @@
 {
   "dependencies": {
     "com.airconsole.unity-webview": {
-      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.2",
+      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.3",
       "depth": 0,
       "source": "git",
       "dependencies": {},
-      "hash": "0169487932dafc1a0d6b43d3828a862af80384bc"
+      "hash": "80168be2f9f1561f5f529cbd508a2d401c7ac71a"
     },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
