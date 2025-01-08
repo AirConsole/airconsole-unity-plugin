@@ -1,4 +1,6 @@
 #region
+
+using System;
 using NDream.AirConsole;
 using System.Diagnostics;
 using System.IO;
@@ -42,6 +44,7 @@ namespace NDream.Unity
            
             Directory.Move(targetPath, webviewPackagePath); 
             DeleteAssetDatabaseDirectory(targetPath);
+            DeleteControllerInWebGLTemplates();
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
@@ -79,6 +82,21 @@ namespace NDream.Unity
             foreach (string file in files) {
                 if (!file.Contains(newVersion)) {
                     File.Delete(file);
+                }
+            }
+        }
+
+        private static void DeleteControllerInWebGLTemplates()
+        {
+            string[] templateDirectories = Directory.GetDirectories(Path.Combine(Application.dataPath, "WebGLTemplates"), "*",
+                SearchOption.TopDirectoryOnly);
+
+            foreach (var templateDirectory in templateDirectories)
+            { 
+                string directoryName = Path.GetFileName(templateDirectory);
+                if (directoryName.StartsWith("airconsole", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    File.Delete(Path.Combine(templateDirectory, "controller.html"));
                 }
             }
         }
