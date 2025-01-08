@@ -15,9 +15,25 @@ namespace NDream.AirConsole.Android.Plugin {
         private AndroidJavaObject _decorView;
         private Coroutine _reenterImmersiveMode;
 
+        private bool CheckLibrary() {
+           
+            // Get the current Android activity context
+            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+
+            // Create an instance of your Java plugin class
+            AndroidJavaObject serviceObj = new("com.airconsole.unityandroidlibrary.AndroidImmersiveService", context);
+            return serviceObj != null;
+        }    
+        
         public void AndroidImmersiveServiceOld() {
             AirConsoleLogger.LogDevelopment("AndroidImmersiveService");
 #if UNITY_ANDROID && !UNITY_EDITOR
+        if(!CheckLibrary()) {
+            AirConsoleLogger.LogDevelopment("AndroidImmersiveService is not initialized");
+            return;
+        }
+
         using (var unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer")) {
             var activity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
             var window = activity.Call<AndroidJavaObject>("getWindow");

@@ -5,9 +5,24 @@ namespace NDream.AirConsole.Android.Plugin {
     public class DataProviderPlugin {
         private AndroidJavaObject dataProviderHelper;
 
+        private bool CheckLibrary() {
+            // Get the current Android activity context
+            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+
+            // Create an instance of your Java plugin class
+            dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
+
+            return dataProviderHelper != null;
+        }
+
         public DataProviderPlugin() {
 #if UNITY_ANDROID
 #if !UNITY_EDITOR
+            if (!CheckLibrary()) {
+                Debug.Log("DataProviderPlugin is not initialized");
+                return;
+            }
             // Get the current Android activity context
             AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
             AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
