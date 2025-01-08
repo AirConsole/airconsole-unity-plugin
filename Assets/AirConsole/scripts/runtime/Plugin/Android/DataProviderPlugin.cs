@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace NDream.AirConsole.Android.Plugin {
     public class DataProviderPlugin {
@@ -58,6 +60,30 @@ namespace NDream.AirConsole.Android.Plugin {
 #endif
 #endif
             throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
+        }
+
+
+        public void GetCarInformation(Action<CarInformation> callback) {
+            if (callback == null) throw new ArgumentException("callback");
+
+#if !UNITY_EDITOR
+#if UNITY_ANDROID 
+            if (dataProviderHelper == null) throw new UnityException("DataProviderPlugin is not initialized");
+           
+            CarInformationCallback carInformationCallback = new CarInformationCallback(callback); 
+            dataProviderHelper.Call("getCarInfo", carInformationCallback);
+            return;
+#endif
+            throw new NotSupportedException("DataProviderPlugin is only supported on Android and Android in Unity");
+#else
+            callback(new CarInformation {
+                AuthToken = new Dictionary<string, string>(),
+                Complete = Random.Range(0, 1) > 0.5f,
+                HomeCountry = string.Empty,
+                Model = string.Empty,
+                SoftwareVersion = string.Empty
+            });
+#endif
         }
 
         private static string ComputeUrlVersion(string version) {

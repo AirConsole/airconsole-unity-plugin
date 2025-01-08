@@ -1,9 +1,9 @@
-using UnityEditor;
 using UnityEngine;
+// ReSharper disable UnusedType.Global
 
 namespace NDream.Unity
 {
-    public class Builder
+    public static class Builder
     {
         public static void BuildAndroid()
         {
