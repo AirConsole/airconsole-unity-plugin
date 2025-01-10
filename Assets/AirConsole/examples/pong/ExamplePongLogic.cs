@@ -24,6 +24,8 @@ public class ExamplePongLogic : MonoBehaviour
         AirConsole.instance.onMessage += OnMessage;
         AirConsole.instance.onPause += OnPause;
         AirConsole.instance.onResume += OnResume;
+        AirConsole.instance.onAdShow += OnAdShow;
+        AirConsole.instance.onAdComplete += OnAdComplete;
         AirConsole.instance.onConnect += OnConnect;
         AirConsole.instance.onDisconnect += OnDisconnect;
     }
@@ -76,16 +78,38 @@ public class ExamplePongLogic : MonoBehaviour
             if (active_player == 1) racketRight.velocity = Vector3.up * (float)data["move"];
         }
     }
-
+    
     private void OnPause()
     {
         Time.timeScale = 0;
         // If we were playing any sounds we must mute them when the game gets paused
+        AudioListener.pause = true;
     }
 
     private void OnResume()
     {
         Time.timeScale = 1;
+        AudioListener.pause = false;
+    }
+
+    /// <summary>
+    /// Pause the game when Ad is shown to the player
+    /// </summary>
+    private void OnAdShow()
+    {
+        Time.timeScale = 0;
+        // If we were playing any sounds we must mute them when an ad is shown
+        AudioListener.pause = true;
+    }
+
+    /// <summary>
+    /// Resume the game after the Ad completed
+    /// </summary>
+    /// <param name="adShown"></param>
+    private void OnAdComplete(bool adShown)
+    {
+        Time.timeScale = 1;
+        AudioListener.pause = false;
     }
 
     /// <summary>
