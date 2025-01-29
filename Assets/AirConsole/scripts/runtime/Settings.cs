@@ -32,7 +32,7 @@ namespace NDream.AirConsole {
 		public static readonly string WEBTEMPLATE_PATH;
 
 		static Settings() {
-			string templateName = "";
+			string templateName;
 			// For Unity 2020 and up
 			if (Application.unityVersion.Substring(0, 3) == "202") {
 				templateName = "AirConsole-2020";

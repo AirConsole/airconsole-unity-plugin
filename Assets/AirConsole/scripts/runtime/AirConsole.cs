@@ -1348,6 +1348,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnReady(JObject msg) {
+            AirConsoleLogger.LogDevelopment("OnReady");
 #if UNITY_ANDROID && !UNITY_EDITOR
 			if (webViewLoadingCanvas != null){
 				GameObject.Destroy (webViewLoadingCanvas.gameObject);
@@ -1695,6 +1696,7 @@ namespace NDream.AirConsole {
         private int _lastSafeAreaWidth = Screen.width;
         private int _lastSafeAreaHeight = Screen.height;
         private WebViewManager _webViewManager;
+        private DataProviderPlugin _dataProviderPlugin;
 
         private IRuntimeConfigurator runtimeConfigurator;
         
@@ -1799,33 +1801,51 @@ namespace NDream.AirConsole {
             return $"{split[0]}.{split[1]}{split[2]}";
         }
 
+        private void OnConnectUrlReceived (string connectionUrl) {
+            CreateAndroidWebview(connectionUrl);
+            
+            _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived;
+        }
+        
         private void InitWebView() {
             if (!string.IsNullOrEmpty(androidGameVersion)) {
-                DataProviderPlugin dataProviderPlugin = new();
-                string connectionUrl = dataProviderPlugin.GetConnectionBaseUrl();
-                Debug.LogWarning($"Received connection url {connectionUrl}");
-                
-                if (webViewObject == null) {
-                    webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
-                    DontDestroyOnLoad(webViewObject.gameObject);
-                    // webViewObject.Init(ProcessJS, transparent: true, zoom: false);
-                    // TODO(automotive-native): Use the above call once the implementation is finished)
-                    webViewObject.Init(ProcessJS,
-                        err => Debug.LogError($"AirConsole WebView error: {err}"),
-                        httpError => Debug.LogError($"AirConsole WebView HttpError: {httpError}"),
-                        url => {
-                            WebViewUrl = url;
-                            Debug.LogError($"AirConsole WebView Loaded URL {url}");
-                        },
-                        started => Debug.LogError($"AirConsole WebView started: {started}"),
-                        hooked => Debug.LogError($"AirConsole WebView hooked: {hooked}"), 
-                        cookies => Debug.LogError($"AirConsole WebView cookies: {cookies}"),
-                        true);
-                        // , false,
-                        // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                _dataProviderPlugin = new();
+                if (_dataProviderPlugin.DataProviderInitialized) {
+                    CreateAndroidWebview(_dataProviderPlugin.ConnectionUrl); 
+                } else {
+                    _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
+                }
+            } else {
+                if (Settings.debug.error) {
+                    Debug.LogError(
+                        "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
+                }
+            }
+        }
 
-                    string url = Settings.AIRCONSOLE_BASE_URL;
-                    url += connectionUrl; 
+        private void CreateAndroidWebview(string connectionUrl) {
+            AirConsoleLogger.LogDevelopment($"Received connection url {connectionUrl}");
+            if (webViewObject == null) {
+                webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
+                DontDestroyOnLoad(webViewObject.gameObject);
+                // webViewObject.Init(ProcessJS, transparent: true, zoom: false);
+                // TODO(automotive-native): Use the above call once the implementation is finished)
+                webViewObject.Init(ProcessJS,
+                    err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
+                    httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
+                    url => {
+                        WebViewUrl = url;
+                        Debug.LogError($"AirConsole WebView Loaded URL {url}");
+                    },
+                    started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
+                    hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"), 
+                    cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
+                    true);
+                // , false,
+                // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+
+                string url = Settings.AIRCONSOLE_BASE_URL;
+                url += connectionUrl; 
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
@@ -1836,22 +1856,22 @@ namespace NDream.AirConsole {
                     url += "&bundle-version=" + pInfo.Get<int>("versionCode");
 #endif
 
-                    url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + androidGameVersion;
-                    url += "&unity-version=" + Application.unityVersion;
+                url += "&game-id=" + Application.identifier;
+                url += "&game-version=" + androidGameVersion;
+                url += "&unity-version=" + Application.unityVersion;
                     
-                    _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
+                _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
                     
-                    webViewObject.SetVisibility(!Application.isEditor);
-                    Debug.LogWarning($"Initial URL: {url}");
-                    webViewObject.LoadURL(url);
+                webViewObject.SetVisibility(!Application.isEditor);
+                AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
+                webViewObject.LoadURL(url);
                     
-                    // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
-                    // TODO(android-native): Replace it with the above line once the implementation is finished
-                    webViewObject.EnableWebviewDebugging(true);
+                // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
+                // TODO(android-native): Replace it with the above line once the implementation is finished
+                webViewObject.EnableWebviewDebugging(true);
 
-                    //Display loading Screen
-                    webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
+                //Display loading Screen
+                webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
 
 
 #if !UNITY_EDITOR
@@ -1872,18 +1892,11 @@ namespace NDream.AirConsole {
 						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
 					}
 #endif
-                }
-            } else {
-                if (Settings.debug.error) {
-                    Debug.LogError(
-                        "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
-                }
             }
         }
 
         private void OnLaunchApp(JObject msg) {
-            Debug.Log("onLaunchApp");
-            Debug.Log($"AC OnLaunchApp for {msg}");
+            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg}");
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
@@ -1938,7 +1951,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewResize(JObject msg) {
-            Debug.Log("OnUnityWebviewResize");
+            AirConsoleLogger.LogDevelopment($"OnUnityWebviewResize w/ msg {msg}");
             if (_devices.Count > 0) {
                 Debug.Log("screen device data: " + _devices[0].ToString());
             }
@@ -1946,7 +1959,7 @@ namespace NDream.AirConsole {
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
-                h = (int)msg["top_bar_height"] * 2;
+                h = (int)msg["top_bar_height"] * 2; // todo(android-native): This probably should use the This is a temporary fix for the top bar height should be screen dpi scaling
                 webViewHeight = h;
                 _webViewManager.SetWebViewHeight(h);
             }
