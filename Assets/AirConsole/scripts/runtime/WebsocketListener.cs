@@ -224,6 +224,7 @@ namespace NDream.AirConsole {
 						this.onLaunchApp (msg);
 					}
 				} else if (action == "onUnityWebviewResize") {
+					AirConsoleLogger.LogDevelopment("onUnityWebviewResize");
 					if (this.onUnityWebviewResize != null) {
 						this.onUnityWebviewResize (msg);
 					}

@@ -13,11 +13,15 @@ namespace NDream.AirConsole {
             Application.runInBackground = false;
             Screen.fullScreen = true;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Application.targetFrameRate = 0;
+            
+            // TODO(android-native): Upgrade to 2022 LTS
+            Application.targetFrameRate = Mathf.CeilToInt((float)Screen.currentResolution.refreshRateRatio.value);
+            QualitySettings.vSyncCount = 0;
         }
         
         public void RefreshConfiguration() {
             Application.runInBackground = false;
+            QualitySettings.vSyncCount = 0;
         }
     }
 }

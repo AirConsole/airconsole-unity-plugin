@@ -41,9 +41,31 @@
 
       var isUnityEditor = !!getURLParameterByName("unity-editor-websocket-port");
     </script>
+<!--        <script src="http://10.0.2.2:8080/api/airconsole-1.10.0.js"></script>-->
     <script src="https://ci-daniel-native-game-sizing-dot-airconsole.appspot.com/api/airconsole-1.10.0.js"></script>
     <script src="./airconsole-unity-plugin.js"></script>
     <script src="airconsole-settings.js"></script>
+    <script>
+      // TODO(android-native): Remove this again
+      // Function to handle pointer events
+      function handlePointerEvent(event) {
+        console.log(`Pointer event detected: ${event.type}`);
+        console.log(`Pointer ID: ${event.pointerId}`);
+        console.log(`Pointer type: ${event.pointerType}`);
+        console.log(`Coordinates: (${event.clientX}, ${event.clientY})`);
+        // Add additional logic as needed
+      }
+
+      // Attach event listeners for various pointer events
+      document.addEventListener('pointerdown', handlePointerEvent);
+      document.addEventListener('pointermove', handlePointerEvent);
+      document.addEventListener('pointerup', handlePointerEvent);
+      document.addEventListener('pointercancel', handlePointerEvent);
+      document.addEventListener('pointerover', handlePointerEvent);
+      document.addEventListener('pointerout', handlePointerEvent);
+      document.addEventListener('pointerenter', handlePointerEvent);
+      document.addEventListener('pointerleave', handlePointerEvent);
+    </script>
     <script>
       var default_progress_bar_config = {
         top: "57.8%",

@@ -1068,7 +1068,7 @@ namespace NDream.AirConsole {
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
             defaultScreenHeight = Screen.height;
-            _androidImmersiveService = new AndroidImmersiveService(); // todo(android-native): Integrating this automatically gets us back to immersive mode.
+            _androidImmersiveService = new AndroidImmersiveService();
 #endif
         }
 
@@ -1175,12 +1175,9 @@ namespace NDream.AirConsole {
                 Camera.main.pixelRect = safeArea;
             }
 
-            _lastSafeAreaHeight = (int)safeArea.height;
-            _lastSafeAreaWidth = (int)safeArea.width;
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
             AirConsoleLogger.LogDevelopment($"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
-            // TODO(android-native): we want to have the check for subscriptions to do event queuing and to inform the user if the settings for game sizing and the registrations don't match.
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
@@ -1189,19 +1186,6 @@ namespace NDream.AirConsole {
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
-
-#if UNITY_ANDROID
-            // TODO(android-native): Decide when the camera rect no longer matches the safe area and needs updating
-            // if (Screen.currentResolution.width != _lastSafeAreaWidth || Screen.currentResolution.height != _lastSafeAreaHeight) {
-            //     if (_lastSafeAreaParameters != null) {
-            //         // TODO(android-native): We need to ensure to only do this, when the safe area feature is used
-            //         RefreshSafeArea(_lastSafeAreaParameters);
-            //     } else {
-            //         // TODO(android-native): Otherwise the topbar margin needs to be updated
-            //         AirConsoleLogger.LogDevelopment("The WebView margins should have been updated");
-            //     }
-            // }
-#endif
 
             runtimeConfigurator?.RefreshConfiguration();
             
@@ -1693,8 +1677,6 @@ namespace NDream.AirConsole {
         private readonly Queue<Action> eventQueue = new Queue<Action>();
         private bool _safeAreaWasSet = false;
         private JObject _lastSafeAreaParameters; 
-        private int _lastSafeAreaWidth = Screen.width;
-        private int _lastSafeAreaHeight = Screen.height;
         private WebViewManager _webViewManager;
         private DataProviderPlugin _dataProviderPlugin;
 
@@ -1791,36 +1773,65 @@ namespace NDream.AirConsole {
 
 
 #if UNITY_ANDROID
-        // TODO(android-native): This approach is most likely the missing piece in the webview - android tablet taskbar handling issue.
         private int GetScaledWebViewHeight() {
             return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
         }
 
-        private string ComputeUrlVersion(string version) {
-            var split = version.Split('.');
-            return $"{split[0]}.{split[1]}{split[2]}";
-        }
 
         private void OnConnectUrlReceived (string connectionUrl) {
-            CreateAndroidWebview(connectionUrl);
+            eventQueue.Enqueue(delegate {
+                CreateAndroidWebview(connectionUrl);
+            });
             
             _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived;
         }
         
         private void InitWebView() {
+            AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
             if (!string.IsNullOrEmpty(androidGameVersion)) {
+                PrepareWebviewOverlay();
                 _dataProviderPlugin = new();
+                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_dataProviderPlugin.IsTvDevice()}, IsCarDevice: {_dataProviderPlugin.IsCarDevice()}, IsNormalDevice: {_dataProviderPlugin.IsNormalDevice()}");
                 if (_dataProviderPlugin.DataProviderInitialized) {
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {_dataProviderPlugin.ConnectionUrl}");
                     CreateAndroidWebview(_dataProviderPlugin.ConnectionUrl); 
                 } else {
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
                     _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
                 }
             } else {
+                AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
                 if (Settings.debug.error) {
                     Debug.LogError(
                         "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
                 }
             }
+        }
+
+        private void PrepareWebviewOverlay() {
+            //Display loading Screen
+            webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
+
+
+#if !UNITY_EDITOR
+					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
+					webViewLoadingImage.sprite = webViewLoadingSprite;
+					webViewLoadingBG.color = Color.black;
+					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
+					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
+					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+					webViewLoadingImage.preserveAspect = true;
+
+					if (webViewLoadingSprite == null) {
+                        AirConsoleLogger.LogDevelopment("Use default android-tv-loadingscreen for overlay");
+						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
+					}
+#endif
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
@@ -1869,29 +1880,6 @@ namespace NDream.AirConsole {
                 // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
                 // TODO(android-native): Replace it with the above line once the implementation is finished
                 webViewObject.EnableWebviewDebugging(true);
-
-                //Display loading Screen
-                webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
-
-
-#if !UNITY_EDITOR
-					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
-					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
-					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
-					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
-					webViewLoadingImage.sprite = webViewLoadingSprite;
-					webViewLoadingBG.color = Color.black;
-					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
-					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
-					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
-					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
-					webViewLoadingImage.preserveAspect = true;
-
-					if (webViewLoadingSprite == null){
-						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
-					}
-#endif
             }
         }
 
@@ -1959,7 +1947,7 @@ namespace NDream.AirConsole {
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
-                h = (int)msg["top_bar_height"] * 2; // todo(android-native): This probably should use the This is a temporary fix for the top bar height should be screen dpi scaling
+                h = (int)msg["top_bar_height"] * 2; // todo(android-native): This probably should use the screen dpi scaling factor
                 webViewHeight = h;
                 _webViewManager.SetWebViewHeight(h);
             }

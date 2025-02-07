@@ -1,6 +1,11 @@
 
 # Upgrade the Unity Plugin to the current version
 
+## Upgrading from v2.5.0 to v2.?.0
+
+- Remove Assets/AirConsole if present
+-
+
 ## Upgrading from v2.5.x to v2.6.0
 
 1. AirConsole now uses Assembly Definition files. For Runtime usage, you need to reference _AirConsole.Runtime_ in your own Assembly Definitions.

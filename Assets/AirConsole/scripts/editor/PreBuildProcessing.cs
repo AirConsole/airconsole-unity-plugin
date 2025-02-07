@@ -12,6 +12,7 @@ public class PreBuildProcessing : IPreprocessBuildWithReport {
     public int callbackOrder => 1;
 
     public void OnPreprocessBuild(BuildReport report) {
+        AssetDatabase.ImportAsset(Path.Join(Application.dataPath, "AirConsole", "resources"), ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
         CheckWebGLSetup();
             
         Debug.Log("Used Python path: " + System.Environment.GetEnvironmentVariable("EMSDK_PYTHON"));

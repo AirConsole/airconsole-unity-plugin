@@ -22,7 +22,7 @@ namespace NDream.AirConsole {
 
         internal WebViewManager(WebViewObject webViewObject, int defaultScreenHeight) {
             _webViewObject = webViewObject;
-            _webViewObject.SetMargins(0,0,0,0);
+            _webViewObject.SetMargins(0,0,0, defaultScreenHeight);
             
             _defaultScreenHeight = defaultScreenHeight;
         }
@@ -35,7 +35,7 @@ namespace NDream.AirConsole {
         }
 
         internal void ActivateSafeArea() {
-            Debug.Log("WebViewManager.ActivateSafeArea()");
+            AirConsoleLogger.LogDevelopment("WebViewManager.ActivateSafeArea()");
 #if WEBVIEWMANAGER_ACTIVE
             _isSafeAreaActive = true;
             _currentState = WebViewState.SafeAreaBased;
@@ -44,7 +44,7 @@ namespace NDream.AirConsole {
         }
 
         internal void RequestStateTransition(WebViewState newState) {
-            Debug.Log($"WebViewManager.RequestStateTransition({newState})");
+            AirConsoleLogger.LogDevelopment($"WebViewManager.RequestStateTransition({newState})");
 #if WEBVIEWMANAGER_ACTIVE
             // When the SafeArea has been activated, we do not allow any other state transitions anymore.
             if (_isSafeAreaActive) {
@@ -58,14 +58,15 @@ namespace NDream.AirConsole {
 #endif
         }
 
-        public void UpdateViewView() {
-            Debug.Log("WebViewManager.UpdateViewView()");
+        public void UpdateWebView() {
+            AirConsoleLogger.LogDevelopment("WebViewManager.UpdateWebView()");
 #if WEBVIEWMANAGER_ACTIVE
             switch (_currentState) {
                 case WebViewState.Hidden:
                     _webViewObject.SetMargins(0, 0, 0, _defaultScreenHeight);
                     break;
                 case WebViewState.TopBar:
+                    AirConsoleLogger.LogDevelopment($"WebViewManager.UpdateWebView w/ Topbar: {_defaultScreenHeight}, {_webViewHeight} => bottomMargin: {(_defaultScreenHeight - _webViewHeight)}");
                     _webViewObject.SetMargins(0, 0, 0, _defaultScreenHeight - _webViewHeight);
                     break;
                 case WebViewState.FullScreen:
@@ -77,6 +78,7 @@ namespace NDream.AirConsole {
             }
 
             _webViewObject.SetVisibility(_currentState != WebViewState.Hidden && !Application.isEditor);
+            AirConsoleLogger.LogDevelopment($"WebViewManager.UpdateWebView: webview setVisibility: {(_currentState != WebViewState.Hidden && !Application.isEditor)}");
 #endif
         }
     }

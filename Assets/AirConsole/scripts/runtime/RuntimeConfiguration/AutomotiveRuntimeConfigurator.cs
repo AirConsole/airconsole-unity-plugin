@@ -13,8 +13,10 @@ namespace NDream.AirConsole {
         public AutomotiveRuntimeConfigurator() {
             Application.runInBackground = false;
             Screen.fullScreen = true;
+            Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            Application.targetFrameRate = 0;
+            Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;
             
             // On automotive we want to ensure that we are not negatively impacted by external pressure.
             AndroidDevice.SetSustainedPerformanceMode(true);
@@ -25,6 +27,10 @@ namespace NDream.AirConsole {
                 Screen.fullScreen = !Screen.fullScreen;
             }
             Application.runInBackground = false;
+            // Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+            // Screen.fullScreen = Screen.fullScreen;
+            Application.targetFrameRate = 60;
+            QualitySettings.vSyncCount = 0;
             // Screen.fullScreen = false;
         }
     }
