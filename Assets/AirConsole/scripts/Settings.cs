@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace NDream.AirConsole {
     public static class Settings {
-        public const string VERSION = "2.5.5";
+        public const string VERSION = "2.5.6";
 
         // ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
         public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";

@@ -7,6 +7,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ## [Unreleased]
 
 
+## [2.5.6] - 2025-02-11
+
+This release fixes an issue where the Unity loader is causing requests to non-existing files.
+
+
 ## [2.5.5] - 2025-01-07
 
 This release patches a bug introduced in version 2.5.4
