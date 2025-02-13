@@ -9,7 +9,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [2.5.6] - 2025-02-11
 
-This release fixes an issue where the Unity loader is causing requests to non-existing files.
+This release fixes an issue where the Unity loader is causing requests to non-existing files in Unity 6 web builds.
 
 
 ## [2.5.5] - 2025-01-07
