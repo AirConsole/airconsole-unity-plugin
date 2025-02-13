@@ -80,17 +80,16 @@
           unity_web_config.productName = "{{{ PRODUCT_NAME }}}";
           unity_web_config.productVersion = "{{{ PRODUCT_VERSION }}}";
 
-          // Instead of doing #if MEMORY_FILENAME and #if SYMBOLS_FILENAME
-          if (UNITY_MEMORY_FILENAME[0] !== "{") {
+          if (UNITY_MEMORY_FILENAME && UNITY_MEMORY_FILENAME[0] !== "{") {
             unity_web_config.memoryUrl = build_URL + "/" + UNITY_MEMORY_FILENAME;
           }
-          if (UNITY_SYMBOLS_FILENAME[0] !== "{") {
+          if (UNITY_SYMBOLS_FILENAME && UNITY_SYMBOLS_FILENAME[0] !== "{") {
             unity_web_config.symbolsUrl = build_URL + "/" + UNITY_SYMBOLS_FILENAME;
           }
-          if (UNITY_CODE_FILENAME[0] !== "{") {
+          if (UNITY_CODE_FILENAME && UNITY_CODE_FILENAME[0] !== "{") {
             unity_web_config.codeUrl = build_URL + "/" + UNITY_CODE_FILENAME;
           }
-          if (UNITY_WORKER_FILENAME[0] !== "{") {
+          if (UNITY_WORKER_FILENAME && UNITY_WORKER_FILENAME[0] !== "{") {
             unity_web_config.workerUrl = build_URL + "/" + UNITY_WORKER_FILENAME;
           }
 
