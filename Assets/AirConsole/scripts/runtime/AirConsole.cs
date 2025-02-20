@@ -1149,7 +1149,7 @@ namespace NDream.AirConsole {
             SetSafeArea(msg);
         }
         
-        protected void SetSafeArea(JObject msg) {
+        public void SetSafeArea(JObject msg) {
             JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
             if (safeAreaObj == null) {
                 throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
