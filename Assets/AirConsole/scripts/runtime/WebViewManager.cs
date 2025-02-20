@@ -22,7 +22,7 @@ namespace NDream.AirConsole {
 
         internal WebViewManager(WebViewObject webViewObject, int defaultScreenHeight) {
             _webViewObject = webViewObject;
-            _webViewObject.SetMargins(0,0,0, defaultScreenHeight);
+            _webViewObject.SetMargins(0,0,0,0);
             
             _defaultScreenHeight = defaultScreenHeight;
         }
