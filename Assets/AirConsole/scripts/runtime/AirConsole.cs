@@ -1069,6 +1069,8 @@ namespace NDream.AirConsole {
 #if UNITY_ANDROID
             defaultScreenHeight = Screen.height;
             _androidImmersiveService = new AndroidImmersiveService();
+                
+            _dataProviderPlugin = new();
 #endif
         }
 
@@ -1783,8 +1785,6 @@ namespace NDream.AirConsole {
         private int GetScaledWebViewHeight() {
             return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
         }
-
-
 #if !UNITY_EDITOR
         private void OnConnectUrlReceived (string connectionUrl) {
             _dataProviderPlugin.OnConnectionUrlReceived -= OnConnectUrlReceived;
@@ -1811,7 +1811,6 @@ namespace NDream.AirConsole {
                 // string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                 CreateAndroidWebview(connectionUrl);
 #else
-                _dataProviderPlugin = new();
                 AirConsoleLogger.LogDevelopment($"IsTvDevice: {_dataProviderPlugin.IsTvDevice()}, IsAutomotiveDevice: {_dataProviderPlugin.IsAutomotiveDevice()}, IsNormalDevice: {_dataProviderPlugin.IsNormalDevice()}");
                 if (_dataProviderPlugin.DataProviderInitialized) {
                     // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
@@ -1847,8 +1846,12 @@ namespace NDream.AirConsole {
 					webViewLoadingBG.color = Color.black;
 					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
 					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
-					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
-					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+                    if (IsAutomotiveDevice()) {
+                        webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+                    } else {
+                        webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+                    }
+                    webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
 					webViewLoadingImage.preserveAspect = true;
 
 					if (webViewLoadingSprite == null) {
@@ -2039,6 +2042,40 @@ namespace NDream.AirConsole {
                     fixedCanvasScalers.Add(allCanvasScalers[i]);
                 }
             }
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is an automotive device.
+        /// </summary>
+        /// <returns>True if the device is an automotive device, otherwise false.</returns>
+        public bool IsAutomotiveDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_dataProviderPlugin == null) {
+                AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _dataProviderPlugin.IsAutomotiveDevice();
+#endif
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is a TV device.
+        /// </summary>
+        /// <returns>True if the device is a TV device, otherwise false.</returns>
+        public bool IsTVDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_dataProviderPlugin == null) {
+                AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _dataProviderPlugin.IsTvDevice();
+#endif
         }
 #endif
 #endif

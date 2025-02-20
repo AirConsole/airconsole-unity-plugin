@@ -52,16 +52,15 @@ namespace NDream.AirConsole.Android.Plugin {
             // Create an instance of your Java plugin class
             dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
             dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
-#else
-            AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
 #endif
+            AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
         }
 
         public bool IsTvDevice() {
             return GetDeviceTypeMask() == UI_MODE_TYPE_TELEVISION;
         }
 
-        public bool IsCarDevice() {
+        public bool IsAutomotiveDevice() {
             return GetDeviceTypeMask() == UI_MODE_TYPE_CAR;
         }
         
