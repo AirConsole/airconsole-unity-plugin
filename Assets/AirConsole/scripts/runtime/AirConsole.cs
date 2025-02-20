@@ -1087,13 +1087,20 @@ namespace NDream.AirConsole {
             // register all incoming events
 #if UNITY_ANDROID
             InitWebView();
+
+            SceneManager.sceneLoaded += OnAndroidSceneLoaded;
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+#else
+            InitWebSockets();
+#endif
+        }
+
+        private void InitWebSockets() {
+#if UNITY_ANDROID
             wsListener = new WebsocketListener(webViewObject);
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
-
-            SceneManager.sceneLoaded += OnAndroidSceneLoaded;
-            Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
 #endif
@@ -1116,7 +1123,6 @@ namespace NDream.AirConsole {
             wsListener.onPremium += OnPremium;
             wsListener.onPause += OnPause;
             wsListener.onResume += OnResume;
-
 
             // if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
             if (Application.isEditor) {
@@ -1779,27 +1785,44 @@ namespace NDream.AirConsole {
         }
 
 
+#if !UNITY_EDITOR
         private void OnConnectUrlReceived (string connectionUrl) {
+            _dataProviderPlugin.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
+                // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                AirConsoleLogger.LogDevelopment($"OnConnectUrlReceived: {connectionUrl}");
                 CreateAndroidWebview(connectionUrl);
             });
             
-            _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived;
+        }
+#endif
+        
+        private string ComputeUrlVersion(string version) {
+            string[] split = version.Split('.');
+            return $"{split[0]}.{split[1]}{split[2]}";
         }
         
         private void InitWebView() {
             AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 PrepareWebviewOverlay();
+#if UNITY_EDITOR
+                string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                // string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
+                CreateAndroidWebview(connectionUrl);
+#else
                 _dataProviderPlugin = new();
-                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_dataProviderPlugin.IsTvDevice()}, IsCarDevice: {_dataProviderPlugin.IsCarDevice()}, IsNormalDevice: {_dataProviderPlugin.IsNormalDevice()}");
+                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_dataProviderPlugin.IsTvDevice()}, IsAutomotiveDevice: {_dataProviderPlugin.IsAutomotiveDevice()}, IsNormalDevice: {_dataProviderPlugin.IsNormalDevice()}");
                 if (_dataProviderPlugin.DataProviderInitialized) {
-                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {_dataProviderPlugin.ConnectionUrl}");
-                    CreateAndroidWebview(_dataProviderPlugin.ConnectionUrl); 
+                    // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                    string connectionUrl = _dataProviderPlugin.ConnectionUrl;
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+                    CreateAndroidWebview(connectionUrl); 
                 } else {
                     AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
                     _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
                 }
+#endif
             } else {
                 AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
                 if (Settings.debug.error) {
@@ -1829,7 +1852,6 @@ namespace NDream.AirConsole {
 					webViewLoadingImage.preserveAspect = true;
 
 					if (webViewLoadingSprite == null) {
-                        AirConsoleLogger.LogDevelopment("Use default android-tv-loadingscreen for overlay");
 						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
 					}
 #endif
@@ -1881,6 +1903,7 @@ namespace NDream.AirConsole {
                 // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
                 // TODO(android-native): Replace it with the above line once the implementation is finished
                 webViewObject.EnableWebviewDebugging(true);
+                InitWebSockets();
             }
         }
 
