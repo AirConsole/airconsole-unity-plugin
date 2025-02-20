@@ -1154,9 +1154,10 @@ namespace NDream.AirConsole {
         }
 
         private void RefreshSafeArea(JObject safeAreaObj) {
-            float y = Screen.height * GetFloatFromMessage(safeAreaObj, "top", 0);
+            float heightValue = GetFloatFromMessage(safeAreaObj, "height", 1);
+            float y = Screen.height * (1-GetFloatFromMessage(safeAreaObj, "top", 0) - heightValue);
             float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
-            float height = Screen.height * GetFloatFromMessage(safeAreaObj, "height", 1);
+            float height = Screen.height * heightValue;
             float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
                 
             // TODO(Marc) Update when we send width / height that are no longer bottom / right
