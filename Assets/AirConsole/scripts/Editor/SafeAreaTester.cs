@@ -25,7 +25,7 @@ namespace NDream.AirConsole.Editor {
         public void CreateGUI() {
             VisualElement root = rootVisualElement;
 
-            leftField = new FloatField("Left") { value = 0 };
+            leftField = new FloatField("Left") { value = 0  };
             topField = new FloatField("Top") { value = 0 };
             widthField = new FloatField("Width") { value = 1 };
             heightField = new FloatField("Height") { value = 1 };
@@ -41,7 +41,6 @@ namespace NDream.AirConsole.Editor {
                 text = "16x9",
                 focusable = false
             };
-            VisualElement flexBoxHorizontal = new();
 
             leftField.value = 0;
             topField.value = 0;
@@ -54,15 +53,33 @@ namespace NDream.AirConsole.Editor {
             root.Add(topField);
             root.Add(widthField);
             root.Add(heightField);
+
+            VisualElement flexBoxHorizontal = CreateFlexBoxHorizontal();
             flexBoxHorizontal.Add(applyButton);
             flexBoxHorizontal.Add(resetButton);
             flexBoxHorizontal.Add(aspect16By9Button);
-            flexBoxHorizontal.style.flexDirection = FlexDirection.Row;
             root.Add(flexBoxHorizontal);
 
+            Ensure01FloatRange(topField);
+            Ensure01FloatRange(leftField);
+            Ensure01FloatRange(widthField);
+            Ensure01FloatRange(heightField);
             root.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
+        private VisualElement CreateFlexBoxHorizontal() {
+            VisualElement flexBoxHorizontal = new(); 
+            flexBoxHorizontal.style.flexDirection = FlexDirection.Row;
+            return flexBoxHorizontal;
+
+        }
+
+        private static void Ensure01FloatRange(FloatField field) =>
+            field.RegisterValueChangedCallback(evt => {
+                field.value = Mathf.Clamp01(evt.newValue);
+                evt.PreventDefault();
+            });
+        
         private void OnKeyDown(KeyDownEvent evt) {
             if (wasConnected) {
                 if (AirConsole.instance) {
