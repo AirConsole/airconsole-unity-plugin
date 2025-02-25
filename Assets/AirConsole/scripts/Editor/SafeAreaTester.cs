@@ -25,7 +25,7 @@ namespace NDream.AirConsole.Editor {
         public void CreateGUI() {
             VisualElement root = rootVisualElement;
 
-            leftField = new FloatField("Left") { value = 0  };
+            leftField = new FloatField("Left") { value = 0 };
             topField = new FloatField("Top") { value = 0 };
             widthField = new FloatField("Width") { value = 1 };
             heightField = new FloatField("Height") { value = 1 };
@@ -68,10 +68,9 @@ namespace NDream.AirConsole.Editor {
         }
 
         private VisualElement CreateFlexBoxHorizontal() {
-            VisualElement flexBoxHorizontal = new(); 
+            VisualElement flexBoxHorizontal = new();
             flexBoxHorizontal.style.flexDirection = FlexDirection.Row;
             return flexBoxHorizontal;
-
         }
 
         private static void Ensure01FloatRange(FloatField field) =>
@@ -79,7 +78,7 @@ namespace NDream.AirConsole.Editor {
                 field.value = Mathf.Clamp01(evt.newValue);
                 evt.PreventDefault();
             });
-        
+
         private void OnKeyDown(KeyDownEvent evt) {
             if (wasConnected) {
                 if (AirConsole.instance) {
@@ -87,6 +86,7 @@ namespace NDream.AirConsole.Editor {
                     AirConsole.instance.OnSafeAreaChanged += OnSafeAreaChanged;
                 }
             }
+
             switch (evt.keyCode) {
                 case KeyCode.Tab: {
                     Focusable currentFocusedElement = rootVisualElement.focusController.focusedElement;
@@ -132,12 +132,11 @@ namespace NDream.AirConsole.Editor {
             if (AirConsole.instance) {
                 wasConnected = true;
                 AirConsole.instance.OnSafeAreaChanged += OnSafeAreaChanged;
-                
-            } 
+            }
         }
 
         private void OnDisable() {
-            if(AirConsole.instance) {
+            if (AirConsole.instance) {
                 AirConsole.instance.OnSafeAreaChanged -= OnSafeAreaChanged;
             }
         }
@@ -174,7 +173,7 @@ namespace NDream.AirConsole.Editor {
             Vector2 screenSize = Handles.GetMainGameViewSize();
             float width = screenSize.x;
             float height = screenSize.y;
-            float aspect = width/height;
+            float aspect = width / height;
             if (aspect > aspect16By9) {
                 heightField.value = 1;
                 widthField.value = aspect16By9 * height / width;
@@ -182,6 +181,7 @@ namespace NDream.AirConsole.Editor {
                 widthField.value = 1;
                 heightField.value = aspect9By16 * width / height;
             }
+
             OnApplyButtonClicked();
         }
     }
