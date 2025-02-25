@@ -1,0 +1,22 @@
+
+{
+  "name": "com.airconsole.unity-plugin",
+  "version": "2.6.0",
+  "displayName": "AirConsole Unity Plugin",
+  "description": "The official AirConsole plugin for Unity",
+  "unity": "2022.3",
+  "unityRelease": "10f1",
+  "documentationUrl": "https://developers.airconsole.com/",
+  "changelogUrl": "https://example.com/changelog.html",
+  "licensesUrl": "https://example.com/licensing.html",
+ "keywords": [
+    "airconsole",
+    "controller",
+    "smartphone"
+  ],
+  "author": {
+    "name": "AirConsole",
+    "email": "eng@n-dream.com",
+    "url": "https://corp.airconsole.com"
+  }
+}
