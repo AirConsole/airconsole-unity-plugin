@@ -10,11 +10,21 @@ namespace NDream.AirConsole.Editor {
     public abstract class UnityVersionCheck {
         [InitializeOnLoadMethod]
         private static void CheckUnityVersions() {
-#if !UNITY_2019_4_OR_NEWER
-            EditorUtility.DisplayDialog("Unsupported", $"AirConsole {Settings.VERSION} requires Unity 2019.4 or newer",
-                "I understand");
-            EditorApplication.isPlaying = false;
+            if (IsSupportedUnityVersion()) {
+                return;
+            }
+
+            string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer";
+            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
+            Debug.LogError(message);
+            throw new UnityException(message);
+        }
+
+        public static bool IsSupportedUnityVersion() {
+#if !UNITY_2022_3_OR_NEWER && !UNITY_6000_0_OR_NEWER
+            return false;
 #endif
+            return true;
         }
     }
 
