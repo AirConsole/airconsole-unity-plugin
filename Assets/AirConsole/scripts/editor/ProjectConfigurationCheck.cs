@@ -1,5 +1,7 @@
 #if !DISABLE_AIRCONSOLE
+using System;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -145,6 +147,46 @@ namespace NDream.AirConsole.Editor {
 #endif
         }
 
+        private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform) {
+            Type playerSettingsType = typeof(PlayerSettings);
+    
+            MethodInfo methodInfo = playerSettingsType.GetMethod(
+                "GetDefaultTextureCompressionFormat", 
+                BindingFlags.NonPublic | BindingFlags.Static);
+    
+            if (methodInfo != null)
+            {
+                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { platform });
+            }
+            
+            return TextureCompressionFormat.Unknown;
+        }
+
+        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup platform, TextureCompressionFormat format) {
+            Type playerSettingsType = typeof(PlayerSettings);
+    
+            MethodInfo methodInfo = playerSettingsType.GetMethod(
+                "SetDefaultTextureCompressionFormat", 
+                BindingFlags.NonPublic | BindingFlags.Static);
+    
+            if (methodInfo != null)
+            {
+                methodInfo.Invoke(null, new object[] { platform, (int)format });
+            }
+        }
+            
+        // Extracted from UnityEditor.TextureCompressionFormat
+        private enum TextureCompressionFormat
+        {
+            Unknown,
+            ETC,
+            ETC2,
+            ASTC,
+            PVRTC,
+            DXTC,
+            BPTC,
+            DXTC_RGTC,
+        }
     }
 }
 #endif
