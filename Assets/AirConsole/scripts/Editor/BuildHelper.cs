@@ -13,6 +13,8 @@ namespace NDream.AirConsole.Editor {
 
         [MenuItem("Tools/AirConsole/Build Web")]
         public static void BuildWeb() {
+            ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);
+            AssetDatabase.SaveAssets();
             if (CommitPendingChanges(out string timestamp, out string commitHash)) {
                 return;
             }
@@ -43,6 +45,8 @@ namespace NDream.AirConsole.Editor {
 
         [MenuItem("Tools/AirConsole/Build Android")]
         public static void BuildAndroid() {
+            ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
+            AssetDatabase.SaveAssets();
             if (CommitPendingChanges(out string timestamp, out string commitHash)) {
                 return;
             }
