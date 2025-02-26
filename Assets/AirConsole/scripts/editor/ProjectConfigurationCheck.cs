@@ -28,6 +28,20 @@ namespace NDream.AirConsole.Editor {
         }
     }
 
+    public abstract class UnityPlatform {
+        [InitializeOnLoadMethod]
+        private static void CheckPlatform() {
+            BuildTargetGroup buildTarget = EditorUserBuildSettings.selectedBuildTargetGroup;
+            if(buildTarget == BuildTargetGroup.Android || buildTarget == BuildTargetGroup.WebGL) {
+                return;
+            }
+
+            Debug.LogWarning($"AirConsole Plugin does not support platform {buildTarget}, switching to WebGL.\n"
+                + "To disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.");
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+        }
+    }
+
     public abstract class ProjectConfigurationCheck : IPreprocessBuildWithReport {
         public int callbackOrder => 0;
 
