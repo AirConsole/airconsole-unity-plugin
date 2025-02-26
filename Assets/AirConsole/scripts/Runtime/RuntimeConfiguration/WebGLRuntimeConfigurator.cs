@@ -1,7 +1,4 @@
 #if !DISABLE_AIRCONSOLE
-#if !UNITY_ANDROID
-#undef AIRCONSOLE_AUTOMOTIVE
-#endif
 using UnityEngine;
 using Screen = UnityEngine.Device.Screen;
 
