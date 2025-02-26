@@ -6,7 +6,7 @@ using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
-using Debug = UnityEngine.Debug;
+using UnityEngine.Rendering;
 
 namespace NDream.AirConsole.Editor {
     public abstract class UnityVersionCheck {
@@ -74,28 +74,96 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
+            PlayerSettings.resetResolutionOnWindowResize = true;
             
-            string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
-            string[] templateUri = PlayerSettings.WebGL.template.Split(':');
-        }
-        [InitializeOnLoadMethod]
-        private static void EnsureWebGLPlayerSettings() {
-            
-            if (templateUri.Length != 2 || templateUri[0].ToUpper() == "APPLICATION" || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
-                string incompatibleTemplateMessage =
-                    $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
-                Debug.LogError(incompatibleTemplateMessage);
-                
-                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings", "Cancel"))
-                {
-                    SettingsService.OpenProjectSettings("Project/Player");
-                }
+            if (!UnityVersionCheck.IsSupportedUnityVersion()) {
+                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2022.3 LTS or newer");
+                throw new UnityException("Unity Version " + Application.unityVersion);
+            }
+
+            bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
+            if (PlayerSettings.runInBackground != shouldRunInBackground) {
+                Debug.Log(
+                    $"AirConsole needs 'Run In Background' to be {shouldRunInBackground} in PlayerSettings for {EditorUserBuildSettings.activeBuildTarget}.\n"
+                    + $"Updating the settings now.");
+                PlayerSettings.runInBackground = shouldRunInBackground;
+            }
+
+            if (PlayerSettings.stripEngineCode == false) {
+                Debug.LogError("AirConsole requires 'Strip Engine Code' to be enabled in Player Settings.\n"
+                               + $"We are updating the settings now.");
+                PlayerSettings.stripEngineCode = true;
+            }
+
+            if (PlayerSettings.GetManagedStrippingLevel(BuildTargetGroup.Android) == ManagedStrippingLevel.Disabled) {
+                Debug.LogWarning("AirConsole requires 'Managed Stripping Level' to be enabled in Player Settings with at minimum Low.\n"
+                                 + $"We are updating the settings now.");
+                PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
+            }
+
+            if (PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup) != ScriptingImplementation.IL2CPP) {
+                Debug.LogWarning("AirConsole requires 'Scripting Backend' to be set to IL2CPP in Player Settings.\n"
+                                 + $"We are updating the settings now.");
+                PlayerSettings.SetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup, ScriptingImplementation.IL2CPP);
             }
         }
-        
+
+        [InitializeOnLoadMethod]
+        private static void EnsureWebGLPlayerSettings() {
+            PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
+            PlayerSettings.WebGL.nameFilesAsHashes = false; // We upload into timestamp based folders. This is not necessary.
+
+            if (PlayerSettings.WebGL.dataCaching) {
+                Debug.LogWarning("AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
+                                 + "Updating the WebGL settings now.");
+                PlayerSettings.WebGL.dataCaching = false;
+            }
+
+            if (PlayerSettings.WebGL.compressionFormat != WebGLCompressionFormat.Disabled) {
+                Debug.LogWarning("AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
+                                 + "Adapting the WebGL settings now.");
+                PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
+            }
+
+            if (PlayerSettings.WebGL.memoryGrowthMode != WebGLMemoryGrowthMode.None) {
+                Debug.LogWarning(
+                    "For performance and stability on automotive, AirConsole requires 'Memory Growth Mode' to be set to None in WebGL PlayerSettings with the games maximum memory usage set.\n"
+                    + "Updating the WebGL settings now.");
+                PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.None;
+                PlayerSettings.WebGL.initialMemorySize = Mathf.Min(512, Mathf.Max(PlayerSettings.WebGL.initialMemorySize, PlayerSettings.WebGL.maximumMemorySize));
+            }
+
+            if (PlayerSettings.WebGL.memorySize > 512) {
+                Debug.LogWarning("AirConsole recommends 'Initial Memory Size' stay at or below 512MB for automotive compatibility.\n"
+                                 + "We are updating the WebGL settings now.");
+                PlayerSettings.WebGL.initialMemorySize = 512;
+            }
+            
+            if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
+                Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                throw new UnityException("Please update the WebGL build and player settings to continue.");
+            }
+        }
 
         [InitializeOnLoadMethod]
         private static void EnsureAndroidPlayerSettings() {
+
+            PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+
+            if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
+                Debug.LogWarning("To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"
+                                 + "We are updating the Android settings now.");
+                PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
+            }
+
+            if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
+                Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                throw new UnityException("Please update the Build and Player settings to continue.");
+            }
+
+            UpdateAndroidPlayerSettingsInProperties();
+            EnsureAndroidPlatformSettings();
+            DisableUndesirableAndroidFeatures();
         }
 
         private static void EnsureAndroidPlatformSettings() {
@@ -106,31 +174,62 @@ namespace NDream.AirConsole.Editor {
             if ((int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
                 Debug.LogError(
                     $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
-                    + $"We are updating the Android settings now.");
+                    + "We are updating the Android settings now.");
             }
 
+            PlayerSettings.Android.renderOutsideSafeArea = true; // required for the webview
+
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
-
-            PlayerSettings.Android.ARCoreEnabled = false;
-            PlayerSettings.Android.androidIsGame = true;
-
-            UpdateAndroidPlayerSettings();
-
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel23) {
+                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
+            }
+            
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.allowedAutorotateToPortrait = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
 
-            if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC) {
-                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for Android builds for improved mobile performance.");
-        }
-        private static void DisableUndesirableAndroidFeatures() {
+            if (PlayerSettings.Android.fullscreenMode != FullScreenMode.FullScreenWindow) {
+                Debug.LogWarning("AirConsole requires 'Fullscreen Mode' to be set to FullScreenWindow in Android PlayerSettings.\n"
+                                 + "We are updating the Android settings now.");
+                PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
+            }
+
+            if (!PlayerSettings.Android.renderOutsideSafeArea) {
+                Debug.LogWarning("AirConsole recommends 'Render Outside Safe Area' to be enabled in Android PlayerSettings.\n"
+                                 + "We are updating the Android settings now.");
+                PlayerSettings.Android.renderOutsideSafeArea = true;
+            }
+
+            if (!PlayerSettings.Android.startInFullscreen) {
+                Debug.LogWarning("AirConsole recommends 'Start In Fullscreen' to be enabled in the Android PlayerSettings.\n"
+                                 + "We are updating the Android settings now.");
+                PlayerSettings.Android.startInFullscreen = true;
+            }
+
+            if (PlayerSettings.Android.preferredInstallLocation != AndroidPreferredInstallLocation.Auto) {
+                Debug.LogWarning("AirConsole recommends 'Preferred Install Location' to be set to Auto in Android PlayerSettings.\n"
+                                 + "We are updating the Android settings now.");
+                PlayerSettings.Android.preferredInstallLocation = AndroidPreferredInstallLocation.Auto;
             }
         }
 
-            SerializedObject playerSettings = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+        private static void DisableUndesirableAndroidFeatures() {
+            if (PlayerSettings.allowUnsafeCode) {
+                Debug.LogError("AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
+                               + "We are updating the Android settings now.");
+                PlayerSettings.allowUnsafeCode = false;
+            }
+
+            PlayerSettings.Android.ARCoreEnabled = false;
+            PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
+            PlayerSettings.Android.androidIsGame = true;
+            PlayerSettings.Android.chromeosInputEmulation = false;
+        }
+
         private static void UpdateAndroidPlayerSettingsInProperties() {
+            SerializedObject playerSettings = new(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
 
             SerializedProperty filterTouchesProperty = playerSettings.FindProperty("AndroidFilterTouchesWhenObscured");
             filterTouchesProperty.boolValue = false;
