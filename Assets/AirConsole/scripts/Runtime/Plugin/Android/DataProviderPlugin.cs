@@ -2,9 +2,7 @@
 #define AIRCONSOLE_ANDROID
 #endif
 using System;
-using System.Collections.Generic;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 
 namespace NDream.AirConsole.Android.Plugin {
@@ -18,11 +16,11 @@ namespace NDream.AirConsole.Android.Plugin {
         private const int UI_MODE_TYPE_TELEVISION = 4;
         private const int UI_MODE_TYPE_CAR = 3;
         private const int UI_MODE_TYPE_NORMAL = 1;
-        
+
         // ReSharper disable once UnusedMember.Local -- Used by DataProviderPlugin() in Android NonEditor only
         private bool CheckLibrary() {
             if (dataProviderHelper != null) return true;
-            
+
             AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
             AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
 
@@ -37,17 +35,20 @@ namespace NDream.AirConsole.Android.Plugin {
                 Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
                 return;
             }
+
             // Get the current Android activity context
             AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
             AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
 
-            UnityPluginStringCallback callback = new UnityPluginStringCallback(url => {
+            UnityPluginStringCallback callback = new(
+                url => {
                     DataProviderInitialized = true;
                     ConnectionUrl = url;
                     OnConnectionUrlReceived?.Invoke(url);
                     Debug.Log($"Received URL: {url}");
                 },
-                error => { Debug.LogError($"Initialization of DataProvider failed with {error}"); }); 
+                error => { Debug.LogError($"DataProviderPlugin initialization failed with {error}"); }
+            );
 
             // Create an instance of your Java plugin class
             dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
@@ -63,11 +64,11 @@ namespace NDream.AirConsole.Android.Plugin {
         public bool IsAutomotiveDevice() {
             return GetDeviceTypeMask() == UI_MODE_TYPE_CAR;
         }
-        
+
         public bool IsNormalDevice() {
             return GetDeviceTypeMask() == UI_MODE_TYPE_NORMAL;
         }
-        
+
         private int GetDeviceTypeMask() {
 #if AIRCONSOLE_ANDROID
             if (!CheckLibrary()) {
