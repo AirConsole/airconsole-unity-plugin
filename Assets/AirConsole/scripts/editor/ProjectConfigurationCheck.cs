@@ -48,30 +48,38 @@ namespace NDream.AirConsole.Editor {
         public int callbackOrder => 0;
 
         public void OnPreprocessBuild(BuildReport report) {
-            switch (report.summary.platform) {
+            CheckSettings(report.summary.platform);
+        }
+
+        public static void CheckSettings(BuildTarget platform) {
+            EnsureSharedPlayerSettings();
+
+            switch (platform) {
                 case BuildTarget.Android:
-                    CheckAndroidPlayerSettings();
+                    EnsureAndroidPlayerSettings();
+                    EnsureAndroidRenderSettings();
                     break;
 
                 case BuildTarget.WebGL:
-                    CheckWebGLPlayerSettings();
+                    EnsureWebGLPlayerSettings();
+                    EnsureWebRenderSettings();
                     break;
 
                 default:
-                    throw new UnityException($"AirConsole Plugin does not support platform {report.summary.platform}");
+                    throw new UnityException($"AirConsole Plugin does not support platform {platform}");
             }
+
+            Debug.Log("AirConsole Plugin configuration checks completed successfully.");
         }
 
-#if UNITY_WEBGL
         [InitializeOnLoadMethod]
-#endif
-        private static void CheckWebGLPlayerSettings() {
-            if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC) {
-                Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for WebGL builds for improved mobile performance.");
-            }
+        private static void EnsureSharedPlayerSettings() {
             
             string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
             string[] templateUri = PlayerSettings.WebGL.template.Split(':');
+        }
+        [InitializeOnLoadMethod]
+        private static void EnsureWebGLPlayerSettings() {
             
             if (templateUri.Length != 2 || templateUri[0].ToUpper() == "APPLICATION" || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
                 string incompatibleTemplateMessage =
@@ -85,16 +93,12 @@ namespace NDream.AirConsole.Editor {
             }
         }
         
-#if UNITY_ANDROID
+
         [InitializeOnLoadMethod]
-#endif
-        private static void CheckAndroidPlayerSettings() {
-            EnforceAndroidPlayerSettings();
-            EnforceAndroidTVSettings();
+        private static void EnsureAndroidPlayerSettings() {
         }
 
-        private static void EnforceAndroidPlayerSettings() {
-            // The internet permission is required for the AirConsole Unity Plugin.
+        private static void EnsureAndroidPlatformSettings() {
             PlayerSettings.Android.forceInternetPermission = true;
 
             // To ensure Google Play compatibility, we require a target SDK of 34 or higher.
@@ -120,11 +124,13 @@ namespace NDream.AirConsole.Editor {
 
             if (EditorUserBuildSettings.androidBuildSubtarget != MobileTextureSubtarget.ASTC) {
                 Debug.LogWarning("AirConsole recommends 'ASTC' as the 'Texture Compression' for Android builds for improved mobile performance.");
+        }
+        private static void DisableUndesirableAndroidFeatures() {
             }
         }
 
-        private static void UpdateAndroidPlayerSettings() {
             SerializedObject playerSettings = new SerializedObject(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+        private static void UpdateAndroidPlayerSettingsInProperties() {
 
             SerializedProperty filterTouchesProperty = playerSettings.FindProperty("AndroidFilterTouchesWhenObscured");
             filterTouchesProperty.boolValue = false;
@@ -135,16 +141,85 @@ namespace NDream.AirConsole.Editor {
             playerSettings.ApplyModifiedProperties();
         }
 
-        private static void EnforceAndroidTVSettings() {
-            PlayerSettings.Android.androidTVCompatibility = true;
-#if UNITY_ANDROID
-            if((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARM64) != AndroidArchitecture.ARM64 
-               || (PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARMv7) != AndroidArchitecture.ARMv7) {
-                Debug.LogWarning("AirConsole for TV requires 'Target Architectures' to be set to ARMv7 and ARM64 in Player Settings.\n"
-                                 + "We are updating the Android settings now.");
-                PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+        private static void EnsureWebRenderSettings() {
+            BuildTarget activeBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            #if !UNITY_6000_0_OR_NEWER
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(activeBuildTarget)) {
+                Debug.LogError(
+                    "AirConsole on web requires 'Auto Graphics API' to be disabled in Player Settings to enable WebGL1.\n"
+                    + "Updating the settings now.");
+                PlayerSettings.SetUseDefaultGraphicsAPIs(activeBuildTarget, false); 
+            }
+
+            if (!PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Contains(GraphicsDeviceType.OpenGLES2)) {
+                Debug.LogWarning($"AirConsole on web requires WebGL 1 to be enabled in Player Settings.\n"
+                                 + "Appending WebGL1 to the graphics APIs now.");
+                GraphicsDeviceType[] graphicsAPIs =
+                    PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Append(GraphicsDeviceType.OpenGLES2).ToArray();
+                PlayerSettings.SetGraphicsAPIs(activeBuildTarget, graphicsAPIs);
+            }
+            #endif
+        }
+        
+        private static void EnsureAndroidRenderSettings() {
+            BuildTarget activeBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+
+            PlayerSettings.use32BitDisplayBuffer = true;
+
+#if !UNITY_6000_0_OR_NEWER
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(activeBuildTarget)) {
+                Debug.LogError(
+                    "AirConsole for AndroidTV requires 'Auto Graphics API' to be disabled in Player Settings to enable OpenGL ES2.\n"
+                    + "We are updating the Android settings now.");
+                PlayerSettings.SetUseDefaultGraphicsAPIs(activeBuildTarget, false);
+            }
+
+            if (!PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Contains(GraphicsDeviceType.OpenGLES2)) {
+                Debug.LogWarning($"AirConsole on Android requires 'OpenGL ES2' to be enabled in Player Settings.\n"
+                                 + "We append Open GL ES2 to the Android Graphics APIs now.");
+                GraphicsDeviceType[] graphicsAPIs =
+                    PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Append(GraphicsDeviceType.OpenGLES2).ToArray();
+                PlayerSettings.SetGraphicsAPIs(activeBuildTarget, graphicsAPIs);
             }
 #endif
+
+            if (!PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)
+                && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).First() != GraphicsDeviceType.Vulkan) {
+                Debug.LogWarning("AirConsole requires 'Vulkan' or AutoGraphics API to be enabled in Player Settings for Automotive.\n"
+                                 + "Prepending Vulkan for Android Graphics APIs now.");
+                GraphicsDeviceType[] graphicsAPIs =
+                    PlayerSettings.GetGraphicsAPIs(BuildTarget.Android)
+                        .Where(api => api != GraphicsDeviceType.Vulkan)
+                        .Prepend(GraphicsDeviceType.Vulkan)
+                        .ToArray();
+                PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
+            }
+
+            if (PlayerSettings.vulkanNumSwapchainBuffers > 2) {
+                Debug.LogWarning(
+                    $"AirConsole recommends a maximum of 2 SwapChain Buffers for Vulkan for best sustained performance and low "
+                    + $"input latency.\n"
+                    + $"Updating the Player Settings now.");
+                PlayerSettings.vulkanNumSwapchainBuffers = 2;
+            }
+        }
+        
+        [MenuItem("Tools/AirConsole/Check Android Config")]
+        public static void CheckAndroid() {
+            CheckSettings(BuildTarget.Android);
+        }
+        
+        [MenuItem("Tools/AirConsole/Check Web Config")]
+        public static void CheckWeb() {
+            CheckSettings(BuildTarget.WebGL);
+        }
+        
+        private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup targetGroup) {
+            TextureCompressionFormat format = GetDefaultTextureCompressionFormat(targetGroup);
+            return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2 &&
+                   (targetGroup == BuildTargetGroup.Android 
+                       ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
+                       : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
         }
 
         private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform) {
