@@ -241,64 +241,52 @@ namespace NDream.AirConsole.Editor {
         }
 
         private static void EnsureWebRenderSettings() {
-            BuildTarget activeBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-            #if !UNITY_6000_0_OR_NEWER
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(activeBuildTarget)) {
+            GraphicsDeviceType[] graphicsAPIs = { GraphicsDeviceType.OpenGLES3 };
+            
+#if !UNITY_6000_0_OR_NEWER
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
                 Debug.LogError(
-                    "AirConsole on web requires 'Auto Graphics API' to be disabled in Player Settings to enable WebGL1.\n"
+                    "AirConsole on web requires 'Auto Graphics API' to be disabled in Player Settings to enable Web GL1.\n"
                     + "Updating the settings now.");
-                PlayerSettings.SetUseDefaultGraphicsAPIs(activeBuildTarget, false); 
+                PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.WebGL, false);
             }
 
-            if (!PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Contains(GraphicsDeviceType.OpenGLES2)) {
-                Debug.LogWarning($"AirConsole on web requires WebGL 1 to be enabled in Player Settings.\n"
-                                 + "Appending WebGL1 to the graphics APIs now.");
-                GraphicsDeviceType[] graphicsAPIs =
-                    PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Append(GraphicsDeviceType.OpenGLES2).ToArray();
-                PlayerSettings.SetGraphicsAPIs(activeBuildTarget, graphicsAPIs);
+            graphicsAPIs = graphicsAPIs.ToList().Append(GraphicsDeviceType.OpenGLES2).ToArray();
+#endif
+            if (!PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).SequenceEqual(graphicsAPIs)) {
+                Debug.LogWarning($"AirConsole requires all WebGL APIs to be enabled in the WebGL Player Settings.\n"
+                                 + "Updating the WebGL Graphics APIs now.");
+                PlayerSettings.SetGraphicsAPIs(BuildTarget.WebGL, graphicsAPIs);
             }
-            #endif
         }
         
         private static void EnsureAndroidRenderSettings() {
-            BuildTarget activeBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-
             PlayerSettings.use32BitDisplayBuffer = true;
 
 #if !UNITY_6000_0_OR_NEWER
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(activeBuildTarget)) {
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)) {
                 Debug.LogError(
-                    "AirConsole for AndroidTV requires 'Auto Graphics API' to be disabled in Player Settings to enable OpenGL ES2.\n"
-                    + "We are updating the Android settings now.");
-                PlayerSettings.SetUseDefaultGraphicsAPIs(activeBuildTarget, false);
-            }
-
-            if (!PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Contains(GraphicsDeviceType.OpenGLES2)) {
-                Debug.LogWarning($"AirConsole on Android requires 'OpenGL ES2' to be enabled in Player Settings.\n"
-                                 + "We append Open GL ES2 to the Android Graphics APIs now.");
-                GraphicsDeviceType[] graphicsAPIs =
-                    PlayerSettings.GetGraphicsAPIs(activeBuildTarget).Append(GraphicsDeviceType.OpenGLES2).ToArray();
-                PlayerSettings.SetGraphicsAPIs(activeBuildTarget, graphicsAPIs);
+                    "AirConsole for Android requires 'Auto Graphics API' to be disabled in Player Settings to enable OpenGL ES2.\n"
+                    + "Updating the Android settings now.");
+                PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             }
 #endif
 
-            if (!PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)
-                && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).First() != GraphicsDeviceType.Vulkan) {
-                Debug.LogWarning("AirConsole requires 'Vulkan' or AutoGraphics API to be enabled in Player Settings for Automotive.\n"
-                                 + "Prepending Vulkan for Android Graphics APIs now.");
-                GraphicsDeviceType[] graphicsAPIs =
-                    PlayerSettings.GetGraphicsAPIs(BuildTarget.Android)
-                        .Where(api => api != GraphicsDeviceType.Vulkan)
-                        .Prepend(GraphicsDeviceType.Vulkan)
-                        .ToArray();
+            GraphicsDeviceType[] graphicsAPIs = { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 };
+            #if !UNITY_6000_0_OR_NEWER
+            graphicsAPIs = graphicsAPIs.ToList().Append(GraphicsDeviceType.OpenGLES2).ToArray();
+            #endif
+            
+            if (!PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).SequenceEqual(graphicsAPIs)) {
+                Debug.LogWarning($"AirConsole requires {string.Join(',', graphicsAPIs) } to be enabled in the Android Player Settings.\n"
+                                 + "Updating the Android Graphics APIs now.");
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
             }
 
             if (PlayerSettings.vulkanNumSwapchainBuffers > 2) {
                 Debug.LogWarning(
-                    $"AirConsole recommends a maximum of 2 SwapChain Buffers for Vulkan for best sustained performance and low "
-                    + $"input latency.\n"
-                    + $"Updating the Player Settings now.");
+                    "AirConsole recommends a maximum of 2 SwapChain Buffers for Vulkan for best sustained performance and low input latency.\n"
+                    + "Updating Player Settings now.");
                 PlayerSettings.vulkanNumSwapchainBuffers = 2;
             }
         }
