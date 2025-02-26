@@ -1,15 +1,13 @@
 ﻿#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
     [CustomEditor(typeof(AirConsole))]
     public class Inspector : UnityEditor.Editor {
-        private GUIStyle styleBlack = new GUIStyle();
+        private GUIStyle styleBlack = new();
         private Texture2D bg;
         private Texture logo;
         private AirConsole controller;
@@ -18,6 +16,7 @@ namespace NDream.AirConsole.Editor {
         private bool translationValue;
         private bool inactivePlayersSilencedValue;
         private bool _inactiveNativeGameSizingValue;
+
         private const string TRANSLATION_ACTIVE = "var AIRCONSOLE_TRANSLATION = true;";
         private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
         private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
@@ -25,35 +24,34 @@ namespace NDream.AirConsole.Editor {
         private const string ANDROID_NATIVE_GAME_SIZING_ACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = true;";
         private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
 
-        
-        private string[] androidScriptingDefines = { };
-
-        private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
+        private static readonly string SettingsPath = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
+        private static readonly string TranslationFilePath = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js";
 
         [InitializeOnLoadMethod]
         private static void Migration() {
-            MigrateVersion250(Application.dataPath + Settings.WEBTEMPLATE_PATH + "/translation.js", SettingsPath);
+            MigrateVersion250(TranslationFilePath, SettingsPath);
         }
 
         public void Awake() {
-            if (File.Exists(SettingsPath)) {
-                string persistedSettings = File.ReadAllText(SettingsPath);
-                translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
-                // We want player silencing to be active by default
-                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
-                _inactiveNativeGameSizingValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
-            }
+            if (!File.Exists(SettingsPath)) return;
+
+            string persistedSettings = File.ReadAllText(SettingsPath);
+            translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
+            inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+            _inactiveNativeGameSizingValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
         }
 
         public void OnEnable() {
-            
-            PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android, out androidScriptingDefines);
-            
-            // get logos
+            LoadResources();
+            SetupStyle();
+        }
+
+        private void LoadResources() {
             bg = (Texture2D)Resources.Load("AirConsoleBg");
             logo = (Texture)Resources.Load("AirConsoleLogoText");
+        }
 
-            // setup style for airconsole logo
+        private void SetupStyle() {
             styleBlack.normal.background = bg;
             styleBlack.normal.textColor = Color.white;
             styleBlack.alignment = TextAnchor.MiddleRight;
@@ -63,78 +61,74 @@ namespace NDream.AirConsole.Editor {
             styleBlack.padding.bottom = 2;
         }
 
-        private void OnDisable() {
-            androidScriptingDefines = new string[] { }; 
-        }
-
         public override void OnInspectorGUI() {
             controller = (AirConsole)target;
 
-            // show logo & version
+            ShowLogoAndVersion();
+            ShowDefaultProperties();
+            DrawSettingsToggles();
+
+#if UNITY_ANDROID
+            ValidateAndroidGameVersion();
+#endif
+
+            ShowAdditionalProperties();
+            ShowButtons();
+        }
+
+        private void ShowLogoAndVersion() {
             EditorGUILayout.BeginHorizontal(styleBlack, GUILayout.Height(30));
             GUILayout.Label(logo, GUILayout.Width(128), GUILayout.Height(30));
             GUILayout.FlexibleSpace();
             GUILayout.Label("v" + Settings.VERSION, styleBlack);
             EditorGUILayout.EndHorizontal();
+        }
 
-            // show default inspector property editor withouth script reference
+        private void ShowDefaultProperties() {
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("controllerHtml"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
-            DrawTranslationsToggle();
-            DrawPlayerSilencingToggle();
-            DrawAndroidNativeGameSizingToggle();
+        }
 
-            
-            bool isAndroidAutomotive = androidScriptingDefines.Contains("AIRCONSOLE_AUTOMOTIVE");
+        private void DrawSettingsToggles() {
+            DrawToggle("Translation", ref translationValue);
+            DrawToggle("Silence Player", ref inactivePlayersSilencedValue);
+            DrawToggle("Native Game Sizing", ref _inactiveNativeGameSizingValue);
+        }
 
-#if UNITY_ANDROID
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField("Android Automotive", GUILayout.MaxWidth(145));
-            bool newIsAndroidAutomotive = EditorGUILayout.Toggle(isAndroidAutomotive);
-            if (isAndroidAutomotive != newIsAndroidAutomotive) {
-                if (newIsAndroidAutomotive) {
-                    PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Android,
-                        androidScriptingDefines.Append("AIRCONSOLE_AUTOMOTIVE").ToArray());
-                } else {
-                    PlayerSettings.SetScriptingDefineSymbols(NamedBuildTarget.Android,
-                        androidScriptingDefines.Where(s => s != "AIRCONSOLE_AUTOMOTIVE").ToArray());
-                }
-            }
+        private void DrawToggle(string label, ref bool value) {
+            bool oldValue = value;
+            value = EditorGUILayout.Toggle(label, value);
+            if (oldValue != value) WriteConstructorSettings(SettingsPath);
+        }
 
-            EditorGUILayout.EndHorizontal();
-#else
-            bool newIsAndroidAutomotive = false;
-#endif
-            
-            
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
-#if UNITY_ANDROID
+        private void ValidateAndroidGameVersion() {
             string androidGameVersion = serializedObject.FindProperty("androidGameVersion").stringValue;
-            if (string.IsNullOrEmpty(androidGameVersion) 
-                || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
+            if (string.IsNullOrEmpty(androidGameVersion) || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
                 EditorGUILayout.HelpBox("Please enter a valid Game Version for Android", MessageType.Error);
             }
-#endif
+        }
+
+        private void ShowAdditionalProperties() {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
-            if(newIsAndroidAutomotive && serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > 1) {
-                EditorGUILayout.HelpBox("Android Automotive uses SafeAreas.\n"
-                                        + "It does not support UI Reference Resolution Scaling.\n"
-                                        + "Use the event OnSafeAreaChanged to control this yourself.", MessageType.Warning);
+            if (serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > (int)AndroidUIResizeMode.ResizeCamera) {
+                EditorGUILayout.HelpBox("Android now uses SafeAreas.\n"
+                                        + "We no longer support UI Reference Resolution Scaling.\n"
+                                        + "You can use the 'AirConsole/AutoscaleCamera' component on your camera or.\n"
+                                        + "use the event OnSafeAreaChanged to control this yourself.", MessageType.Warning);
             }
             EditorGUILayout.PropertyField(serializedObject.FindProperty("webViewLoadingSprite"));
-
             EditorGUILayout.PropertyField(serializedObject.FindProperty("browserStartMode"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("devGameId"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("devLanguage"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("LocalIpOverride"));
 
             serializedObject.ApplyModifiedProperties();
+        }
 
-
+        private void ShowButtons() {
             EditorGUILayout.BeginHorizontal(styleBlack);
-            // check if a port was exported
             if (File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
                 if (GUILayout.Button("Open Exported Port", GUILayout.MaxWidth(130))) {
                     Extentions.OpenBrowser(controller, EditorPrefs.GetString("airconsolePortPath"));
@@ -159,44 +153,19 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawTranslationsToggle() {
-            bool oldTranslationValue = translationValue;
-            translationValue = EditorGUILayout.Toggle("Translation", translationValue);
-            if (oldTranslationValue != translationValue) {
-                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
-                WriteConstructorSettings(path);
-            }
-        }
-
-        private void DrawPlayerSilencingToggle() {
-            bool oldInactivePlayersSilencedValue = inactivePlayersSilencedValue;
-            inactivePlayersSilencedValue = EditorGUILayout.Toggle("Silence Player", inactivePlayersSilencedValue);
-            if (oldInactivePlayersSilencedValue != inactivePlayersSilencedValue) {
-                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
-                WriteConstructorSettings(path);
-            }
-        }
-
-        private void DrawAndroidNativeGameSizingToggle() {
-            bool oldNativeGameSizingValue = _inactiveNativeGameSizingValue;
-            _inactiveNativeGameSizingValue = EditorGUILayout.Toggle("Native Game Sizing", _inactiveNativeGameSizingValue);
-            if (oldNativeGameSizingValue != _inactiveNativeGameSizingValue) {
-                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
-                WriteConstructorSettings(path);
-            }
-        }
-
         private void WriteConstructorSettings(string path) {
-            File.WriteAllText(path,
-                $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
-                + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
-                + $"{(_inactiveNativeGameSizingValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
+            try {
+                File.WriteAllText(path,
+                    $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
+                    + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
+                    + $"{(_inactiveNativeGameSizingValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
+            } catch (IOException e) {
+                Debug.LogError($"Failed to write settings file: {e.Message}");
+            }
         }
 
         private static void MigrateVersion250(string originalPath, string newPath) {
-            if (!File.Exists(originalPath)) {
-                return;
-            }
+            if (!File.Exists(originalPath)) return;
 
             if (!File.Exists(newPath)) {
                 Debug.LogWarning("Update settings file to new version, renaming from translation.js to game-settings.js");
