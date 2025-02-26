@@ -18,13 +18,13 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            EditorUtility.DisplayDialog("Unsupported", $"AirConsole {Settings.VERSION} requires Unity 2021.3 or newer",
+            EditorUtility.DisplayDialog("Unsupported", $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer",
                 "I understand");
             EditorApplication.isPlaying = false;
         }
 
     public static bool IsSupportedUnityVersion() {
-#if !UNITY_2021_3_OR_NEWER && !UNITY_2022_3_OR_NEWER
+#if !UNITY_2022_3_OR_NEWER && !UNITY_6000_0_OR_NEWER
             return false; 
 #endif
             return true;
@@ -35,9 +35,13 @@ namespace NDream.AirConsole.Editor {
         public int callbackOrder => 0;
 
         public void OnPreprocessBuild(BuildReport report) {
+            CheckSettings(report.summary.platform);
+        }
+
+        public static void CheckSettings(BuildTarget platform) {
             CheckGeneralPlayerSettings();
 
-            switch (report.summary.platform) {
+            switch (platform) {
                 case BuildTarget.Android:
                     CheckAndroidPlayerSettings();
                     break;
@@ -47,7 +51,7 @@ namespace NDream.AirConsole.Editor {
                     break;
 
                 default:
-                    throw new UnityException($"AirConsole Plugin does not support platform {report.summary.platform}");
+                    throw new UnityException($"AirConsole Plugin does not support platform {platform}");
             }
             
             Debug.Log("AirConsole Plugin configuration checks completed successfully.");
@@ -56,7 +60,7 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void CheckGeneralPlayerSettings() {
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
-                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2021.3 LTS or newer");
+                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2022.3 LTS or newer");
                 throw new UnityException("Unity Version " + Application.unityVersion);
             }
             
