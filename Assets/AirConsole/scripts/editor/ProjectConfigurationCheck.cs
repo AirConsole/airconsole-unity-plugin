@@ -88,24 +88,6 @@ namespace NDream.AirConsole.Editor {
                     + $"Updating the settings now.");
                 PlayerSettings.runInBackground = shouldRunInBackground;
             }
-
-            if (PlayerSettings.stripEngineCode == false) {
-                Debug.LogError("AirConsole requires 'Strip Engine Code' to be enabled in Player Settings.\n"
-                               + $"We are updating the settings now.");
-                PlayerSettings.stripEngineCode = true;
-            }
-
-            if (PlayerSettings.GetManagedStrippingLevel(BuildTargetGroup.Android) == ManagedStrippingLevel.Disabled) {
-                Debug.LogWarning("AirConsole requires 'Managed Stripping Level' to be enabled in Player Settings with at minimum Low.\n"
-                                 + $"We are updating the settings now.");
-                PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
-            }
-
-            if (PlayerSettings.GetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup) != ScriptingImplementation.IL2CPP) {
-                Debug.LogWarning("AirConsole requires 'Scripting Backend' to be set to IL2CPP in Player Settings.\n"
-                                 + $"We are updating the settings now.");
-                PlayerSettings.SetScriptingBackend(EditorUserBuildSettings.selectedBuildTargetGroup, ScriptingImplementation.IL2CPP);
-            }
         }
 
         [InitializeOnLoadMethod]
@@ -117,12 +99,6 @@ namespace NDream.AirConsole.Editor {
                 Debug.LogWarning("AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
                                  + "Updating the WebGL settings now.");
                 PlayerSettings.WebGL.dataCaching = false;
-            }
-
-            if (PlayerSettings.WebGL.compressionFormat != WebGLCompressionFormat.Disabled) {
-                Debug.LogWarning("AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
-                                 + "Adapting the WebGL settings now.");
-                PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Disabled;
             }
 
             if (PlayerSettings.WebGL.memoryGrowthMode != WebGLMemoryGrowthMode.None) {
@@ -177,7 +153,7 @@ namespace NDream.AirConsole.Editor {
                     + "We are updating the Android settings now.");
             }
 
-            PlayerSettings.Android.renderOutsideSafeArea = true; // required for the webview
+            PlayerSettings.Android.renderOutsideSafeArea = true;
 
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel23) {
@@ -189,24 +165,6 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.allowedAutorotateToPortrait = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
-
-            if (PlayerSettings.Android.fullscreenMode != FullScreenMode.FullScreenWindow) {
-                Debug.LogWarning("AirConsole requires 'Fullscreen Mode' to be set to FullScreenWindow in Android PlayerSettings.\n"
-                                 + "We are updating the Android settings now.");
-                PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
-            }
-
-            if (!PlayerSettings.Android.renderOutsideSafeArea) {
-                Debug.LogWarning("AirConsole recommends 'Render Outside Safe Area' to be enabled in Android PlayerSettings.\n"
-                                 + "We are updating the Android settings now.");
-                PlayerSettings.Android.renderOutsideSafeArea = true;
-            }
-
-            if (!PlayerSettings.Android.startInFullscreen) {
-                Debug.LogWarning("AirConsole recommends 'Start In Fullscreen' to be enabled in the Android PlayerSettings.\n"
-                                 + "We are updating the Android settings now.");
-                PlayerSettings.Android.startInFullscreen = true;
-            }
 
             if (PlayerSettings.Android.preferredInstallLocation != AndroidPreferredInstallLocation.Auto) {
                 Debug.LogWarning("AirConsole recommends 'Preferred Install Location' to be set to Auto in Android PlayerSettings.\n"
