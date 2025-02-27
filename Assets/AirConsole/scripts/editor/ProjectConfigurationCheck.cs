@@ -158,7 +158,7 @@ namespace NDream.AirConsole.Editor {
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new UnityException("Please update the Build and Player settings to continue.");
+                throw new UnityException("Please update the Android Build and Player settings to continue.");
             }
 
             UpdateAndroidPlayerSettingsInProperties();
@@ -309,7 +309,7 @@ namespace NDream.AirConsole.Editor {
                        : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
         }
 
-        private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup platform) {
+        private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
             Type playerSettingsType = typeof(PlayerSettings);
     
             MethodInfo methodInfo = playerSettingsType.GetMethod(
@@ -318,13 +318,17 @@ namespace NDream.AirConsole.Editor {
     
             if (methodInfo != null)
             {
-                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { platform });
+#if UNITY_6000_0_OR_NEWER
+                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup) });
+#else
+                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
+#endif
             }
             
             return TextureCompressionFormat.Unknown;
         }
 
-        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup platform, TextureCompressionFormat format) {
+        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup buildTargetGroup, TextureCompressionFormat format) {
             Type playerSettingsType = typeof(PlayerSettings);
     
             MethodInfo methodInfo = playerSettingsType.GetMethod(
@@ -333,7 +337,22 @@ namespace NDream.AirConsole.Editor {
     
             if (methodInfo != null)
             {
-                methodInfo.Invoke(null, new object[] { platform, (int)format });
+#if UNITY_6000_0_OR_NEWER
+                methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup), format });
+#else
+                methodInfo.Invoke(null, new object[] { buildTargetGroup, (int)format });
+#endif
+            }
+        }
+        
+        private static BuildTarget GetBuildTargetFromGroup(BuildTargetGroup group) {
+            switch (group) {
+                case BuildTargetGroup.Android:
+                    return BuildTarget.Android;
+                case BuildTargetGroup.WebGL:
+                    return BuildTarget.WebGL;
+                default:
+                    throw new UnityException($"Unsupported BuildTargetGroup {group}");
             }
         }
             
