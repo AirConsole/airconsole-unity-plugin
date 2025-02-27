@@ -34,12 +34,12 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void CheckPlatform() {
             BuildTargetGroup buildTarget = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if(buildTarget == BuildTargetGroup.Android || buildTarget == BuildTargetGroup.WebGL) {
+            if (buildTarget == BuildTargetGroup.Android || buildTarget == BuildTargetGroup.WebGL) {
                 return;
             }
 
             Debug.LogWarning($"AirConsole Plugin does not support platform {buildTarget}, switching to WebGL.\n"
-                + "To disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.");
+                             + "To disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.");
             EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
         }
     }
@@ -75,7 +75,7 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
             PlayerSettings.resetResolutionOnWindowResize = true;
-            
+
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
                 Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2022.3 LTS or newer");
                 throw new UnityException("Unity Version " + Application.unityVersion);
@@ -130,7 +130,8 @@ namespace NDream.AirConsole.Editor {
                     "For performance and stability on automotive, AirConsole requires 'Memory Growth Mode' to be set to None in WebGL PlayerSettings with the games maximum memory usage set.\n"
                     + "Updating the WebGL settings now.");
                 PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.None;
-                PlayerSettings.WebGL.initialMemorySize = Mathf.Min(512, Mathf.Max(PlayerSettings.WebGL.initialMemorySize, PlayerSettings.WebGL.maximumMemorySize));
+                PlayerSettings.WebGL.initialMemorySize = Mathf.Min(512,
+                    Mathf.Max(PlayerSettings.WebGL.initialMemorySize, PlayerSettings.WebGL.maximumMemorySize));
             }
 
             if (PlayerSettings.WebGL.memorySize > 512) {
@@ -138,7 +139,7 @@ namespace NDream.AirConsole.Editor {
                                  + "We are updating the WebGL settings now.");
                 PlayerSettings.WebGL.initialMemorySize = 512;
             }
-            
+
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
                 throw new UnityException("Please update the WebGL build and player settings to continue.");
@@ -147,7 +148,6 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void EnsureAndroidPlayerSettings() {
-
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
 
             if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
@@ -183,7 +183,7 @@ namespace NDream.AirConsole.Editor {
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel23) {
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
             }
-            
+
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.allowedAutorotateToPortrait = false;
@@ -242,101 +242,93 @@ namespace NDream.AirConsole.Editor {
 
         private static void EnsureWebRenderSettings() {
             GraphicsDeviceType[] graphicsAPIs = { GraphicsDeviceType.OpenGLES3 };
-            
+
 #if !UNITY_6000_0_OR_NEWER
             if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
                 Debug.LogError(
-                    "AirConsole on web requires 'Auto Graphics API' to be disabled in Player Settings to enable Web GL1.\n"
-                    + "Updating the settings now.");
+                    "AirConsole WebGL requires 'Auto Graphics API' to be disabled to enable Web GL1.\nUpdating the settings now.");
                 PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.WebGL, false);
             }
 
             graphicsAPIs = graphicsAPIs.ToList().Append(GraphicsDeviceType.OpenGLES2).ToArray();
 #endif
             if (!PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL).SequenceEqual(graphicsAPIs)) {
-                Debug.LogWarning($"AirConsole requires all WebGL APIs to be enabled in the WebGL Player Settings.\n"
+                Debug.LogWarning("AirConsole requires WebGL2, WebGL1 to be enabled in the WebGL Player Settings.\n"
                                  + "Updating the WebGL Graphics APIs now.");
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.WebGL, graphicsAPIs);
             }
         }
-        
+
         private static void EnsureAndroidRenderSettings() {
             PlayerSettings.use32BitDisplayBuffer = true;
 
 #if !UNITY_6000_0_OR_NEWER
             if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)) {
                 Debug.LogError(
-                    "AirConsole for Android requires 'Auto Graphics API' to be disabled in Player Settings to enable OpenGL ES2.\n"
+                    "AirConsole Android requires 'Auto Graphics API' to be disabled to enable OpenGL ES2.\n"
                     + "Updating the Android settings now.");
                 PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
             }
 #endif
 
             GraphicsDeviceType[] graphicsAPIs = { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 };
-            #if !UNITY_6000_0_OR_NEWER
+#if !UNITY_6000_0_OR_NEWER
             graphicsAPIs = graphicsAPIs.ToList().Append(GraphicsDeviceType.OpenGLES2).ToArray();
-            #endif
-            
+#endif
+
             if (!PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).SequenceEqual(graphicsAPIs)) {
-                Debug.LogWarning($"AirConsole requires {string.Join(',', graphicsAPIs) } to be enabled in the Android Player Settings.\n"
+                Debug.LogWarning($"AirConsole requires {string.Join(',', graphicsAPIs)} to be enabled in the Android Player Settings.\n"
                                  + "Updating the Android Graphics APIs now.");
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
             }
-
-            if (PlayerSettings.vulkanNumSwapchainBuffers > 2) {
-                Debug.LogWarning(
-                    "AirConsole recommends a maximum of 2 SwapChain Buffers for Vulkan for best sustained performance and low input latency.\n"
-                    + "Updating Player Settings now.");
-                PlayerSettings.vulkanNumSwapchainBuffers = 2;
-            }
         }
-        
+
         [MenuItem("Tools/AirConsole/Check Android Config")]
         public static void CheckAndroid() {
             CheckSettings(BuildTarget.Android);
         }
-        
+
         [MenuItem("Tools/AirConsole/Check Web Config")]
         public static void CheckWeb() {
             CheckSettings(BuildTarget.WebGL);
         }
-        
+
+        #region Check Texture format usage
+
         private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup targetGroup) {
             TextureCompressionFormat format = GetDefaultTextureCompressionFormat(targetGroup);
-            return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2 &&
-                   (targetGroup == BuildTargetGroup.Android 
+            return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
+                   && (targetGroup == BuildTargetGroup.Android
                        ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
                        : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
         }
 
         private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
             Type playerSettingsType = typeof(PlayerSettings);
-    
+
             MethodInfo methodInfo = playerSettingsType.GetMethod(
-                "GetDefaultTextureCompressionFormat", 
+                "GetDefaultTextureCompressionFormat",
                 BindingFlags.NonPublic | BindingFlags.Static);
-    
-            if (methodInfo != null)
-            {
+
+            if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
                 return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup) });
 #else
                 return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
 #endif
             }
-            
+
             return TextureCompressionFormat.Unknown;
         }
 
         private static void SetPlayerSettingsTextureFormat(BuildTargetGroup buildTargetGroup, TextureCompressionFormat format) {
             Type playerSettingsType = typeof(PlayerSettings);
-    
+
             MethodInfo methodInfo = playerSettingsType.GetMethod(
-                "SetDefaultTextureCompressionFormat", 
+                "SetDefaultTextureCompressionFormat",
                 BindingFlags.NonPublic | BindingFlags.Static);
-    
-            if (methodInfo != null)
-            {
+
+            if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
                 methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup), format });
 #else
@@ -344,7 +336,7 @@ namespace NDream.AirConsole.Editor {
 #endif
             }
         }
-        
+
         private static BuildTarget GetBuildTargetFromGroup(BuildTargetGroup group) {
             switch (group) {
                 case BuildTargetGroup.Android:
@@ -355,10 +347,9 @@ namespace NDream.AirConsole.Editor {
                     throw new UnityException($"Unsupported BuildTargetGroup {group}");
             }
         }
-            
+
         // Extracted from UnityEditor.TextureCompressionFormat
-        private enum TextureCompressionFormat
-        {
+        private enum TextureCompressionFormat {
             Unknown,
             ETC,
             ETC2,
@@ -366,8 +357,10 @@ namespace NDream.AirConsole.Editor {
             PVRTC,
             DXTC,
             BPTC,
-            DXTC_RGTC,
+            DXTC_RGTC
         }
+
+        #endregion Check Texture format usage
     }
 }
 #endif
