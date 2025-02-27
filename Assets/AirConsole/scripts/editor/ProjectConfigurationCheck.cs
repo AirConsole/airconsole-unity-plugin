@@ -88,6 +88,12 @@ namespace NDream.AirConsole.Editor {
                     + $"Updating the settings now.");
                 PlayerSettings.runInBackground = shouldRunInBackground;
             }
+ 
+            if (PlayerSettings.allowUnsafeCode) {
+                Debug.LogError("AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
+                               + "We are updating the Android settings now.");
+                PlayerSettings.allowUnsafeCode = false;
+            }
         }
 
         [InitializeOnLoadMethod]
@@ -174,12 +180,6 @@ namespace NDream.AirConsole.Editor {
         }
 
         private static void DisableUndesirableAndroidFeatures() {
-            if (PlayerSettings.allowUnsafeCode) {
-                Debug.LogError("AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
-                               + "We are updating the Android settings now.");
-                PlayerSettings.allowUnsafeCode = false;
-            }
-
             PlayerSettings.Android.ARCoreEnabled = false;
             PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
             PlayerSettings.Android.androidIsGame = true;
@@ -204,7 +204,7 @@ namespace NDream.AirConsole.Editor {
 #if !UNITY_6000_0_OR_NEWER
             if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
                 Debug.LogError(
-                    "AirConsole WebGL requires 'Auto Graphics API' to be disabled to enable Web GL1.\nUpdating the settings now.");
+                    "AirConsole WebGL requires 'Auto Graphics API' to be disabled to enable WebGL1.\nUpdating the settings now.");
                 PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.WebGL, false);
             }
 
