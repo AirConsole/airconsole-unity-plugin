@@ -1,6 +1,6 @@
 /**
  * Copyright by N-Dream AG 2025.
- * @version 2.6.0
+ * @version 2.5.6
  */
 
 /**
@@ -91,7 +91,6 @@ App.prototype.updateProgressBar = function(progress_bar, progress) {
 
 App.prototype.startNativeApp = function() {
     var me = this;
-    me.game_container.style.display = 'none';
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({ action: "onGameEnd" }));
@@ -161,14 +160,13 @@ App.prototype.initAirConsole = function() {
     var me = this;
     var translation = window.AIRCONSOLE_TRANSLATION;   
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
-    var androidNativeGameSizing = window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING;
 
-    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players, supportsNativeGameSizing: androidNativeGameSizing });
+    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players });
     
     const version = me.airconsole.version.split('.');
-    if(version.length < 3 || parseInt(version[0]) < 1 || parseInt(version[1]) < 10) {
-        confirm('Unity AirConsole Plugin 2.6.0 requires at minimum the AirConsole API version 1.10.0. Please review the upgrade instructions');
-        window.open('https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version');
+    if(version.length < 3 || version[0] < 1 || version[1] < 9) {
+        confirm('Unity AirConsole Plugin 2.5.0 requires at minimum the AirConsole API version 1.9.0. Please review the upgrade instructions');
+        window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/release/2.5.0/README.md#upgrading-from-v214--to-v250');
     }
 
     me.airconsole.onMessage = function (from, data) {
@@ -187,17 +185,9 @@ App.prototype.initAirConsole = function() {
             "devices": me.airconsole.devices,
             "server_time_offset": me.airconsole.server_time_offset,
             "location": document.location.href,
-            "translations": me.airconsole.translations,
-            gameSafeArea: me.airconsole.gameSafeArea
+            "translations": me.airconsole.translations
         });
     };
-    
-    me.airconsole.onSetSafeArea = function (safeArea) {
-        me.postToUnity({
-            action: 'onSetSafeArea',
-            safeArea: safeArea
-        });
-    }
 
     me.airconsole.onDeviceStateChange = function (device_id, device_data) {
         me.postToUnity({

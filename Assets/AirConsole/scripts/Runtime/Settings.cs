@@ -6,6 +6,7 @@ namespace NDream.AirConsole {
 
 		public const string VERSION = "2.6.0";
 		
+		// ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
 		// public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/"; //"https://www.airconsole.com/";
 		// public const string AIRCONSOLE_DEV_URL_HTTPS = "https://www.airconsole.com/"; // "https://www.airconsole.com/";
 		// public const string AIRCONSOLE_DEV_URL_HTTP = "http://http.airconsole.com/"; // "http://http.airconsole.com/";
@@ -21,8 +22,8 @@ namespace NDream.AirConsole {
 
 		// local
 		public const string AIRCONSOLE_BASE_URL = "http://10.0.2.2:8090/"; //"https://www.airconsole.com/";
-		public const string AIRCONSOLE_DEV_URL_HTTPS = "http://localhost:8090/"; // "https://www.airconsole.com/";
-		public const string AIRCONSOLE_DEV_URL_HTTP = "http://localhost:8090/"; // "http://http.airconsole.com/";
+		public const string AIRCONSOLE_DEV_URL_HTTPS = "http://10.0.2.2:8090/"; // "https://www.airconsole.com/";
+		public const string AIRCONSOLE_DEV_URL_HTTP = "http://10.0.2.2:8090/"; // "http://http.airconsole.com/";
 		
 		// ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
 		// public const string AIRCONSOLE_BASE_URL = "https://ci-marc-android-native-dot-airconsole.appspot.com/"; //"https://www.airconsole.com/";
@@ -40,20 +41,21 @@ namespace NDream.AirConsole {
 
 		public static readonly string WEBTEMPLATE_PATH;
 
+        private const string TEMPLATE_NAME_2020 = "AirConsole-2020";
+        private const string TEMPLATE_NAME_U6 = "AirConsole-U6";
+
 		static Settings() {
-			string templateName;
-			// For Unity 2020 and up
-			if (Application.unityVersion.Substring(0, 3) == "202") {
-				templateName = "AirConsole-2020";
-			} else {
-				templateName = "AirConsole";  
-			}
+            string templateName;
+            if (IsUnity6OrHigher()) {
+                templateName = TEMPLATE_NAME_U6;
+            } else {
+                templateName = TEMPLATE_NAME_2020;
+            }
+            WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
+        }
 
-			WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
-
-#if UNITY_EDITOR
-			UnityEditor.PlayerSettings.WebGL.template = $"PROJECT:{templateName}";
-#endif
-		}
+        private static bool IsUnity6OrHigher() {
+            return int.Parse(Application.unityVersion.Split('.')[0]) >= 6000;
+        }
 	}
 }

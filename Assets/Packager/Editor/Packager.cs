@@ -5,9 +5,7 @@ using NDream.AirConsole;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using UnityEditor;
-using UnityEditor.PackageManager;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
 #endregion
@@ -33,6 +31,7 @@ namespace NDream.Unity
         [MenuItem("Tools/AirConsole/Package Plugin")]
         public static void Export()
         {
+            Debug.ClearDeveloperConsole();
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             Debug.Log($"Exporting to {outputPath}");
 
