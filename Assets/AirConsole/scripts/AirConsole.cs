@@ -1003,6 +1003,63 @@ namespace NDream.AirConsole {
             return result;
         }
 
+        
+        /// <summary>
+        /// Sets the immersive state of the AirConsole game based on the provided options.
+        /// </summary>
+        /// <param name="payload">
+        /// A JObject that may include the following property:
+        /// <list type="bullet">
+        ///     <item>
+        ///         <description>
+        ///             <c>light</c>: An optional object that contains:
+        ///             <list type="bullet">
+        ///                 <item><description><c>r</c>: An integer (or ubyte) value in the range [0, 255].</description></item>
+        ///                 <item><description><c>g</c>: An integer (or ubyte) value in the range [0, 255].</description></item>
+        ///                 <item><description><c>b</c>: An integer (or ubyte) value in the range [0, 255].</description></item>
+        ///             </list>
+        ///         </description>
+        ///     </item>
+        /// </list>
+        /// </param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if the <c>light</c> object is provided but any of its fields (<c>r</c>, <c>g</c>, or <c>b</c>) are missing.
+        /// </exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown if any of the light values are outside the valid range [0, 255].
+        /// </exception>
+        public void SetImmersiveState(JObject payload) {
+            if (!IsAirConsoleUnityPluginReady()) {
+                throw new NotReadyException();
+            }
+
+            if (!payload.HasValues) {
+                return;
+            }
+
+            JToken light = payload["light"];
+            if (light != null) {
+                if (light["r"] == null || light["g"] == null || light["b"] == null) {
+                    throw new ArgumentException("The 'light' object must contain fields 'r', 'g', and 'b'.");
+                }
+
+                int r = (int)light["r"];
+                int g = (int)light["g"];
+                int b = (int)light["b"];
+
+                if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) {
+                    throw new ArgumentOutOfRangeException("light values must be in the range [0, 255]");
+                }
+            }
+            
+            
+            JObject msg = new JObject {
+                { "action", "setImmersiveState" },
+                { "state", payload }
+            };
+            wsListener.Message(msg);
+        }
         #endregion
 
 #endif

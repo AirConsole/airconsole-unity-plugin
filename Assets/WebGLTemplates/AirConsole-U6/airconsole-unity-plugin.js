@@ -1,6 +1,6 @@
 /**
  * Copyright by N-Dream AG 2025.
- * @version 2.5.5
+ * @version 2.5.6
  */
 
 /**
@@ -396,6 +396,8 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.requestPersistentData(data.uids);
     } else if (data.action == "storePersistentData") {
         this.airconsole.storePersistentData(data.key, data.value, data.uid);
+    } else if (data.action == "setImmersiveState") {
+        this.airconsole.setImmersiveState(data.state);
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }

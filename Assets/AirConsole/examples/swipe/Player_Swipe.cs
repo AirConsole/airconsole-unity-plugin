@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if !DISABLE_AIRCONSOLE
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using NDream.AirConsole;
@@ -57,3 +58,4 @@ public class Player_Swipe : MonoBehaviour {
 		}
 	}
 }
+#endif
