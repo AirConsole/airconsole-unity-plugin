@@ -45,3 +45,4 @@ Thumbs.db
 # Visual Studio Code generated #
 # ============ #
 /.vs
+.utmp
