@@ -170,6 +170,8 @@ public class ExamplePongLogic : MonoBehaviour
         SetGameScreen(LOBBY);
         AirConsole.instance.SetActivePlayers(0);
         ResetBall(false);
+        racketLeft.velocity = Vector2.zero;
+        racketRight.velocity = Vector2.zero;
         scoreRacketLeft = 0;
         scoreRacketRight = 0;
         CheckTwoPlayers();
