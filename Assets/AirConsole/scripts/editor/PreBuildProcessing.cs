@@ -23,24 +23,11 @@ namespace NDream.AirConsole.Editor
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            CheckWebGLSetup();
-
-            Debug.Log("Used Python path: " + System.Environment.GetEnvironmentVariable("EMSDK_PYTHON"));
-
-            // In case you get a Build exception from Unity such as:
-            //   System.ComponentModel.Win32Exception (2): No such file or directory)
-            // Make sure that the correct Python version is installed and can be found by Unity during
-            // the Build process.
-
-            // If you need to set the Python path manually you can use the code below, uncomment it and
-            // set "EMSDK_PYTHON" to the the Python 3 (Or Python 2 for old Unity versions) path:
-#if !UNITY_2020_1_OR_NEWER && UNITY_EDITOR_OSX
-        System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", Settings.Python2Path);
-#endif
-
-#if UNITY_ANDROID
-        ValidateAndroidManifest();
-#endif
+            if (report.summary.platform == BuildTarget.Android) {
+                ValidateAndroidManifest();
+            } else if (report.summary.platform == BuildTarget.WebGL) {
+                CheckWebGLSetup();
+            }
         }
 
 

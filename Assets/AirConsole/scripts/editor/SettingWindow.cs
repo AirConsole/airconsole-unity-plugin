@@ -80,12 +80,6 @@ namespace NDream.AirConsole.Editor {
 
 			EditorGUILayout.EndToggleGroup ();
 
-
-			EditorGUILayout.BeginHorizontal();
-			Settings.Python2Path = EditorGUILayout.TextField("Python 2 Path", Settings.Python2Path, GUILayout.MinWidth(600));
-			EditorPrefs.SetString("python2Path", Settings.Python2Path);
-			GUILayout.EndHorizontal();
-
 			EditorGUILayout.BeginHorizontal (styleBlack);
 
 			GUILayout.FlexibleSpace ();
