@@ -4,7 +4,6 @@
 using System;
 using UnityEngine;
 
-
 namespace NDream.AirConsole.Android.Plugin {
     public class DataProviderPlugin {
         private AndroidJavaObject dataProviderHelper;
@@ -19,12 +18,14 @@ namespace NDream.AirConsole.Android.Plugin {
 
         // ReSharper disable once UnusedMember.Local -- Used by DataProviderPlugin() in Android NonEditor only
         private bool CheckLibrary() {
-            if (dataProviderHelper != null) return true;
+            if (dataProviderHelper != null) {
+                return true;
+            }
 
             AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
             AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
 
-            dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
+            dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
 
             return dataProviderHelper != null;
         }
@@ -51,7 +52,7 @@ namespace NDream.AirConsole.Android.Plugin {
             );
 
             // Create an instance of your Java plugin class
-            dataProviderHelper = new("com.airconsole.unityandroidlibrary.DataProviderService", context);
+            dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
             dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
 #endif
             AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
@@ -75,6 +76,7 @@ namespace NDream.AirConsole.Android.Plugin {
                 Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
                 return 0;
             }
+
             return dataProviderHelper.Call<int>("getDeviceTypeMask");
 #endif
             return 0;

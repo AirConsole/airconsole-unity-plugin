@@ -12,8 +12,7 @@ using Newtonsoft.Json.Linq;
 using UnityEngine.Serialization;
 #if UNITY_ANDROID
 using UnityEngine.SceneManagement;
-#endif
-#if UNITY_WEBGL
+#elif UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
 
@@ -1126,8 +1125,8 @@ namespace NDream.AirConsole {
 #if UNITY_ANDROID
             defaultScreenHeight = Screen.height;
             _androidImmersiveService = new AndroidImmersiveService();
-                
-            _dataProviderPlugin = new();
+
+            _dataProviderPlugin = new DataProviderPlugin();
 #endif
         }
 
@@ -1135,10 +1134,8 @@ namespace NDream.AirConsole {
             // application has to run in background
 #if UNITY_EDITOR
             runtimeConfigurator = new EditorRuntimeConfigurator();
-#elif AIRCONSOLE_AUTOMOTIVE
-            runtimeConfigurator = new AutomotiveRuntimeConfigurator();
 #elif UNITY_ANDROID
-            runtimeConfigurator = new AndroidRuntimeConfigurator();
+            runtimeConfigurator = new AndroidRuntimeConfigurator(_dataProviderPlugin);
 #else
             runtimeConfigurator = new WebGLRuntimeConfigurator();
 #endif
