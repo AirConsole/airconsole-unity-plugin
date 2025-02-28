@@ -255,8 +255,9 @@ namespace NDream.AirConsole.Editor {
 
         private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup targetGroup) {
             TextureCompressionFormat format = GetDefaultTextureCompressionFormat(targetGroup);
+            // Either the Texture Default settings in Player Settings are ETC2 | ASTC or the platforms build settings Texture Compression is
             return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
-                   && (targetGroup == BuildTargetGroup.Android
+                   || (targetGroup == BuildTargetGroup.Android
                        ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
                        : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
         }
