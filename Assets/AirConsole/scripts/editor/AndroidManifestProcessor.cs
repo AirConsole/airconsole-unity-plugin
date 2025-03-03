@@ -7,7 +7,7 @@ using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
     public class AndroidManifestProcessor : IPreprocessBuildWithReport {
-        public int callbackOrder => 0;
+        public int callbackOrder => 999;
 
         [MenuItem("Tools/AirConsole/Development/Update Android Manifest")]
         public static void TestManifestMenuItem() {
@@ -102,6 +102,9 @@ namespace NDream.AirConsole.Editor {
         private readonly XmlElement activityElement;
         private readonly XmlElement gameActivityElement;
 
+        private const string ANDROID_ACTIVITY_THEME = "@style/UnityThemeSelector";
+        private const string ANDROID_GAMEACTIVITY_THEME = "@style/BaseUnityGameActivityTheme";
+
         internal AndroidManifestTransformer(string path) {
             manifest = new AndroidManifest(path);
             manifestElement = manifest.SelectSingleNode("/manifest") as XmlElement;
@@ -173,6 +176,7 @@ namespace NDream.AirConsole.Editor {
                 "mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density",
                 manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, activityElement, "android", "hardwareAccelerated", "true", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, activityElement, "android", "theme", ANDROID_ACTIVITY_THEME, manifest.AndroidXmlNamespace);
         }
 
         private void UpdateGameActivityAttributes() {
@@ -187,6 +191,7 @@ namespace NDream.AirConsole.Editor {
                 "mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density",
                 manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, gameActivityElement, "android", "hardwareAccelerated", "true", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, activityElement, "android", "theme", ANDROID_GAMEACTIVITY_THEME, manifest.AndroidXmlNamespace);
         }
 
         private void ActivityAddAirConsoleIntentFilter() {

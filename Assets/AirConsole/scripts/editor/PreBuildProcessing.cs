@@ -13,15 +13,8 @@ namespace NDream.AirConsole.Editor {
     public class PreBuildProcessing : IPreprocessBuildWithReport {
         public int callbackOrder => 1;
 
-        private const string ANDROID_MANIFEST_PATH = "Assets/Plugins/Android/AndroidManifest.xml";
-
-        private const string UNITY6_ANDROID_ACTIVITY_NAME = "com.unity3d.player.UnityPlayerGameActivity";
-        private const string UNITY6_ANDROID_ACTIVITY_THEME = "@style/BaseUnityGameActivityTheme";
-        private const string UNITY_ANDROID_ACTIVITY_NAME = "com.unity3d.player.UnityPlayerActivity";
-        private const string UNITY_ANDROID_ACTIVITY_THEME = "@style/UnityThemeSelector";
-
-
-        public void OnPreprocessBuild(BuildReport report) {
+        public void OnPreprocessBuild(BuildReport report)
+        {
             CheckWebGLSetup();
 
             Debug.Log("Used Python path: " + Environment.GetEnvironmentVariable("EMSDK_PYTHON"));
@@ -37,65 +30,6 @@ namespace NDream.AirConsole.Editor {
         System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", Settings.Python2Path);
 #endif
 
-#if UNITY_ANDROID
-        ValidateAndroidManifest();
-#endif
-        }
-
-
-        private static void ValidateAndroidManifest() {
-            string disabledManifestPath = Path.GetFullPath($"{ANDROID_MANIFEST_PATH}.DISABLED");
-            string manifestPath = Path.GetFullPath(ANDROID_MANIFEST_PATH);
-
-            if (File.Exists(disabledManifestPath)) {
-                File.Move(disabledManifestPath, manifestPath);
-            }
-
-            if (File.Exists(manifestPath)) {
-                XDocument manifest = XDocument.Load(manifestPath);
-
-                if (manifest.Root == null) {
-                    return;
-                }
-
-                XElement[] applicationElements = manifest.Root.Elements("application").ToArray();
-                if (!applicationElements.Any()) {
-                    return;
-                }
-
-                XElement[] activityElements = applicationElements.Elements("activity").ToArray();
-                if (!activityElements.Any()) {
-                    return;
-                }
-
-                XName nameAttribute = XName.Get("name", "http://schemas.android.com/apk/res/android");
-                XName themeAttribute = XName.Get("theme", "http://schemas.android.com/apk/res/android");
-
-                foreach (XElement activityElement in activityElements) {
-                    XAttribute name = activityElement.Attribute(nameAttribute);
-                    if (name == null) {
-                        continue;
-                    }
-
-                    string activityName = name.Value;
-                    if (activityName == UNITY6_ANDROID_ACTIVITY_NAME) {
-                        XAttribute theme = activityElement.Attribute(themeAttribute);
-                        if (theme == null) {
-                            activityElement.SetAttributeValue(themeAttribute, UNITY6_ANDROID_ACTIVITY_THEME);
-                        }
-                    } else if (activityName == UNITY_ANDROID_ACTIVITY_NAME) {
-                        XAttribute theme = activityElement.Attribute(themeAttribute);
-                        if (theme == null) {
-                            activityElement.SetAttributeValue(themeAttribute, UNITY_ANDROID_ACTIVITY_THEME);
-                        }
-                    }
-                }
-
-                manifest.Save(manifestPath);
-            } else {
-                throw new UnityException(
-                    $"{ANDROID_MANIFEST_PATH} does not exist. AirConsole for Android TV requires specific settings. Please reimport the AirConsole package to recreate the correct AndroidManifest.");
-            }
         }
 
         private static void CheckWebGLSetup() {
