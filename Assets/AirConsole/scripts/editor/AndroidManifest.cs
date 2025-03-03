@@ -1,8 +1,10 @@
 #if !DISABLE_AIRCONSOLE
+using System.Diagnostics.CodeAnalysis;
 using System.Xml;
 
 namespace NDream.AirConsole.Editor {
     // Approach based on https://stackoverflow.com/questions/56886994/c-sharp-adding-attribute-to-xml-element-appends-the-namespace-to-the-end-of-the
+    [SuppressMessage("ReSharper", "UnusedMember.Global")]
     internal class AndroidManifest : AndroidXmlDocument {
         private readonly XmlElement ApplicationElement;
 
