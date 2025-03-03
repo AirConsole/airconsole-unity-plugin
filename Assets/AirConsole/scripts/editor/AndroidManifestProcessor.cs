@@ -146,6 +146,7 @@ namespace NDream.AirConsole.Editor {
 
         private void UpdateManifestAttributes() {
             SetAttributeIfMissing(manifest, manifestElement, "android", "installLocation", "auto", manifest.AndroidXmlNamespace);
+            RemoveAttributeIfPresent(manifestElement, "android", "package");
         }
 
         private void AddSupportsScreens() {
@@ -169,12 +170,13 @@ namespace NDream.AirConsole.Editor {
         }
 
         private void UpdateApplicationAttributes() {
-            RemoveAttributeIfPresent(manifest, applicationElement, "tools", "replace", manifest.ToolsXmlNamespace);
-            RemoveAttributeIfPresent(manifest, applicationElement, "android", "usesCleartextTraffic", manifest.AndroidXmlNamespace);
-            RemoveAttributeIfPresent(manifest, applicationElement, "android", "icon", manifest.AndroidXmlNamespace);
-            RemoveAttributeIfPresent(manifest, applicationElement, "android", "label", manifest.AndroidXmlNamespace);
-            RemoveAttributeIfPresent(manifest, applicationElement, "android", "isGame", manifest.AndroidXmlNamespace);
-            RemoveAttributeIfPresent(manifest, applicationElement, "android", "banner", manifest.AndroidXmlNamespace);
+            RemoveAttributeIfPresent(applicationElement, "tools", "replace");
+            RemoveAttributeIfPresent(applicationElement, "android", "usesCleartextTraffic");
+            RemoveAttributeIfPresent(applicationElement, "android", "icon");
+            RemoveAttributeIfPresent(applicationElement, "android", "label");
+            RemoveAttributeIfPresent(applicationElement, "android", "isGame");
+            RemoveAttributeIfPresent(applicationElement, "android", "banner");
+            RemoveAttributeIfPresent(applicationElement, "xmlns", "tools");
         }
 
         private void UpdateActivityAttributes() {
@@ -308,10 +310,10 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private static void RemoveAttributeIfPresent(AndroidManifest manifest, XmlElement element, string prefix, string name,
-            string xmlNamespace) {
-            if (element.GetAttribute(name, xmlNamespace) != string.Empty) {
-                element.RemoveAttribute(name);
+        private static void RemoveAttributeIfPresent(XmlElement element, string prefix, string name) {
+            string elementName = $"{prefix}:{name}";
+            if (element.GetAttribute(elementName) != string.Empty) {
+                element.RemoveAttribute(elementName);
             }
         }
 
