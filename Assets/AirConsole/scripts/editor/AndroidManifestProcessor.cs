@@ -11,7 +11,7 @@ namespace NDream.AirConsole.Editor {
         public int callbackOrder => 999;
 
         [MenuItem("Tools/AirConsole/Development/Update Android Manifest")]
-        public static void TestManifestMenuItem() {
+        public static void UpdateAndroidManifestMenuAction() {
             UpdateAndroidManifest();
         }
 
