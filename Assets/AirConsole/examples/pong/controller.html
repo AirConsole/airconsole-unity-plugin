@@ -1,205 +1,205 @@
 <html>
-    <head>
-        <script src="https://www.airconsole.com/api/airconsole-1.9.0.js"></script>
-        <script>
-            const LOBBY = "LOBBY";
-            const GAME = "GAME";
+<head>
+    <script src="https://www.airconsole.com/api/airconsole-1.9.0.js"></script>
+    <script>
+        const LOBBY = "LOBBY";
+        const GAME = "GAME";
+        
+        let transitions = {
+            LOBBY: {
+                entryAction: () => {
+                    if (screen === LOBBY) return;
+                    document.getElementById("lobby").style.display = "block";
+                    document.getElementById("game_mode").style.display = "none";
+                    this.screen = LOBBY;
+                },
+            },
+            GAME: {
+                entryAction: () => {
+                    if (screen === GAME) return;
+                    document.getElementById("lobby").style.display = "none";
+                    document.getElementById("game_mode").style.display = "block";
+                    this.screen = GAME;
+                },
+            },
+        };
+
+        let airconsole;
+        var screen = LOBBY;
+        
+        /**
+         * Sets up the communication to the screen.
+         */
+        function init() {
+            airconsole = new AirConsole({"orientation": "portrait"});
+    
+            airconsole.onActivePlayersChange = function(player_number) {
+                console.info(`ActivePlayersChange [${ airconsole.device_id }]: player number`, player_number);
+                const outputDiv = document.getElementById("game_output");
+                if (player_number !== undefined) {
+                    outputDiv.innerHTML = ["Left Player", "Right Player"][player_number];
+                } else {
+                    transitions[LOBBY].entryAction();
+                }
+            }
+          
+            // We lose or gain master controller status if the current master is not hero 
+            // but a hero joins or leaves the session.
+            airconsole.onConnect = function(device_id) {
+                updateControllerStatus();
+            };
             
-            let transitions = {
-                LOBBY: {
-                    entryAction: () => {
-                        if (screen === LOBBY) return;
-                        document.getElementById("lobby").style.display = "block";
-                        document.getElementById("game_mode").style.display = "none";
-                        this.screen = LOBBY;
-                    },
-                },
-                GAME: {
-                    entryAction: () => {
-                        if (screen === GAME) return;
-                        document.getElementById("lobby").style.display = "none";
-                        document.getElementById("game_mode").style.display = "block";
-                        this.screen = GAME;
-                    },
-                },
+            airconsole.onDisconnect = function(device_id) {
+                updateControllerStatus();
+            }
+    
+            function updateControllerStatus() {
+                if (airconsole.getMasterControllerDeviceId() === airconsole.device_id) {
+                    configurePrimaryController();
+                } else {
+                    configureAdditionalController();
+                }
+            }
+            
+            function configurePrimaryController() {
+                document.getElementById("lobby_players").style.display = "none";
+                document.getElementById("lobby_master").style.display = "block";
+                document.getElementById("wait_players").style.display = "block";
+            }
+            
+            function configureAdditionalController() {
+                document.getElementById("lobby_players").style.display = "block";
+                document.getElementById("lobby_master").style.display = "none";
+                document.getElementById("wait_players").style.display = "none";
+            }
+
+            airconsole.onReady = function() {
+                if (!airconsole.arePlayersSilenced()) {
+                    transitions[LOBBY].entryAction();
+                }
+                configurePrimaryController();
+            };
+            
+            airconsole.onCustomDeviceStateChange = function(device_id, data) {
+                if (device_id === AirConsole.SCREEN) {
+                    if (!!data.screen) {
+                        transitions[data.screen].entryAction();
+                    }
+                    if (screen === LOBBY) {
+                        if (data.enough_players) {
+                            document.getElementById("start_game").style.display = "block";
+                            document.getElementById("wait_players").style.display = "none";
+                        } else {
+                            document.getElementById("start_game").style.display = "none";
+                            document.getElementById("wait_players").style.display = "block";
+                        }
+                    }
+                }
             };
 
-            let airconsole;
-            var screen = LOBBY;
-            
-            /**
-             * Sets up the communication to the screen.
+            /*
+             * Makes the device vibrate if the screen says so.
              */
-            function init() {
-                airconsole = new AirConsole({"orientation": "portrait"});
+            airconsole.onMessage = function (from, data) {
+                if (from === AirConsole.SCREEN && data.vibrate) {
+                    airconsole.vibrate(data.vibrate);
+                    console.log("Vibrating: " + data.vibrate);
+                }
+            };
+        }
         
-                airconsole.onActivePlayersChange = function(player_number) {
-                    console.info(`ActivePlayersChange [${ airconsole.device_id }]: player number`, player_number);
-                    var outputDiv = document.getElementById("game_output");
-                    if (player_number !== undefined) {
-                        outputDiv.innerHTML = ["Left Player", "Right Player"][player_number];
-                    } else {
-                        transitions[LOBBY].entryAction();
-                    }
-                }
-              
-                // We lose or gain master controller status if the current master is not hero 
-                // but a hero joins or leaves the session.
-                airconsole.onConnect = function(device_id) {
-                    updateControllerStatus();
-                };
-                
-                airconsole.onDisconnect = function(device_id) {
-                    updateControllerStatus();
-                }
+        /**
+         * Tells the screen to move the paddle of this player.
+         * @param amount
+         */
+        function move(amount) {
+            airconsole.message(AirConsole.SCREEN, { move: amount })
+        }
         
-                function updateControllerStatus() {
-                    if (airconsole.getMasterControllerDeviceId() === airconsole.device_id) {
-                        configurePrimaryController();
-                    } else {
-                        configureAdditionalController();
-                    }
-                }
-                
-                function configurePrimaryController() {
-                    document.getElementById("lobby_players").style.display = "none";
-                    document.getElementById("lobby_master").style.display = "block";
-                    document.getElementById("wait_players").style.display = "block";
-                }
-                
-                function configureAdditionalController() {
-                    document.getElementById("lobby_players").style.display = "block";
-                    document.getElementById("lobby_master").style.display = "none";
-                    document.getElementById("wait_players").style.display = "none";
-                }
+        function startGame() {
+            airconsole.message(AirConsole.SCREEN, { start_game: true })
+        }
 
-                airconsole.onReady = function() {
-                    if (!airconsole.arePlayersSilenced()) {
-                        transitions[LOBBY].entryAction();
-                    }
-                    configurePrimaryController();
-                };
-                
-                airconsole.onCustomDeviceStateChange = function(device_id, data) {
-                    if (device_id === AirConsole.SCREEN) {
-                        if (!!data.screen) {
-                            transitions[data.screen].entryAction();
-                        }
-                        if (screen === LOBBY) {
-                            if (data.enough_players) {
-                                document.getElementById("start_game").style.display = "block";
-                                document.getElementById("wait_players").style.display = "none";
-                            } else {
-                                document.getElementById("start_game").style.display = "none";
-                                document.getElementById("wait_players").style.display = "block";
-                            }
-                        }
-                    }
-                };
+    </script>
+    <style type="text/css">
+        @font-face {
+            font-family: 'Arial';
+        }
 
-                /*
-                 * Makes the device vibrate if the screen says so.
-                 */
-                airconsole.onMessage = function (from, data) {
-                    if (from === AirConsole.SCREEN && data.vibrate) {
-                        airconsole.vibrate(data.vibrate);
-                        console.log("Vibrating: " + data.vibrate);
-                    }
-                };
-            }
-            
-            /**
-             * Tells the screen to move the paddle of this player.
-             * @param amount
-             */
-            function move(amount) {
-                airconsole.message(AirConsole.SCREEN, { move: amount })
-            }
-            
-            function startGame() {
-                airconsole.message(AirConsole.SCREEN, { start_game: true })
-            }
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: 'PressStart2P', sans-serif;
+            color: white;
+            text-align: center;
+            background-color: black;
+        }
+
+        .button {
+            display: inline-block;
+            height: 45%;
+            width: 98%;
+            background-color: #222;
+            position: relative;
+        }
+
+        .button_label {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            top: 50%;
+            margin-top: -6px;
+        }
+
+        #game_output {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            margin-top: -8px;
+            color: #777;
+        }
+    </style>
+</head>
+<body onload="init()">
+    <div style="height: 50px"></div>
     
-        </script>
-        <style type="text/css">
-            @font-face {
-                font-family: 'Arial';
-            }
-    
-            html, body {
-                height: 100%;
-                margin: 0;
-                font-family: 'PressStart2P', sans-serif;
-                color: white;
-                text-align: center;
-                background-color: black;
-            }
-    
-            .button {
-                display: inline-block;
-                height: 45%;
-                width: 98%;
-                background-color: #222;
-                position: relative;
-            }
-    
-            .button_label {
-                position: absolute;
-                left: 0;
-                width: 100%;
-                top: 50%;
-                margin-top: -6px;
-            }
-    
-            #game_output {
-                position: absolute;
-                top: 50%;
-                left: 0;
-                width: 100%;
-                margin-top: -8px;
-                color: #777;
-            }
-        </style>
-    </head>
-    <body onload="init()">
-        <div style="height: 50px"></div>
-        
-        <div id="lobby" style="width: 100%; height: auto; display: block;">
-            <div id="lobby_players" style="margin: auto; width: 60%; height: 60%; display: none;">
-                <h1>Lobby</h1>
-                <p>... Waiting for Game Master ...</p>
-            </div>
-            
-            <div id="lobby_master" style="margin: auto; width: 60%; height: 60%; display: none;">
-                <h1>Lobby</h1>
-                <p id="start_game"
-                    style="max-width: 200px; height: 100px; display: none; border-color: green; border-width: 2px; border-style: solid;"
-                    onclick="startGame()">
-                    Click to start
-                </p>
-                <p id="wait_players" style="max-width: 200px; height: 100px; display: none; border-color: red; border-width: 2px; border-style: solid;">
-                    Waiting for more players
-                </p>
-            </div>
+    <div id="lobby" style="width: 100%; height: auto; display: block;">
+        <div id="lobby_players" style="margin: auto; width: 60%; height: 60%; display: none;">
+            <h1>Lobby</h1>
+            <p>... Waiting for Game Master ...</p>
         </div>
         
-        <div id="game_mode" style="display: none">
-            <div class="button"
-                ontouchstart="move(5)"
-                ontouchend="move(0)"
-                onmousedown="move(5)"
-                onmouseup="move(0)">
-                <div class="button_label">UP</div>
-            </div>
-            <div style="height: 8%"></div>
-            <div class="button"
-                ontouchstart="move(-5)"
-                ontouchend="move(0)"
-                onmousedown="move(-5)"
-                onmouseup="move(0)">
-                <div class="button_label">DOWN</div>
-            </div>
+        <div id="lobby_master" style="margin: auto; width: 60%; height: 60%; display: none;">
+            <h1>Lobby</h1>
+            <p id="start_game"
+                style="max-width: 200px; height: 100px; display: none; border-color: green; border-width: 2px; border-style: solid;"
+                onclick="startGame()">
+                Click to start
+            </p>
+            <p id="wait_players" style="max-width: 200px; height: 100px; display: none; border-color: red; border-width: 2px; border-style: solid;">
+                Waiting for more players
+            </p>
         </div>
-        <div id="game_output">... Waiting ...</div>
-    </body>
+    </div>
+    
+    <div id="game_mode" style="display: none">
+        <div class="button"
+            ontouchstart="move(5)"
+            ontouchend="move(0)"
+            onmousedown="move(5)"
+            onmouseup="move(0)">
+            <div class="button_label">UP</div>
+        </div>
+        <div style="height: 8%"></div>
+        <div class="button"
+            ontouchstart="move(-5)"
+            ontouchend="move(0)"
+            onmousedown="move(-5)"
+            onmouseup="move(0)">
+            <div class="button_label">DOWN</div>
+        </div>
+    </div>
+    <div id="game_output">... Waiting ...</div>
+</body>
 </html>
