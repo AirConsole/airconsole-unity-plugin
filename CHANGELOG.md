@@ -9,6 +9,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Added
 
 - Automatically set androidVersionCode to `seconds since 2025-01-01T00:00:00` to ensure conflict free builds.
+- We now automatically update the AndroidManifest as necessary for AirConsole to work on Android. We also remove old settings that are no longer necessary or conflict with Unity 2022 or Unity 6.
+
+### Removed
+
+- AndroidManifest: The plugin no longer ships with a custom AndroidManifest.
 
 ## [2.5.6] - 2025-02-11
 

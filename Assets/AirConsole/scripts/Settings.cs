@@ -16,7 +16,7 @@ namespace NDream.AirConsole {
         public const int DEFAULT_WEBSOCKET_PORT = 7843;
         public static int webServerPort = 7842;
         public static int webSocketPort = 7843;
-        public static DebugLevel debug = new DebugLevel();
+        public static DebugLevel debug = new();
         public static string Python2Path = "/usr/local/bin/python2";
 
         public static readonly string WEBTEMPLATE_PATH;
@@ -38,10 +38,8 @@ namespace NDream.AirConsole {
 #endif
             WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
         }
-        
-        
 
-        private static bool IsUnity6OrHigher() {
+        public static bool IsUnity6OrHigher() {
             return int.Parse(Application.unityVersion.Split('.')[0]) >= 6000;
         }
     }

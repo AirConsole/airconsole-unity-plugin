@@ -69,7 +69,7 @@ namespace NDream.AirConsole.Editor {
                     throw new UnityException($"AirConsole Plugin does not support platform {platform}");
             }
 
-            Debug.Log("AirConsole Plugin configuration checks completed successfully.");
+            Debug.Log($"AirConsole Plugin configuration checks for {platform} completed successfully.");
         }
 
         [InitializeOnLoadMethod]
@@ -88,7 +88,7 @@ namespace NDream.AirConsole.Editor {
                     + $"Updating the settings now.");
                 PlayerSettings.runInBackground = shouldRunInBackground;
             }
- 
+
             if (PlayerSettings.allowUnsafeCode) {
                 Debug.LogError("AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
                                + "We are updating the Android settings now.");
@@ -264,6 +264,7 @@ namespace NDream.AirConsole.Editor {
 
         private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup targetGroup) {
             TextureCompressionFormat format = GetDefaultTextureCompressionFormat(targetGroup);
+            // Either the Texture Default settings in Player Settings are ETC2 | ASTC or the platforms build settings Texture Compression is
             return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
                    || (targetGroup == BuildTargetGroup.Android
                        ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
