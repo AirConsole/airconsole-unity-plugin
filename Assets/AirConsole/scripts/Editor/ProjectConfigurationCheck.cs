@@ -146,6 +146,8 @@ namespace NDream.AirConsole.Editor {
             UpdateAndroidPlayerSettingsInProperties();
             EnsureAndroidPlatformSettings();
             DisableUndesirableAndroidFeatures();
+
+            PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
         }
 
         private static void EnsureAndroidPlatformSettings() {
@@ -239,6 +241,13 @@ namespace NDream.AirConsole.Editor {
                                  + "Updating the Android Graphics APIs now.");
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
             }
+        }
+        
+        private static int SecondsSinceStartOf2025() {
+            DateTime startOfYear = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime now = DateTime.UtcNow; 
+
+            return (int)(now - startOfYear).TotalSeconds;
         }
 
         [MenuItem("Tools/AirConsole/Check Android Config")]
