@@ -1,3 +1,4 @@
+#if !DISABLE_AIRCONSOLE
 #region
 using NDream.AirConsole;
 using System.Diagnostics;
@@ -84,3 +85,4 @@ namespace NDream.Unity
         }
     }
 }
+#endif

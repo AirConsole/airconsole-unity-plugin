@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿#if !DISABLE_AIRCONSOLE
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -200,3 +201,4 @@ public class GameStatesExampleLogic : MonoBehaviour {
 		return playerColorData;
 	}
 }
+#endif
