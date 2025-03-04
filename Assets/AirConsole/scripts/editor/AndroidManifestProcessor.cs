@@ -131,10 +131,12 @@ namespace NDream.AirConsole.Editor {
             AddQueries(manifest, manifestElement);
             UpdateApplicationAttributes(applicationElement);
 
-            UpdateActivityAttributes(manifest, activityElement, ANDROID_ACTIVITY_THEME);
-            ActivityAddAirConsoleIntentFilter(manifest, activityElement);
+            if (activityElement != null) {
+                UpdateActivityAttributes(manifest, activityElement, ANDROID_ACTIVITY_THEME);
+                ActivityAddAirConsoleIntentFilter(manifest, activityElement);
+            }
 
-            if (Settings.IsUnity6OrHigher()) {
+            if (Settings.IsUnity6OrHigher() && gameActivityElement != null) {
                 UpdateActivityAttributes(manifest, gameActivityElement, ANDROID_GAMEACTIVITY_THEME);
                 ActivityAddAirConsoleIntentFilter(manifest, gameActivityElement);
             }
@@ -196,7 +198,7 @@ namespace NDream.AirConsole.Editor {
         private static void ActivityAddAirConsoleIntentFilter(AndroidManifest manifest, XmlElement activityElement) {
             XmlNamespaceManager nsManager = CreateNamespaceManager(manifest);
             XmlElement existingIntentFilter = activityElement.SelectSingleNode(
-                "intent-filter[action/@android:name='android.intent.action.MAIN']",
+                "intent-filter[category/@android:name='android.intent.category.LAUNCHER']",
                 nsManager) as XmlElement;
 
             if (existingIntentFilter != null) {
@@ -230,7 +232,7 @@ namespace NDream.AirConsole.Editor {
             if (!Settings.IsUnity6OrHigher()) {
                 AddUsesFeature(manifest, manifestElement, "android.glEsVersion", "0x00020000");
             } else {
-                RemoveUsesFeature(manifestElement, "android.glEsVersion");
+                RemoveGlEsVersion(manifest, manifestElement, "android.glEsVersion");
             }
 
             AddUsesFeature(manifest, manifestElement, "android.software.leanback", null, "true");
@@ -260,8 +262,12 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private static void RemoveUsesFeature(XmlElement manifestElement, string name) {
-            manifestElement.RemoveAttribute(name);
+        private static void RemoveGlEsVersion(AndroidManifest manifest, XmlElement manifestElement, string name) {
+            XmlElement usesGlEsVersion = manifest.SelectSingleNode(
+                "//uses-feature[@android:glEsVersion]",
+                CreateNamespaceManager(manifest)) as XmlElement;
+
+            usesGlEsVersion?.ParentNode.RemoveChild(usesGlEsVersion);
         }
 
         private static void AddUsesPermission(AndroidManifest manifest, XmlElement manifestElement, string name) {
