@@ -7,6 +7,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEngine;
 
+// TODO(android-native): Remove Python logic from Unity 2019 OSX and integrate WebGL Setup Check with ProjectConfigurationCheck instead.
 namespace NDream.AirConsole.Editor
 {
     public class PreBuildProcessing : IPreprocessBuildWithReport
