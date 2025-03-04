@@ -73,10 +73,6 @@ namespace NDream.AirConsole.Editor {
 			if (EditorPrefs.GetBool ("debugError", true) != true) {
 				Settings.debug.error = EditorPrefs.GetBool ("debugError");
 			}
-
-			if (EditorPrefs.GetString("python2Path", "") != "") {
-				Settings.Python2Path = EditorPrefs.GetString("python2Path");
-			}
 		}
 
 		public static void ResetDefaultValues () {
