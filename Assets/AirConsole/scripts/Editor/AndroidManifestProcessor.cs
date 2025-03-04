@@ -7,9 +7,9 @@ using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
     public class AndroidManifestProcessor : IPreprocessBuildWithReport {
-        public int callbackOrder => 0;
+        public int callbackOrder => 999;
 
-        [MenuItem("Tools/AirConsole/Process Android Manifest")]
+        [MenuItem("Tools/AirConsole/Development/Update Android Manifest")]
         public static void TestManifestMenuItem() {
             UpdateAndroidManifest();
         }
@@ -96,11 +96,15 @@ namespace NDream.AirConsole.Editor {
     }
 
     internal class AndroidManifestTransformer {
+        private readonly string AirConsoleAndroidMimeType = "application/airconsole";
         private readonly AndroidManifest manifest;
-        private readonly XmlElement manifestElement;
         private readonly XmlElement applicationElement;
+        private readonly XmlElement manifestElement;
         private readonly XmlElement activityElement;
         private readonly XmlElement gameActivityElement;
+
+        private const string ANDROID_ACTIVITY_THEME = "@style/UnityThemeSelector";
+        private const string ANDROID_GAMEACTIVITY_THEME = "@style/BaseUnityGameActivityTheme";
 
         internal AndroidManifestTransformer(string path) {
             manifest = new AndroidManifest(path);
@@ -128,22 +132,21 @@ namespace NDream.AirConsole.Editor {
             UpdateApplicationAttributes();
 
             UpdateActivityAttributes();
-            ActivityAddAirConsoleIntentFilter();
+            ActivityAddAirConsoleIntentFilter(activityElement);
 
             if (int.Parse(Application.unityVersion.Split('.')[0]) >= 6000) {
                 UpdateGameActivityAttributes();
-                GameActivityAddAirConsoleIntentFilter();
+                ActivityAddAirConsoleIntentFilter(gameActivityElement);
             }
 
-            AddApplicationMetaData();
             AddUsesFeatureAndPermissions();
 
             manifest.Save();
         }
 
         private void UpdateManifestAttributes() {
-            SetAttributeIfMissing(manifest, manifestElement, "android", "package", "com.unity3d.player", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, manifestElement, "android", "installLocation", "preferExternal", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, manifestElement, "android", "installLocation", "auto", manifest.AndroidXmlNamespace);
+            RemoveAttributeIfPresent(manifestElement, "android", "package");
         }
 
         private void AddSupportsScreens() {
@@ -163,17 +166,17 @@ namespace NDream.AirConsole.Editor {
             SetAttributeIfMissing(manifest, action, "android", "name", "android.intent.action.MAIN", manifest.AndroidXmlNamespace);
 
             XmlElement data = GetOrCreateElement(manifest, intent, "data");
-            SetAttributeIfMissing(manifest, data, "android", "mimeType", "application/airconsole", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, data, "android", "mimeType", AirConsoleAndroidMimeType, manifest.AndroidXmlNamespace);
         }
 
         private void UpdateApplicationAttributes() {
-            SetAttributeIfMissing(manifest, applicationElement, "tools", "replace", "android:theme,android:icon",
-                manifest.ToolsXmlNamespace);
-            SetAttributeIfMissing(manifest, applicationElement, "android", "usesCleartextTraffic", "true", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, applicationElement, "android", "icon", "@drawable/app_icon", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, applicationElement, "android", "label", "@string/app_name", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, applicationElement, "android", "isGame", "true", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, applicationElement, "android", "banner", "@drawable/app_banner", manifest.AndroidXmlNamespace);
+            RemoveAttributeIfPresent(applicationElement, "tools", "replace");
+            RemoveAttributeIfPresent(applicationElement, "android", "usesCleartextTraffic");
+            RemoveAttributeIfPresent(applicationElement, "android", "icon");
+            RemoveAttributeIfPresent(applicationElement, "android", "label");
+            RemoveAttributeIfPresent(applicationElement, "android", "isGame");
+            RemoveAttributeIfPresent(applicationElement, "android", "banner");
+            RemoveAttributeIfPresent(applicationElement, "xmlns", "tools");
         }
 
         private void UpdateActivityAttributes() {
@@ -181,13 +184,13 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            SetAttributeIfMissing(manifest, activityElement, "android", "label", "@string/app_name", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, activityElement, "android", "screenOrientation", "fullSensor", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, activityElement, "android", "screenOrientation", "landscape", manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, activityElement, "android", "launchMode", "singleTask", manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, activityElement, "android", "configChanges",
                 "mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density",
                 manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, activityElement, "android", "hardwareAccelerated", "true", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, activityElement, "android", "theme", ANDROID_ACTIVITY_THEME, manifest.AndroidXmlNamespace);
         }
 
         private void UpdateGameActivityAttributes() {
@@ -195,17 +198,17 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            SetAttributeIfMissing(manifest, gameActivityElement, "android", "label", "@string/app_name", manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, gameActivityElement, "android", "screenOrientation", "fullSensor",
+            SetAttributeIfMissing(manifest, gameActivityElement, "android", "screenOrientation", "landscape",
                 manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, gameActivityElement, "android", "launchMode", "singleTask", manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, gameActivityElement, "android", "configChanges",
                 "mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density",
                 manifest.AndroidXmlNamespace);
             SetAttributeIfMissing(manifest, gameActivityElement, "android", "hardwareAccelerated", "true", manifest.AndroidXmlNamespace);
+            SetAttributeIfMissing(manifest, activityElement, "android", "theme", ANDROID_GAMEACTIVITY_THEME, manifest.AndroidXmlNamespace);
         }
 
-        private void ActivityAddAirConsoleIntentFilter() {
+        private void ActivityAddAirConsoleIntentFilter(XmlElement activityElement) {
             XmlElement existingIntentFilter = activityElement.SelectSingleNode(
                 "intent-filter[action/@android:name='android.intent.action.MAIN']",
                 CreateNamespaceManager()) as XmlElement;
@@ -232,73 +235,28 @@ namespace NDream.AirConsole.Editor {
                 airConsoleIntentFilter.AppendChild(actionElement);
 
                 XmlElement dataElement = manifest.CreateElement("data");
-                SetAttributeIfMissing(manifest, dataElement, "android", "mimeType", "application/airconsole", manifest.AndroidXmlNamespace);
+                SetAttributeIfMissing(manifest, dataElement, "android", "mimeType", AirConsoleAndroidMimeType,
+                    manifest.AndroidXmlNamespace);
                 airConsoleIntentFilter.AppendChild(dataElement);
             }
-        }
-
-        private void GameActivityAddAirConsoleIntentFilter() {
-            XmlElement existingIntentFilter = gameActivityElement.SelectSingleNode(
-                "intent-filter[action/@android:name='android.intent.action.MAIN']",
-                CreateNamespaceManager()) as XmlElement;
-
-            if (existingIntentFilter != null) {
-                XmlElement leanbackCategory = GetOrCreateElement(manifest, existingIntentFilter, "category",
-                    node => GetAttributeValue(node, "android", "name", manifest.AndroidXmlNamespace)
-                            == "android.intent.category.LEANBACK_LAUNCHER");
-                SetAttributeIfMissing(manifest, leanbackCategory, "android", "name", "android.intent.category.LEANBACK_LAUNCHER",
-                    manifest.AndroidXmlNamespace);
-            }
-
-            XmlNamespaceManager nsManager = CreateNamespaceManager();
-            XmlElement airConsoleIntentFilter = gameActivityElement.SelectSingleNode(
-                "intent-filter[data/@android:mimeType='application/airconsole']", nsManager) as XmlElement;
-
-            if (airConsoleIntentFilter == null) {
-                airConsoleIntentFilter = manifest.CreateElement("intent-filter");
-                gameActivityElement.AppendChild(airConsoleIntentFilter);
-
-                XmlElement actionElement = manifest.CreateElement("action");
-                SetAttributeIfMissing(manifest, actionElement, "android", "name", "android.intent.action.MAIN",
-                    manifest.AndroidXmlNamespace);
-                airConsoleIntentFilter.AppendChild(actionElement);
-
-                XmlElement dataElement = manifest.CreateElement("data");
-                SetAttributeIfMissing(manifest, dataElement, "android", "mimeType", "application/airconsole", manifest.AndroidXmlNamespace);
-                airConsoleIntentFilter.AppendChild(dataElement);
-            }
-        }
-
-        private void AddApplicationMetaData() {
-            string buildId = System.Guid.NewGuid().ToString();
-
-            AddMetaData("unity.build-id", buildId);
-            AddMetaData("unity.splash-mode", "0");
-            AddMetaData("unity.splash-enable", "True");
-        }
-
-        private void AddMetaData(string name, string value) {
-            XmlElement metaData = GetOrCreateElement(manifest, applicationElement, "meta-data",
-                node => GetAttributeValue(node, "android", "name", manifest.AndroidXmlNamespace) == name);
-
-            SetAttributeIfMissing(manifest, metaData, "android", "name", name, manifest.AndroidXmlNamespace);
-            SetAttributeIfMissing(manifest, metaData, "android", "value", value, manifest.AndroidXmlNamespace);
         }
 
         private void AddUsesFeatureAndPermissions() {
             if (int.Parse(Application.unityVersion.Split('.')[0]) < 6000) {
-                AddUsesFeature("android.glEsVersion", "0x00020000");
+                AddUsesFeature(manifest, manifestElement, "android.glEsVersion", "0x00020000");
+            } else {
+                RemoveUsesFeature(manifestElement, "android.glEsVersion");
             }
 
-            AddUsesFeature("android.software.leanback", null, "true");
-            AddUsesFeature("android.hardware.touchscreen", null, "false");
-            AddUsesFeature("android.hardware.touchscreen.multitouch", null, "false");
-            AddUsesFeature("android.hardware.touchscreen.multitouch.distinct", null, "false");
+            AddUsesFeature(manifest, manifestElement,"android.software.leanback", null, "true");
+            AddUsesFeature(manifest, manifestElement,"android.hardware.touchscreen", null, "false");
+            AddUsesFeature(manifest, manifestElement,"android.hardware.touchscreen.multitouch", null, "false");
+            AddUsesFeature(manifest, manifestElement,"android.hardware.touchscreen.multitouch.distinct", null, "false");
 
-            AddUsesPermission("android.permission.INTERNET");
+            AddUsesPermission(manifest, manifestElement, "android.permission.INTERNET");
         }
 
-        private void AddUsesFeature(string name, string glEsVersion = null, string required = null) {
+        private void AddUsesFeature(AndroidManifest manifest, XmlElement manifestElement, string name, string glEsVersion = null, string required = null) {
             XmlElement usesFeature;
 
             if (glEsVersion != null) {
@@ -316,7 +274,11 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private void AddUsesPermission(string name) {
+        private void RemoveUsesFeature(XmlElement manifestElement, string name) {
+            manifestElement.RemoveAttribute(name);
+        }
+
+        private void AddUsesPermission(AndroidManifest manifest, XmlElement manifestElement, string name) {
             XmlElement usesPermission = GetOrCreateElement(manifest, manifestElement, "uses-permission",
                 node => GetAttributeValue(node, "android", "name", manifest.AndroidXmlNamespace) == name);
 
@@ -351,6 +313,13 @@ namespace NDream.AirConsole.Editor {
             if (element.GetAttribute(name, xmlNamespace) == string.Empty) {
                 XmlAttribute attr = manifest.GenerateAttribute(prefix, name, value, xmlNamespace);
                 element.SetAttributeNode(attr);
+            }
+        }
+
+        private static void RemoveAttributeIfPresent(XmlElement element, string prefix, string name) {
+            string elementName = $"{prefix}:{name}";
+            if (element.GetAttribute(elementName) != string.Empty) {
+                element.RemoveAttribute(elementName);
             }
         }
 

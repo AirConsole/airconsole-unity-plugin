@@ -1,6 +1,6 @@
 using System;
 using UnityEngine;
-
+// This class is used in AndroidJNI of DataProviderPlugin.cs
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
 
