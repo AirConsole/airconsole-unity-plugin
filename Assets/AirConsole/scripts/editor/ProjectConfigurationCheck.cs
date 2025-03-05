@@ -101,8 +101,9 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.resetResolutionOnWindowResize = true;
 
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
-                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2022.3 LTS or newer");
-                throw new UnityException("Unity Version " + Application.unityVersion);
+                string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
+                Debug.LogError(message);
+                throw new UnityException(message);
             }
 
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
