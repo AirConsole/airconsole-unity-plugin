@@ -69,7 +69,7 @@ namespace NDream.AirConsole.Editor {
             DrawTranslationsToggle();
             DrawPlayerSilencingToggle();
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidTvGameVersion"));
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("webViewLoadingSprite"));
 

@@ -77,7 +77,7 @@ namespace NDream.AirConsole {
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
         public static string Version {
 #if UNITY_ANDROID
-            get { return instance.androidTvGameVersion; }
+            get { return instance.androidGameVersion; }
 #else
             get { return string.Empty; }
 #endif
@@ -1072,12 +1072,14 @@ namespace NDream.AirConsole {
         [Tooltip("Automatically scale the game canvas")]
         public bool autoScaleCanvas = true;
 
+        [FormerlySerializedAs("androidTvGameVersion")]
         [Header("Android Settings")]
         [Tooltip(
             "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
-        public string androidTvGameVersion;
+        public string androidGameVersion;
 
-        [Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        [Tooltip("Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+                 + "On Android Automotive please use OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1768,7 +1770,7 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            if (androidTvGameVersion != null && androidTvGameVersion != "") {
+            if (androidGameVersion != null && androidGameVersion != "") {
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
@@ -1788,7 +1790,7 @@ namespace NDream.AirConsole {
 #endif
 
                     url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + androidTvGameVersion;
+                    url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
                     webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
@@ -1831,7 +1833,7 @@ namespace NDream.AirConsole {
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
-            if (gameId != Application.identifier || gameVersion != instance.androidTvGameVersion) {
+            if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
                 if (msg["quit_after_launch_intent"] != null) {
