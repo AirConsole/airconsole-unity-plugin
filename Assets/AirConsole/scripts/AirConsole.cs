@@ -324,13 +324,6 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
-        /// Returns an array of device_ids of the active players previously set by the
-        /// screen by calling setActivePlayers. The first device_id in the array is the
-        /// first player, the second device_id in the array is the second player, ...
-        /// </summary>
-        public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
-
-        /// <summary>
         /// Returns the device_id of a player, if the player is part of the active
         /// players previously set by the screen by calling setActivePlayers. If fewer
         /// players are in the game than the passed in player_number or the active
@@ -1649,6 +1642,16 @@ namespace NDream.AirConsole {
         /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
         /// </summary>
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
+
+        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)] 
+        public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
+        
+        /// <summary>
+        /// Returns an array of device_ids of the active players previously set by the
+        /// screen by calling setActivePlayers. The first device_id in the array is the
+        /// first player, the second device_id in the array is the second player, ...
+        /// </summary>
+        public ReadOnlyCollection<int> ActivePlayerDeviceIds => _players.AsReadOnly();
 
         // private vars
         private WebSocketServer wsServer;
