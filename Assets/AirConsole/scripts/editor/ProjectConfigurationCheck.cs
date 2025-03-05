@@ -16,6 +16,7 @@ namespace NDream.AirConsole.Editor {
                 message +=
                     "\nTo disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.";
             }
+
             Debug.LogError(message);
             throw new UnityException(message);
         }
@@ -58,8 +59,12 @@ namespace NDream.AirConsole.Editor {
             Type moduleManager = Type.GetType("UnityEditor.Modules.ModuleManager,UnityEditor.dll");
             MethodInfo IsPlatformSupportLoadedByBuildTarget = moduleManager.GetMethod("IsPlatformSupportLoadedByBuildTarget",
                 BindingFlags.Static | BindingFlags.NonPublic);
-            bool result = (bool)IsPlatformSupportLoadedByBuildTarget.Invoke(null, new object[] { buildTarget });
-            return result;
+
+            if (IsPlatformSupportLoadedByBuildTarget != null) {
+                return (bool)IsPlatformSupportLoadedByBuildTarget.Invoke(null, new object[] { buildTarget });
+            }
+
+            return true;
         }
     }
 
