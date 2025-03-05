@@ -39,9 +39,9 @@ namespace NDream.AirConsole {
             WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
         }
 
-        public static bool IsUnity6OrHigher() {
-            return int.Parse(Application.unityVersion.Split('.')[0]) >= 6000;
-        }
+        public static bool IsUnity6OrHigher() => int.Parse(Application.unityVersion.Split('.')[0]) >= 6000;
+
+        public static bool IsUnity2022OrHigher() => int.Parse(Application.unityVersion.Split('.')[0]) >= 2022;
     }
 }
 #endif

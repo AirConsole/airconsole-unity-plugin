@@ -9,6 +9,18 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace NDream.AirConsole.Editor {
+    internal abstract class EditorNotificationService {
+        internal static void InvokeError(string message, bool addAirConsoleDisable = false) {
+            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
+            if (addAirConsoleDisable) {
+                message +=
+                    "\nTo disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.";
+            }
+            Debug.LogError(message);
+            throw new UnityException(message);
+        }
+    }
+
     public abstract class UnityVersionCheck {
         [InitializeOnLoadMethod]
         private static void CheckUnityVersions() {
@@ -16,10 +28,7 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer";
-            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
-            Debug.LogError(message);
-            throw new UnityException(message);
+            EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!", true);
         }
 
         public static bool IsSupportedUnityVersion() {
@@ -33,14 +42,27 @@ namespace NDream.AirConsole.Editor {
     public abstract class UnityPlatform {
         [InitializeOnLoadMethod]
         private static void CheckPlatform() {
-            BuildTargetGroup buildTarget = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if (buildTarget == BuildTargetGroup.Android || buildTarget == BuildTargetGroup.WebGL) {
+            BuildTarget buildTarget = EditorUserBuildSettings.selectedStandaloneTarget;
+            if (buildTarget is BuildTarget.Android or BuildTarget.WebGL) {
                 return;
             }
 
-            Debug.LogWarning($"AirConsole Plugin does not support platform {buildTarget}, switching to WebGL.\n"
-                             + "To disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.");
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            if (IsPlatformSupported(BuildTarget.WebGL)) {
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            } else if (IsPlatformSupported(BuildTarget.Android)) {
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+            } else {
+                EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires the WebGL or Android module to be present!",
+                    true);
+            }
+        }
+
+        private static bool IsPlatformSupported(BuildTarget buildTarget) {
+            Type moduleManager = Type.GetType("UnityEditor.Modules.ModuleManager,UnityEditor.dll");
+            MethodInfo IsPlatformSupportLoadedByBuildTarget = moduleManager.GetMethod("IsPlatformSupportLoadedByBuildTarget",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            bool result = (bool)IsPlatformSupportLoadedByBuildTarget.Invoke(null, new object[] { buildTarget });
+            return result;
         }
     }
 
