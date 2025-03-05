@@ -32,10 +32,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         public static bool IsSupportedUnityVersion() {
-#if !UNITY_2022_3_OR_NEWER && !UNITY_6000_0_OR_NEWER
-            return false;
-#endif
-            return true;
+            return Settings.IsUnity2022OrHigher();
         }
     }
 
@@ -120,6 +117,8 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void EnsureWebGLPlayerSettings() {
+            VerifyWebGLTemplate();
+            
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
             PlayerSettings.WebGL.nameFilesAsHashes = false; // We upload into timestamp based folders. This is not necessary.
 
@@ -147,6 +146,23 @@ namespace NDream.AirConsole.Editor {
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
                 throw new UnityException("Please update the WebGL build and player settings to continue.");
+            }
+        }
+
+        private static void VerifyWebGLTemplate() {
+            string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
+            string[] templateUri = PlayerSettings.WebGL.template.Split(':');
+            if (templateUri.Length != 2
+                || templateUri[0].ToUpper() == "APPLICATION"
+                || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
+                string incompatibleTemplateMessage =
+                    $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
+                Debug.LogError(incompatibleTemplateMessage);
+
+                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
+                        "Cancel")) {
+                    SettingsService.OpenProjectSettings("Project/Player");
+                }
             }
         }
 

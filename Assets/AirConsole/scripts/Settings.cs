@@ -21,21 +21,13 @@ namespace NDream.AirConsole {
 
         public static readonly string WEBTEMPLATE_PATH;
 
-        private const string TEMPLATE_NAME = "AirConsole";
         private const string TEMPLATE_NAME_2020 = "AirConsole-2020";
         private const string TEMPLATE_NAME_U6 = "AirConsole-U6";
 
-        public static readonly string[] TEMPLATE_NAMES = { TEMPLATE_NAME, TEMPLATE_NAME_2020, TEMPLATE_NAME_U6 };
+        public static readonly string[] TEMPLATE_NAMES = { TEMPLATE_NAME_2020, TEMPLATE_NAME_U6 };
 
         static Settings() {
-            string templateName;
-#if UNITY_6000_0_OR_NEWER
-            templateName = TEMPLATE_NAME_U6;
-#elif !UNITY_2020_1_OR_NEWER
-            templateName = TEMPLATE_NAME;
-#else
-            templateName = TEMPLATE_NAME_2020;
-#endif
+            string templateName = IsUnity6OrHigher() ? TEMPLATE_NAME_U6 : TEMPLATE_NAME_2020;
             WEBTEMPLATE_PATH = $"/WebGLTemplates/{templateName}";
         }
 
