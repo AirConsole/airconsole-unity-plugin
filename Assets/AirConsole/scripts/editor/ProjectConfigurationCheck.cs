@@ -161,7 +161,8 @@ namespace NDream.AirConsole.Editor {
 
                 if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
                         "Cancel")) {
-                    SettingsService.OpenProjectSettings("Project/Player");
+                    // In Unity 6 this needs to be done with a delay call, otherwise it breaks the window layout when Project Settings are docked already.
+                    EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player"); 
                 }
             }
         }
