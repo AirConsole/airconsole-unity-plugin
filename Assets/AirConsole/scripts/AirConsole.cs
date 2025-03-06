@@ -1424,7 +1424,7 @@ namespace NDream.AirConsole {
 
         private void OnAdComplete(JObject msg) {
 #if UNITY_ANDROID && !UNITY_EDITOR
-		webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+            webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
 #endif
             try {
                 bool adWasShown = (bool)msg["ad_was_shown"];
@@ -1652,7 +1652,7 @@ namespace NDream.AirConsole {
         private UnityEngine.UI.Image webViewLoadingBG;
         private int webViewHeight;
         private int defaultScreenHeight;
-        private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
+        private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 #endif
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1680,7 +1680,7 @@ namespace NDream.AirConsole {
             bool isHttps = !Application.isEditor
                            || (!string.IsNullOrEmpty(instance.LocalIpOverride) && instance.LocalIpOverride.StartsWith("https://"));
 #else
-			bool isHttps = true;
+            bool isHttps = true;
 #endif
             string url = isHttps ? Settings.AIRCONSOLE_DEV_URL_HTTPS : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
@@ -1754,7 +1754,7 @@ namespace NDream.AirConsole {
         }
 
         private string ComputeUrlVersion(string version) {
-            var split = version.Split('.');
+            string[] split = version.Split('.');
             return $"{split[0]}.{split[1]}{split[2]}";
         }
 
@@ -1791,22 +1791,22 @@ namespace NDream.AirConsole {
 
 
 #if !UNITY_EDITOR
-					webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-					webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
-					webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
-					webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
-					webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
-					webViewLoadingImage.sprite = webViewLoadingSprite;
-					webViewLoadingBG.color = Color.black;
-					webViewLoadingImage.rectTransform.localPosition = new Vector3 (0, 0, 0);
-					webViewLoadingBG.rectTransform.localPosition = new Vector3 (0, 0, 0);
-					webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
-					webViewLoadingBG.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
-					webViewLoadingImage.preserveAspect = true;
+                    webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+                    webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
+                    webViewLoadingImage.sprite = webViewLoadingSprite;
+                    webViewLoadingBG.color = Color.black;
+                    webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
+                    webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
+                    webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
+                    webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
+                    webViewLoadingImage.preserveAspect = true;
 
-					if (webViewLoadingSprite == null){
-						webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
-					}
+                    if (webViewLoadingSprite == null) {
+                        webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
+                    }
 #endif
                 }
             } else {
@@ -1836,7 +1836,7 @@ namespace NDream.AirConsole {
                 }
 
                 // Start the main AirConsole App
-                AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
                 AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
                 AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                 AndroidJavaObject launchIntent = null;
