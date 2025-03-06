@@ -321,7 +321,7 @@ public class ExampleBasicLogic : MonoBehaviour {
 		AirConsole.instance.SetActivePlayers ();
 
 		string activePlayerIds = "";
-		foreach (int id in AirConsole.instance.GetActivePlayerDeviceIds) {
+		foreach (int id in AirConsole.instance.ActivePlayerDeviceIds) {
 			activePlayerIds += id + "\n";
 		}
 
