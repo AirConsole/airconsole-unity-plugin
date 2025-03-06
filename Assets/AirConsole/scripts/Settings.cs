@@ -17,8 +17,6 @@ namespace NDream.AirConsole {
         public static int webServerPort = 7842;
         public static int webSocketPort = 7843;
         public static DebugLevel debug = new();
-        public static string Python2Path = "/usr/local/bin/python2";
-
         public static readonly string WEBTEMPLATE_PATH;
 
         private const string TEMPLATE_NAME_2020 = "AirConsole-2020";

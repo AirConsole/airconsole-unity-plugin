@@ -81,10 +81,10 @@ namespace NDream.AirConsole {
         private bool isReady;
 
 #if UNITY_ANDROID
-        WebViewObject webViewObject;
+        private WebViewObject webViewObject;
 
         public WebsocketListener(WebViewObject webViewObject) {
-            base.IgnoreExtensions = true;
+            IgnoreExtensions = true;
             this.webViewObject = webViewObject;
         }
 #else
@@ -240,8 +240,8 @@ namespace NDream.AirConsole {
                 Application.ExternalCall("window.app.processUnityData", data.ToString()); //TODO: External Call is obsolete?
             } else if (Application.platform == RuntimePlatform.Android) {
 #if UNITY_ANDROID
-				string serialized = JsonConvert.ToString(data.ToString());
-				webViewObject.EvaluateJS("androidUnityPostMessage(" + serialized + ");");
+                string serialized = JsonConvert.ToString(data.ToString());
+                webViewObject.EvaluateJS("androidUnityPostMessage(" + serialized + ");");
 #endif
             } else {
                 Send(data.ToString());
