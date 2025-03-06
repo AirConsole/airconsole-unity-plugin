@@ -16,6 +16,7 @@ namespace NDream.AirConsole.Editor {
                 reader.Read();
                 Load(reader);
             }
+
             nsManager = new XmlNamespaceManager(NameTable);
             nsManager.AddNamespace("android", AndroidXmlNamespace);
             nsManager.AddNamespace("tools", ToolsXmlNamespace);
@@ -25,13 +26,16 @@ namespace NDream.AirConsole.Editor {
         /// Saves the XML document at the current documentPath.
         /// </summary>
         /// <returns>Returns the path at which the document was saved.</returns>
-        internal string Save() => SaveAs(documentPath);
+        internal string Save() {
+            return SaveAs(documentPath);
+        }
 
         private string SaveAs(string path) {
             using (XmlTextWriter writer = new(path, new UTF8Encoding(false))) {
                 writer.Formatting = Formatting.Indented;
                 Save(writer);
             }
+
             return path;
         }
     }

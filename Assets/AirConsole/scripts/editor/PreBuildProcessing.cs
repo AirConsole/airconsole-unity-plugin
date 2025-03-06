@@ -1,7 +1,9 @@
 #if !DISABLE_AIRCONSOLE
 #if UNITY_EDITOR
+using System;
 using System.IO;
 using System.Linq;
+using System.Xml.Linq;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -16,7 +18,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         private static void CheckWebGLSetup() {
-#if UNITY_WEBGL 
+#if UNITY_WEBGL
             if (string.IsNullOrEmpty(PlayerSettings.WebGL.template)) {
                 EditorUtility.DisplayDialog("Error", "No WebGL Template configured", "Cancel");
                 throw new UnityException("WebGL template not configured");
