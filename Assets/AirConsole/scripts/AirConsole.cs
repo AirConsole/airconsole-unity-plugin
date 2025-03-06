@@ -8,6 +8,7 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 #if UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
