@@ -242,10 +242,10 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
             }
         }
-        
+
         private static int SecondsSinceStartOf2025() {
-            DateTime startOfYear = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            DateTime now = DateTime.UtcNow; 
+            DateTime startOfYear = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime now = DateTime.UtcNow;
 
             return (int)(now - startOfYear).TotalSeconds;
         }
