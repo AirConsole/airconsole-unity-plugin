@@ -13,8 +13,7 @@ namespace NDream.AirConsole.Editor {
     public class PreBuildProcessing : IPreprocessBuildWithReport {
         public int callbackOrder => 1;
 
-        public void OnPreprocessBuild(BuildReport report)
-        {
+        public void OnPreprocessBuild(BuildReport report) {
             CheckWebGLSetup();
 
             Debug.Log("Used Python path: " + Environment.GetEnvironmentVariable("EMSDK_PYTHON"));
@@ -29,7 +28,6 @@ namespace NDream.AirConsole.Editor {
 #if !UNITY_2020_1_OR_NEWER && UNITY_EDITOR_OSX
         System.Environment.SetEnvironmentVariable("EMSDK_PYTHON", Settings.Python2Path);
 #endif
-
         }
 
         private static void CheckWebGLSetup() {

@@ -6,7 +6,7 @@ using UnityEditor;
 namespace NDream.AirConsole.Editor {
     [CustomEditor(typeof(AirConsole))]
     public class Inspector : UnityEditor.Editor {
-        private GUIStyle styleBlack = new GUIStyle();
+        private GUIStyle styleBlack = new();
         private Texture2D bg;
         private Texture logo;
         private AirConsole controller;
@@ -18,7 +18,6 @@ namespace NDream.AirConsole.Editor {
         private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
         private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
-
 
         private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
 

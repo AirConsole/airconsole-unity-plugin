@@ -82,7 +82,7 @@ namespace NDream.AirConsole {
             get { return string.Empty; }
 #endif
         }
-        
+
         /// <summary>
         /// AirConsole Singleton Instance.
         /// This is your direct access to the AirConsole API.
@@ -229,7 +229,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "message");
             msg.Add("from", to);
             msg.Add("data", JToken.FromObject(data));
@@ -246,7 +246,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "broadcast");
             msg.Add("data", JToken.FromObject(data));
 
@@ -316,7 +316,7 @@ namespace NDream.AirConsole {
                 _players.Add(device_ids[i]);
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "setActivePlayers");
             msg.Add("max_players", max_players);
 
@@ -348,7 +348,6 @@ namespace NDream.AirConsole {
         public int ConvertDeviceIdToPlayerNumber(int device_id) {
             return _players.IndexOf(device_id);
         }
-
 
         /// <summary>
         /// Returns the globally unique id of a device.
@@ -460,7 +459,6 @@ namespace NDream.AirConsole {
                 return null;
             }
         }
-
 
         /// <summary>
         /// Gets a translation for the users current language See http://developers.airconsole.com/#!/guides/translations
@@ -596,7 +594,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "navigateHome");
 
             wsListener.Message(msg);
@@ -611,7 +609,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "navigateTo");
             msg.Add("data", url);
 
@@ -627,7 +625,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "setCustomDeviceState");
             msg.Add("data", JToken.FromObject(data));
 
@@ -651,7 +649,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "setCustomDeviceStateProperty");
             msg.Add("key", JToken.FromObject(key));
             msg.Add("value", JToken.FromObject(value));
@@ -663,7 +661,7 @@ namespace NDream.AirConsole {
 
             JToken custom = _devices[0]["custom"];
             if (custom == null) {
-                JObject new_custom = new JObject();
+                JObject new_custom = new();
                 _devices[0]["custom"] = JToken.FromObject(new_custom);
             }
 
@@ -685,7 +683,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "showAd");
 
             wsListener.Message(msg);
@@ -720,7 +718,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            List<int> result = new List<int>();
+            List<int> result = new();
             string game_url = GetGameUrl(_location);
             for (int i = 1; i < _devices.Count; ++i) {
                 JToken device = GetDevice(i);
@@ -731,7 +729,6 @@ namespace NDream.AirConsole {
 
             return result;
         }
-
 
         /// <summary>
         /// Returns true if a user is logged in.
@@ -776,7 +773,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "requestHighScores");
             msg.Add("level_name", level_name);
             msg.Add("level_version", level_version);
@@ -827,7 +824,7 @@ namespace NDream.AirConsole {
         /// </summary>
         public void StoreHighScore(string level_name, string level_version, float score, string uid, JObject data = null,
             string score_string = null) {
-            List<string> uids = new List<string>();
+            List<string> uids = new();
             uids.Add(uid);
             StoreHighScore(level_name, level_version, score, uids, data, score_string);
         }
@@ -849,14 +846,14 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "storeHighScore");
             msg.Add("level_name", level_name);
             msg.Add("level_version", level_version);
             msg.Add("score", score);
 
 
-            JArray uidJArray = new JArray();
+            JArray uidJArray = new();
             foreach (string uid in uids) {
                 uidJArray.Add(uid);
             }
@@ -899,11 +896,11 @@ namespace NDream.AirConsole {
                 throw new ArgumentException("uids must contain at least one uid");
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "requestPersistentData");
 
             if (uids != null) {
-                JArray uidJArray = new JArray();
+                JArray uidJArray = new();
                 foreach (string uid in uids) {
                     uidJArray.Add(uid);
                 }
@@ -932,7 +929,7 @@ namespace NDream.AirConsole {
                 throw new ArgumentException("uid must not be null or empty");
             }
 
-            JObject msg = new JObject();
+            JObject msg = new();
             msg.Add("action", "storePersistentData");
             msg.Add("key", key);
             msg.Add("value", value);
@@ -984,7 +981,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            List<int> result = new List<int>();
+            List<int> result = new();
 
             List<int> allControllers = GetControllerDeviceIds();
             for (int i = 0; i < allControllers.Count; ++i) {
@@ -996,7 +993,6 @@ namespace NDream.AirConsole {
             return result;
         }
 
-        
         /// <summary>
         /// Sets the immersive state of the AirConsole game based on the provided options.
         /// </summary>
@@ -1045,14 +1041,15 @@ namespace NDream.AirConsole {
                     throw new ArgumentOutOfRangeException("light values must be in the range [0, 255]");
                 }
             }
-            
-            
-            JObject msg = new JObject {
+
+
+            JObject msg = new() {
                 { "action", "setImmersiveState" },
                 { "state", payload }
             };
             wsListener.Message(msg);
         }
+
         #endregion
 
 #endif
@@ -1191,13 +1188,12 @@ namespace NDream.AirConsole {
         private void OnDisable() {
             StopWebsocketServer();
         }
-        
-        public static T ACFindObjectOfType<T>() where T : UnityEngine.Object
-        {
+
+        public static T ACFindObjectOfType<T>() where T : UnityEngine.Object {
 #if !UNITY_6000_0_OR_NEWER
             return UnityEngine.Object.FindObjectOfType<T>();
 #else
-            return UnityEngine.Object.FindFirstObjectByType<T>();
+            return FindFirstObjectByType<T>();
 #endif
         }
 
@@ -1586,9 +1582,8 @@ namespace NDream.AirConsole {
         private void OnPause(JObject msg) {
             try {
                 if (onPause != null) {
-                    eventQueue.Enqueue(delegate () {
-                        if (onPause != null)
-                        {
+                    eventQueue.Enqueue(delegate() {
+                        if (onPause != null) {
                             onPause();
                         }
                     });
@@ -1607,9 +1602,8 @@ namespace NDream.AirConsole {
         private void OnResume(JObject msg) {
             try {
                 if (onResume != null) {
-                    eventQueue.Enqueue(delegate () {
-                        if (onResume != null)
-                        {
+                    eventQueue.Enqueue(delegate() {
+                        if (onResume != null) {
                             onResume();
                         }
                     });
@@ -1653,13 +1647,13 @@ namespace NDream.AirConsole {
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new List<UnityEngine.UI.CanvasScaler>();
 #endif
-        private List<JToken> _devices = new List<JToken>();
+        private List<JToken> _devices = new();
         private int _device_id;
         private int _server_time_offset;
         private string _location;
         private Dictionary<string, string> _translations;
-        private List<int> _players = new List<int>();
-        private readonly Queue<Action> eventQueue = new Queue<Action>();
+        private List<int> _players = new();
+        private readonly Queue<Action> eventQueue = new();
 
         // unity singleton handling
         private static AirConsole _instance;
@@ -1689,14 +1683,12 @@ namespace NDream.AirConsole {
             }
 
 #if UNITY_EDITOR
-            var hasDevGameId = instance.devGameId.Length > 0;
-            var hasDevLanguage = instance.devLanguage.Length > 0;
-            if (hasDevGameId)
-            {
-                url += "?dev-game-id=" + AirConsole.instance.devGameId;
+            bool hasDevGameId = instance.devGameId.Length > 0;
+            bool hasDevLanguage = instance.devLanguage.Length > 0;
+            if (hasDevGameId) {
+                url += "?dev-game-id=" + instance.devGameId;
 
-                if (hasDevLanguage)
-                {
+                if (hasDevLanguage) {
                     url += $"&language={instance.devLanguage}";
                 }
             }
@@ -1748,7 +1740,6 @@ namespace NDream.AirConsole {
                 _devices.Add(null);
             }
         }
-
 
 #if UNITY_ANDROID
         private int GetScaledWebViewHeight() {
