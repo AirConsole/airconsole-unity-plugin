@@ -19,6 +19,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Deprecated
 
 - `GetActivePlayerDeviceIds` has been deprecated and replaced with `ActivePlayerDeviceIds`
+- Python SDK handling has been removed. This feature was only required for Unity 2019 on MacOS 12+
 
 ## [2.5.6] - 2025-02-11
 
