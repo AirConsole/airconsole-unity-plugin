@@ -9,6 +9,19 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace NDream.AirConsole.Editor {
+    internal abstract class EditorNotificationService {
+        internal static void InvokeError(string message, bool addAirConsoleDisable = false) {
+            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
+            if (addAirConsoleDisable) {
+                message +=
+                    "\nTo disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.";
+            }
+
+            Debug.LogError(message);
+            throw new UnityException(message);
+        }
+    }
+
     public abstract class UnityVersionCheck {
         [InitializeOnLoadMethod]
         private static void CheckUnityVersions() {
@@ -16,31 +29,42 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer";
-            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
-            Debug.LogError(message);
-            throw new UnityException(message);
+            EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!", true);
         }
 
         public static bool IsSupportedUnityVersion() {
-#if !UNITY_2022_3_OR_NEWER && !UNITY_6000_0_OR_NEWER
-            return false;
-#endif
-            return true;
+            return Settings.IsUnity2022OrHigher();
         }
     }
 
     public abstract class UnityPlatform {
         [InitializeOnLoadMethod]
         private static void CheckPlatform() {
-            BuildTargetGroup buildTarget = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if (buildTarget == BuildTargetGroup.Android || buildTarget == BuildTargetGroup.WebGL) {
+            BuildTarget buildTarget = EditorUserBuildSettings.selectedStandaloneTarget;
+            if (buildTarget is BuildTarget.Android or BuildTarget.WebGL) {
                 return;
             }
 
-            Debug.LogWarning($"AirConsole Plugin does not support platform {buildTarget}, switching to WebGL.\n"
-                             + "To disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.");
-            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            if (IsPlatformSupported(BuildTarget.WebGL)) {
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            } else if (IsPlatformSupported(BuildTarget.Android)) {
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
+            } else {
+                EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires the WebGL or Android module to be present!",
+                    true);
+            }
+        }
+
+        private static bool IsPlatformSupported(BuildTarget buildTarget) {
+            Type moduleManager = Type.GetType("UnityEditor.Modules.ModuleManager,UnityEditor.dll");
+            MethodInfo IsPlatformSupportLoadedByBuildTarget = moduleManager.GetMethod("IsPlatformSupportLoadedByBuildTarget",
+                BindingFlags.Static | BindingFlags.NonPublic);
+
+            if (IsPlatformSupportLoadedByBuildTarget != null) {
+                return (bool)IsPlatformSupportLoadedByBuildTarget.Invoke(null, new object[] { buildTarget });
+            }
+
+            return true;
         }
     }
 
@@ -77,8 +101,9 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.resetResolutionOnWindowResize = true;
 
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
-                Debug.LogError("AirConsole Unity Plugin 2.6.0 and above require Unity 2022.3 LTS or newer");
-                throw new UnityException("Unity Version " + Application.unityVersion);
+                string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
+                Debug.LogError(message);
+                throw new UnityException(message);
             }
 
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
@@ -98,6 +123,8 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void EnsureWebGLPlayerSettings() {
+            VerifyWebGLTemplate();
+
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
             PlayerSettings.WebGL.nameFilesAsHashes = false; // We upload into timestamp based folders. This is not necessary.
 
@@ -125,6 +152,24 @@ namespace NDream.AirConsole.Editor {
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
                 throw new UnityException("Please update the WebGL build and player settings to continue.");
+            }
+        }
+
+        private static void VerifyWebGLTemplate() {
+            string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
+            string[] templateUri = PlayerSettings.WebGL.template.Split(':');
+            if (templateUri.Length != 2
+                || templateUri[0].ToUpper() == "APPLICATION"
+                || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
+                string incompatibleTemplateMessage =
+                    $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
+                Debug.LogError(incompatibleTemplateMessage);
+
+                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
+                        "Cancel")) {
+                    // In Unity 6 this needs to be done with a delay call, otherwise it breaks the window layout when Project Settings are docked already.
+                    EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player"); 
+                }
             }
         }
 
