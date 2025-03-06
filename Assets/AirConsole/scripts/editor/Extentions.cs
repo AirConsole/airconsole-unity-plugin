@@ -60,10 +60,10 @@ namespace NDream.AirConsole.Editor {
                 Settings.debug.warning = EditorPrefs.GetBool("debugWarning");
             }
 
-			if (EditorPrefs.GetBool ("debugError", true) != true) {
-				Settings.debug.error = EditorPrefs.GetBool ("debugError");
-			}
-		}
+            if (EditorPrefs.GetBool("debugError", true) != true) {
+                Settings.debug.error = EditorPrefs.GetBool("debugError");
+            }
+        }
 
         public static void ResetDefaultValues() {
             Settings.debug.info = DebugLevel.DEFAULT_INFO;

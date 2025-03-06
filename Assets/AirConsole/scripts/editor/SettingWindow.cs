@@ -77,7 +77,7 @@ namespace NDream.AirConsole.Editor {
 
             EditorGUILayout.EndToggleGroup();
 
-			EditorGUILayout.BeginHorizontal (styleBlack);
+            EditorGUILayout.BeginHorizontal(styleBlack);
 
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Reset Settings", GUILayout.MaxWidth(110))) {

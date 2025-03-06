@@ -1196,7 +1196,7 @@ namespace NDream.AirConsole {
 
         public static T ACFindObjectOfType<T>() where T : UnityEngine.Object {
 #if !UNITY_6000_0_OR_NEWER
-            return UnityEngine.Object.FindObjectOfType<T>();
+            return FindObjectOfType<T>();
 #else
             return FindFirstObjectByType<T>();
 #endif
