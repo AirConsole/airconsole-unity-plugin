@@ -10,11 +10,6 @@ namespace NDream.AirConsole.Editor {
     public class AndroidManifestProcessor : IPreprocessBuildWithReport {
         public int callbackOrder => 999;
 
-        [MenuItem("Tools/AirConsole/Development/Update Android Manifest")]
-        public static void UpdateAndroidManifestMenuAction() {
-            UpdateAndroidManifest();
-        }
-
         public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report) {
             if (report.summary.platform != BuildTarget.Android) {
                 return;
@@ -39,7 +34,7 @@ namespace NDream.AirConsole.Editor {
             File.Copy(unityManifestPath, targetPath);
         }
 
-        private static void UpdateAndroidManifest() {
+        internal static void UpdateAndroidManifest() {
             string manifestPath = GetManifestPath();
 
             AndroidManifestTransformer transformer = EnsureCustomManifestExists(manifestPath);

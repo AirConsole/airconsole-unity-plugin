@@ -75,7 +75,7 @@ namespace NDream.AirConsole.Editor {
             CheckSettings(report.summary.platform);
         }
 
-        public static void CheckSettings(BuildTarget platform) {
+        internal static void CheckSettings(BuildTarget platform) {
             EnsureSharedPlayerSettings();
 
             switch (platform) {
@@ -168,7 +168,7 @@ namespace NDream.AirConsole.Editor {
                 if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
                         "Cancel")) {
                     // In Unity 6 this needs to be done with a delay call, otherwise it breaks the window layout when Project Settings are docked already.
-                    EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player"); 
+                    EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player");
                 }
             }
         }
@@ -293,16 +293,6 @@ namespace NDream.AirConsole.Editor {
             DateTime now = DateTime.UtcNow;
 
             return (int)(now - startOfYear).TotalSeconds;
-        }
-
-        [MenuItem("Tools/AirConsole/Check Android Config")]
-        public static void CheckAndroid() {
-            CheckSettings(BuildTarget.Android);
-        }
-
-        [MenuItem("Tools/AirConsole/Check Web Config")]
-        public static void CheckWeb() {
-            CheckSettings(BuildTarget.WebGL);
         }
 
         #region Check Texture format usage
