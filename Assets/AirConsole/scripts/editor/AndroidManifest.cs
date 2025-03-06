@@ -8,7 +8,9 @@ namespace NDream.AirConsole.Editor {
     internal class AndroidManifest : AndroidXmlDocument {
         private readonly XmlElement ApplicationElement;
 
-        internal AndroidManifest(string path) : base(path) { ApplicationElement = SelectSingleNode("/manifest/application") as XmlElement; }
+        internal AndroidManifest(string path) : base(path) {
+            ApplicationElement = SelectSingleNode("/manifest/application") as XmlElement;
+        }
 
         internal XmlAttribute GenerateAttribute(string prefix, string key, string value, string XmlNamespace) {
             XmlAttribute attr = CreateAttribute(prefix, key, XmlNamespace);
@@ -16,7 +18,9 @@ namespace NDream.AirConsole.Editor {
             return attr;
         }
 
-        internal void SetAttribute(XmlAttribute Attribute) { ApplicationElement.Attributes.Append(Attribute); }
+        internal void SetAttribute(XmlAttribute Attribute) {
+            ApplicationElement.Attributes.Append(Attribute);
+        }
     }
 }
 #endif
