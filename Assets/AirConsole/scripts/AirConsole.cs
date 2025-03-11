@@ -1753,7 +1753,7 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            if (!string.IsNullOrEmpty(androidTvGameVersion)) {
+            if (!string.IsNullOrEmpty(androidGameVersion)) {
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
