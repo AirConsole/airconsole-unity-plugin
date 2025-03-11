@@ -79,10 +79,9 @@ namespace NDream.AirConsole.Editor {
     }
 
     internal abstract class PluginVersionTracker {
-        private const string PluginVersionKey = "NDream.AirConsole.PluginVersion";
-
         private static string GetLastKnownPluginVersion() {
-            string previousPluginVersion = EditorPrefs.GetString(PluginVersionKey, string.Empty);
+            ProjectPreferences preferences = ProjectPreferenceManager.LoadPreferences();
+            string previousPluginVersion = preferences.PluginVersion ?? string.Empty;
             return string.IsNullOrEmpty(previousPluginVersion) ? string.Empty : previousPluginVersion;
         }
 
@@ -110,11 +109,15 @@ namespace NDream.AirConsole.Editor {
         }
 
         internal static void RecordPluginVersionUpdate(string newVersionString) {
-            EditorPrefs.SetString(PluginVersionKey, newVersionString);
+            ProjectPreferences preferences = ProjectPreferenceManager.LoadPreferences();
+            preferences.PluginVersion = newVersionString;
+            ProjectPreferenceManager.SavePreferences(preferences);
         }
 
         internal static void DeleteLastPluginVersionKey() {
-            EditorPrefs.DeleteKey(PluginVersionKey);
+            ProjectPreferences preferences = ProjectPreferenceManager.LoadPreferences();
+            preferences.PluginVersion = string.Empty;
+            ProjectPreferenceManager.SavePreferences(preferences);
         }
 
         [MenuItem("Tools/AirConsole/Force upgrade project")]
