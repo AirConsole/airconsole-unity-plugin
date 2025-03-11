@@ -32,7 +32,7 @@ public class ExamplePongLogic : MonoBehaviour {
 	/// </summary>
 	/// <param name="device_id">The device_id that connected</param>
 	void OnConnect (int device_id) {
-		if (AirConsole.instance.GetActivePlayerDeviceIds.Count == 0) {
+		if (AirConsole.instance.ActivePlayerDeviceIds.Count == 0) {
 			if (AirConsole.instance.GetControllerDeviceIds ().Count >= 2) {
 				StartGame ();
 			} else {

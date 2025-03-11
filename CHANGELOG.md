@@ -15,6 +15,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Removed
 
 - AndroidManifest: The plugin no longer ships with a custom AndroidManifest.
+- The obsoleted AirConsole properties `server_time_offset`, `device_id` and `devices` have been removed. Please use `GetServerTime(), GetDeviceId()`` and`.Devices` instead.
+
+### Deprecated
+
+- `GetActivePlayerDeviceIds` has been deprecated and replaced with `ActivePlayerDeviceIds`
 - Python SDK handling has been removed. This feature was only required for Unity 2019 on MacOS 12+
 
 ## [2.5.6] - 2025-02-11

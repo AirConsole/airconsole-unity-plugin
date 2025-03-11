@@ -8,6 +8,7 @@ using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 #if UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
@@ -77,7 +78,7 @@ namespace NDream.AirConsole {
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
         public static string Version {
 #if UNITY_ANDROID
-            get { return instance.androidTvGameVersion; }
+            get { return instance.androidGameVersion; }
 #else
             get { return string.Empty; }
 #endif
@@ -322,13 +323,6 @@ namespace NDream.AirConsole {
 
             wsListener.Message(msg);
         }
-
-        /// <summary>
-        /// Returns an array of device_ids of the active players previously set by the
-        /// screen by calling setActivePlayers. The first device_id in the array is the
-        /// first player, the second device_id in the array is the second player, ...
-        /// </summary>
-        public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
 
         /// <summary>
         /// Returns the device_id of a player, if the player is part of the active
@@ -1069,12 +1063,14 @@ namespace NDream.AirConsole {
         [Tooltip("Automatically scale the game canvas")]
         public bool autoScaleCanvas = true;
 
+        [FormerlySerializedAs("androidTvGameVersion")]
         [Header("Android Settings")]
         [Tooltip(
             "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
-        public string androidTvGameVersion;
+        public string androidGameVersion;
 
-        [Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        [Tooltip("Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+                 + "On Android Automotive please use OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1624,23 +1620,21 @@ namespace NDream.AirConsole {
             }
         }
 
-        // TODO(2.6.0): Remove this property
-        [Obsolete("Please use GetServerTime(). This method will be removed in version 2.6.0.", true)]
-        public int server_time_offset => _server_time_offset;
-
-        // TODO(2.6.0): Remove this property
-        [Obsolete("device_id is deprecated, please use GetDeviceId() instead.\nThis method will be removed in version 2.6.0.", true)]
-        public int device_id => GetDeviceId();
-
-        // TODO(2.6.0): Remove this property
-        [Obsolete("Please use getter .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
-        public ReadOnlyCollection<JToken> devices => _devices.AsReadOnly();
-
         /// <summary>
         /// Provides access to the device data of all devices in the game.
         /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
         /// </summary>
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
+
+        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)] 
+        public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
+        
+        /// <summary>
+        /// Returns an array of device_ids of the active players previously set by the
+        /// screen by calling setActivePlayers. The first device_id in the array is the
+        /// first player, the second device_id in the array is the second player, ...
+        /// </summary>
+        public ReadOnlyCollection<int> ActivePlayerDeviceIds => _players.AsReadOnly();
 
         // private vars
         private WebSocketServer wsServer;
@@ -1791,7 +1785,7 @@ namespace NDream.AirConsole {
 #endif
 
                     url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + androidTvGameVersion;
+                    url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
                     webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
@@ -1834,7 +1828,7 @@ namespace NDream.AirConsole {
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
-            if (gameId != Application.identifier || gameVersion != instance.androidTvGameVersion) {
+            if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
                 if (msg["quit_after_launch_intent"] != null) {
