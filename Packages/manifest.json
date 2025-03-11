@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.airconsole.webview": "https://github.com/AirConsole/airconsole-unity-webview.git?path=/package#v1.0.1",
+    "com.airconsole.unity-webview": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment",
     "com.unity.ext.nunit": "2.0.5",
     "com.unity.ide.rider": "3.0.34",
     "com.unity.ide.vscode": "1.2.5",
