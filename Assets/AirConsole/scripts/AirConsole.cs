@@ -1753,11 +1753,23 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            if (androidGameVersion != null && androidGameVersion != "") {
+            if (!string.IsNullOrEmpty(androidTvGameVersion)) {
                 if (webViewObject == null) {
                     webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                     DontDestroyOnLoad(webViewObject.gameObject);
                     webViewObject.Init((msg) => ProcessJS(msg));
+                    webViewObject.Init(ProcessJS,
+                        err => AirConsoleLogger.LogDevelopment($"AirConsole webview error: {err}"),
+                        httpError => AirConsoleLogger.LogDevelopment($"AirConsole webview HttpError: {httpError}"),
+                        url => {
+                            if (Settings.debug.info) {
+                                Debug.Log($"AirConsole webview loaded url: {url}");
+                            }
+                        },
+                        started => AirConsoleLogger.LogDevelopment($"AirConsole webview started: {started}"),
+                        hooked => AirConsoleLogger.LogDevelopment($"AirConsole webview hooked: {hooked}"),
+                        cookies => AirConsoleLogger.LogDevelopment($"AirConsole webview cookies: {cookies}"),
+                        true);
 
                     string url = Settings.AIRCONSOLE_BASE_URL;
                     url += "client?id=androidunity-" + ComputeUrlVersion(Settings.VERSION);
