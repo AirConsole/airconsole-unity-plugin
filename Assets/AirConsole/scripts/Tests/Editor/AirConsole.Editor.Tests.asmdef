@@ -1,6 +1,6 @@
 {
-    "name": "AirConsole.Tests",
-    "rootNamespace": "NDream.AirConsole.Test",
+    "name": "AirConsole.Editor.Tests",
+    "rootNamespace": "NDream.AirConsole.Editor.Tests",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
