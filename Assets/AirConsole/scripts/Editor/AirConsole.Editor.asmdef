@@ -1,0 +1,21 @@
+{
+    "name": "AirConsole.Editor",
+    "rootNamespace": "NDream.AirConsole.Editor",
+    "references": [
+        "AirConsole.Runtime",
+        "UnityEditor.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
