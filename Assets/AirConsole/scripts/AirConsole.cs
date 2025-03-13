@@ -1175,10 +1175,7 @@ namespace NDream.AirConsole {
         }
 
         private void Update() {
-            // dispatch event queue on main unity thread
-            while (eventQueue.Count > 0) {
-                eventQueue.Dequeue().Invoke();
-            }
+            ProcessEvents();
 
 #if UNITY_ANDROID
             //back button on TV remotes
@@ -1186,6 +1183,13 @@ namespace NDream.AirConsole {
                 Application.Quit();
             }
 #endif
+        }
+
+        private void ProcessEvents() {
+            // dispatch event queue on main unity thread
+            while (eventQueue.Count > 0) {
+                eventQueue.Dequeue().Invoke();
+            }
         }
 
         private void OnApplicationQuit() {
@@ -1720,6 +1724,9 @@ namespace NDream.AirConsole {
 
         public void ProcessJS(string data) {
             wsListener.ProcessMessage(data);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            ProcessEvents();
+#endif
         }
 
         private JToken GetDevice(int deviceId) {
