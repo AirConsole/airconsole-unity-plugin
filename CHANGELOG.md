@@ -8,17 +8,17 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [2.5.7] - 2025-03-12
 
-This release fixes an issue where AirConsole callbacks got delayed by at least one frame, incorrect Android Manifest outputs during builds and improves
-the pong example.
+This release fixes an issue where AirConsole callbacks got delayed by at least one frame, incorrect Android Manifest outputs during builds
+and improves the pong example.
 
 ### Fixed
 
-- SendMessage calls in WebGL builds are now processed as soon as possible.
+- WebGL: Events sent from the browser to Unity are now processed as soon as possible.
 - Fixed usage of all variants of Unity Activities in Android Manifest
 
 ### Changed
 
-- Adjust the pong example to make use of the CustomDeviceState and bring it closer to the Web pong example
+- Adjust the pong example to make use of the CustomDeviceState and bring it closer to the javascript pong example
 
 ## [2.5.6] - 2025-02-11
 
