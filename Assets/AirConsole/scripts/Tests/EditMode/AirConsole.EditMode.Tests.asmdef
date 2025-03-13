@@ -1,0 +1,22 @@
+{
+  "name": "AirConsole.EditMode.Tests",
+  "rootNamespace": "NDream.AirConsole.EditMode.Tests",
+  "references": [
+    "UnityEngine.TestRunner",
+    "AirConsole.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll",
+    "Newtonsoft.Json.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
