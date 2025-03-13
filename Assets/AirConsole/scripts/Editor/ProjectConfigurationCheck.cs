@@ -40,8 +40,8 @@ namespace NDream.AirConsole.Editor {
     public abstract class UnityPlatform {
         [InitializeOnLoadMethod]
         private static void CheckPlatform() {
-            BuildTarget buildTarget = EditorUserBuildSettings.selectedStandaloneTarget;
-            if (buildTarget is BuildTarget.Android or BuildTarget.WebGL) {
+            BuildTargetGroup buildTarget = EditorUserBuildSettings.selectedBuildTargetGroup;
+            if (buildTarget is BuildTargetGroup.Android or BuildTargetGroup.WebGL) {
                 return;
             }
 
