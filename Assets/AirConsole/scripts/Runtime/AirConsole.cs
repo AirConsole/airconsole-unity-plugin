@@ -7,9 +7,10 @@ using System;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
-using UnityEngine.SceneManagement;
 using UnityEngine.Serialization;
-#if UNITY_WEBGL
+#if UNITY_ANDROID
+using UnityEngine.SceneManagement;
+#elif UNITY_WEBGL
 using System.Runtime.InteropServices;
 #endif
 
@@ -61,6 +62,8 @@ namespace NDream.AirConsole {
     public delegate void OnPause();
 
     public delegate void OnResume();
+
+    public delegate void OnSafeAreaChanged(Rect newSafeArea);
 
     public class AirConsole : MonoBehaviour {
 #if !DISABLE_AIRCONSOLE
@@ -213,6 +216,13 @@ namespace NDream.AirConsole {
         /// Gets called when the game should be resumed.
         /// </summary>
         public event OnResume onResume;
+
+        /// <summary>
+        /// Is invoked when the SafeArea of the device changes through the platform.
+        /// </summary>
+        /// <param name="newSafeArea">The new safe area as a camera pixelRect the game and game's UI must respect</param>
+        /// <remarks>On Android Automotive targets, this event must be used to drive changes to Unity GUI / UIElement reference resolutions where necessary.</remarks>
+        public event OnSafeAreaChanged OnSafeAreaChanged;
 
         /// <summary>
         /// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
@@ -1072,8 +1082,8 @@ namespace NDream.AirConsole {
         public string androidGameVersion;
 
         [Tooltip(
-            "Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
-            + "On Android Automotive please use OnSafeAreaChanged")]
+            "Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+            + "Use this together with OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1098,7 +1108,7 @@ namespace NDream.AirConsole {
 
         #region unity functions
 
-        private void Awake() {
+        protected void Awake() {
             if (instance != this) {
                 Destroy(gameObject);
             }
@@ -1111,7 +1121,7 @@ namespace NDream.AirConsole {
 #endif
         }
 
-        private void Start() {
+        protected void Start() {
             // application has to run in background
 #if UNITY_ANDROID && !UNITY_EDITOR
             Application.runInBackground = false;
@@ -1122,16 +1132,24 @@ namespace NDream.AirConsole {
             // register all incoming events
 #if UNITY_ANDROID
             InitWebView();
+
+            SceneManager.sceneLoaded += OnAndroidSceneLoaded;
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+#else
+            InitWebSockets();
+#endif
+        }
+
+        private void InitWebSockets() {
+#if UNITY_ANDROID
             wsListener = new WebsocketListener(webViewObject);
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
-
-            SceneManager.sceneLoaded += OnSceneLoaded;
-            Screen.sleepTimeout = SleepTimeout.NeverSleep;
 #else
             wsListener = new WebsocketListener();
 #endif
+            wsListener.OnSetSafeArea += OnSetSafeArea;
             wsListener.onReady += OnReady;
             wsListener.onClose += OnClose;
             wsListener.onMessage += OnMessage;
@@ -1151,12 +1169,10 @@ namespace NDream.AirConsole {
             wsListener.onPause += OnPause;
             wsListener.onResume += OnResume;
 
-
-            // check if game is running in webgl build
-            if (Application.platform != RuntimePlatform.WebGLPlayer && Application.platform != RuntimePlatform.Android) {
+            if (Application.isEditor) {
                 // start websocket connection
                 wsServer = new WebSocketServer(Settings.webSocketPort);
-                wsServer.AddWebSocketService<WebsocketListener>(Settings.WEBSOCKET_PATH, () => wsListener);
+                wsServer.AddWebSocketService(Settings.WEBSOCKET_PATH, () => wsListener);
                 wsServer.Start();
 
                 if (Settings.debug.info) {
@@ -1170,7 +1186,53 @@ namespace NDream.AirConsole {
             }
         }
 
-        private void Update() {
+        private void OnSetSafeArea(JObject msg) {
+            SetSafeArea(msg);
+        }
+
+        internal void SetSafeArea(JObject msg) {
+            JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
+            if (safeAreaObj == null) {
+                throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
+            }
+
+            eventQueue.Enqueue(delegate {
+                _lastSafeAreaParameters = safeAreaObj;
+                RefreshSafeArea(_lastSafeAreaParameters);
+            });
+        }
+
+        private void RefreshSafeArea(JObject safeAreaObj) {
+            float heightValue = GetFloatFromMessage(safeAreaObj, "height", 1);
+            float y = Screen.height * (1 - GetFloatFromMessage(safeAreaObj, "top", 0) - heightValue);
+            float x = Screen.width * GetFloatFromMessage(safeAreaObj, "left", 0);
+            float height = Screen.height * heightValue;
+            float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
+
+            // TODO(Marc) Update when we send width / height that are no longer bottom / right
+            Rect safeArea = new() {
+                y = y,
+                height = height,
+                x = x,
+                width = width
+            };
+            SafeArea = safeArea;
+
+            if ((androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
+                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution)
+                && Camera.main != null) {
+                AirConsoleLogger.LogDevelopment($"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
+                Camera.main.pixelRect = safeArea;
+            }
+
+            _safeAreaWasSet = true;
+            _webViewManager.ActivateSafeArea();
+            AirConsoleLogger.LogDevelopment(
+                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
+            OnSafeAreaChanged?.Invoke(SafeArea);
+        }
+
+        protected void Update() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
@@ -1399,9 +1461,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdShow(JObject msg) {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.SetMargins(0, 0, 0, 0);
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
+
             try {
                 if (onAdShow != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1422,9 +1483,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnAdComplete(JObject msg) {
-#if UNITY_ANDROID && !UNITY_EDITOR
-            webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
+
             try {
                 bool adWasShown = (bool)msg["ad_was_shown"];
 
@@ -1447,9 +1507,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnGameEnd(JObject msg) {
-#if UNITY_ANDROID
-            webViewObject.SetMargins(0, 0, 0, 0);
-#endif
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
+
             try {
                 if (onGameEnd != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1639,6 +1698,12 @@ namespace NDream.AirConsole {
         /// </summary>
         public ReadOnlyCollection<int> ActivePlayerDeviceIds => _players.AsReadOnly();
 
+        /// <summary>
+        /// The currently valid safe area in camera coordinates. Valid pixelRect for cameras to render in.
+        /// </summary>
+        /// <remarks>Can be directly assigned to the camera.pixelRect</remarks>
+        public Rect SafeArea { get; private set; } = new(0, 0, Screen.width, Screen.height);
+
         // private vars
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
@@ -1656,8 +1721,11 @@ namespace NDream.AirConsole {
         private int _server_time_offset;
         private string _location;
         private Dictionary<string, string> _translations;
-        private List<int> _players = new();
+        private readonly List<int> _players = new();
         private readonly Queue<Action> eventQueue = new();
+        private bool _safeAreaWasSet;
+        private JObject _lastSafeAreaParameters;
+        private WebViewManager _webViewManager;
 
         // unity singleton handling
         private static AirConsole _instance;
@@ -1665,6 +1733,7 @@ namespace NDream.AirConsole {
         private void StopWebsocketServer() {
             if (wsServer != null) {
                 wsServer.Stop();
+                wsServer = null;
             }
         }
 
@@ -1756,27 +1825,79 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
+            AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
             if (!string.IsNullOrEmpty(androidGameVersion)) {
-                if (webViewObject == null) {
-                    webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
+                PrepareWebviewOverlay();
+#if UNITY_EDITOR
+                // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
+                CreateAndroidWebview(connectionUrl);
+#else
+                if (_dataProviderPlugin.DataProviderInitialized) {
+                    string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
+                    // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+                    CreateAndroidWebview(connectionUrl); 
+                } else {
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
+                    _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
+                }
+#endif
+            } else {
+                AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
+                if (Settings.debug.error) {
+                    Debug.LogError(
+                        "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
+                }
+            }
+        }
+
+        private void PrepareWebviewOverlay() {
+            //Display loading Screen
+            webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
+
+
+#if !UNITY_EDITOR
+            webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
+            webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
+            webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+            webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
+            webViewLoadingImage.sprite = webViewLoadingSprite;
+            webViewLoadingBG.color = Color.black;
+            webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
+            webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
+            webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
+            webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
+            webViewLoadingImage.preserveAspect = true;
+
+            if (webViewLoadingSprite == null) {
+                webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
+            }
+#endif
+        }
+
+        private void CreateAndroidWebview(string connectionUrl) {
+            AirConsoleLogger.LogDevelopment($"Received connection url {connectionUrl}");
+            if (webViewObject == null) {
+                webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
+                if (Application.isPlaying) {
                     DontDestroyOnLoad(webViewObject.gameObject);
-                    webViewObject.Init((msg) => ProcessJS(msg));
-                    webViewObject.Init(ProcessJS,
-                        err => AirConsoleLogger.LogDevelopment($"AirConsole webview error: {err}"),
-                        httpError => AirConsoleLogger.LogDevelopment($"AirConsole webview HttpError: {httpError}"),
-                        url => {
-                            if (Settings.debug.info) {
-                                Debug.Log($"AirConsole webview loaded url: {url}");
-                            }
-                        },
-                        started => AirConsoleLogger.LogDevelopment($"AirConsole webview started: {started}"),
-                        hooked => AirConsoleLogger.LogDevelopment($"AirConsole webview hooked: {hooked}"),
-                        cookies => AirConsoleLogger.LogDevelopment($"AirConsole webview cookies: {cookies}"),
-                        true);
+                }
 
-                    string url = Settings.AIRCONSOLE_BASE_URL;
-                    url += "client?id=androidunity-" + ComputeUrlVersion(Settings.VERSION);
+                webViewObject.Init(ProcessJS,
+                    err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
+                    httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
+                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
+                    started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
+                    hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
+                    cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
+                    true, false);
+                // , false,
+                // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
 
+                string url = Settings.AIRCONSOLE_BASE_URL;
+                url += connectionUrl;
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
@@ -1791,43 +1912,21 @@ namespace NDream.AirConsole {
                     url += "&game-version=" + androidGameVersion;
                     url += "&unity-version=" + Application.unityVersion;
 
-                    webViewObject.SetMargins(0, 0, 0, defaultScreenHeight);
-                    webViewObject.SetVisibility(true);
-                    webViewObject.LoadURL(url);
+                _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
-                    //Display loading Screen
-                    webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
+                webViewObject.SetVisibility(!Application.isEditor);
+                AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
+                webViewObject.LoadURL(url);
 
-
-#if !UNITY_EDITOR
-                    webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
-                    webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
-                    webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
-                    webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
-                    webViewLoadingImage.sprite = webViewLoadingSprite;
-                    webViewLoadingBG.color = Color.black;
-                    webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
-                    webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
-                    webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
-                    webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
-                    webViewLoadingImage.preserveAspect = true;
-
-                    if (webViewLoadingSprite == null) {
-                        webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
-                    }
-#endif
-                }
-            } else {
-                if (Settings.debug.error) {
-                    Debug.LogError(
-                        "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
-                }
+                // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
+                // TODO(android-native): Replace it with the above line once the implementation is finished
+                webViewObject.EnableWebviewDebugging(true);
+                InitWebSockets();
             }
         }
 
         private void OnLaunchApp(JObject msg) {
-            Debug.Log("onLaunchApp");
+            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg}");
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
 
@@ -1882,7 +1981,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewResize(JObject msg) {
-            Debug.Log("OnUnityWebviewResize");
+            AirConsoleLogger.LogDevelopment($"OnUnityWebviewResize w/ msg {msg}");
             if (_devices.Count > 0) {
                 Debug.Log("screen device data: " + _devices[0].ToString());
             }
@@ -1890,31 +1989,58 @@ namespace NDream.AirConsole {
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
-                h = (int)msg["top_bar_height"] * 2;
+                h = (int)msg["top_bar_height"] * 2; // todo(android-native): This probably should use the screen dpi scaling factor
                 webViewHeight = h;
+                _webViewManager.SetWebViewHeight(h);
             }
 
-            webViewObject.SetMargins(0, 0, 0, defaultScreenHeight - webViewHeight);
+            if (webViewHeight > 0) {
+                _webViewManager.RequestStateTransition(WebViewManager.WebViewState.TopBar);
+            } else {
+                _webViewManager.RequestStateTransition(WebViewManager.WebViewState.Hidden);
+            }
+
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+                Camera.main.pixelRect = GetCameraPixelRect();
             }
+        }
+
+        private Rect GetCameraPixelRect() {
+#if UNITY_ANDROID
+            if (_safeAreaWasSet) {
+                return SafeArea;
+            }
+
+            return new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+#else
+            return Camera.main.pixelRect;
+#endif
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
-            webViewObject.SetMargins(0, 0, 0, 0);
+            AirConsoleLogger.LogDevelopment($"OnUnityWebviewPlatformReady {msg}");
+            _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
+#if UNITY_ANDROID
+        private void OnAndroidSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
             if (instance != this) {
                 return;
             }
 
-            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
-                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                Camera.main.pixelRect = new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                Camera.main.pixelRect = GetCameraPixelRect();
             }
 
+#if !AIRCONSOLE_AUTOMOTIVE
+            AdaptUGuiLayout();
+#endif
+        }
+#endif
+
+#if UNITY_ANDROID
+        private void AdaptUGuiLayout() {
             if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
 
@@ -1933,9 +2059,15 @@ namespace NDream.AirConsole {
             }
         }
 #endif
+#endif
+
+        private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) {
+            return !string.IsNullOrEmpty((string)msg[name])
+                ? (float)msg[name]
+                : defaultValue;
+        }
 
         #endregion
-
-#endif
     }
 }
+#endif
