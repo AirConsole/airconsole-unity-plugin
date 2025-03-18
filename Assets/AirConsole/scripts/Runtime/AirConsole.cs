@@ -32,19 +32,19 @@ namespace NDream.AirConsole {
 
     public delegate void OnMessage(int from, JToken data);
 
-    public delegate void OnDeviceStateChange(int device_id, JToken user_data);
+    public delegate void OnDeviceStateChange(int deviceId, JToken deviceData);
 
-    public delegate void OnConnect(int device_id);
+    public delegate void OnConnect(int deviceId);
 
-    public delegate void OnDisconnect(int device_id);
+    public delegate void OnDisconnect(int deviceId);
 
-    public delegate void OnCustomDeviceStateChange(int device_id, JToken custom_device_data);
+    public delegate void OnCustomDeviceStateChange(int deviceId, JToken customDeviceStateData);
 
-    public delegate void OnDeviceProfileChange(int device_id);
+    public delegate void OnDeviceProfileChange(int deviceId);
 
     public delegate void OnAdShow();
 
-    public delegate void OnAdComplete(bool ad_was_shown);
+    public delegate void OnAdComplete(bool adWasShown);
 
     public delegate void OnGameEnd();
 
@@ -56,7 +56,7 @@ namespace NDream.AirConsole {
 
     public delegate void OnPersistentDataLoaded(JToken data);
 
-    public delegate void OnPremium(int device_id);
+    public delegate void OnPremium(int deviceId);
 
     public delegate void OnPause();
 
@@ -104,7 +104,7 @@ namespace NDream.AirConsole {
 
         /// <summary>
         /// Gets called when the game console is ready.
-        /// This event also also fires onConnect for all devices that already are
+        /// This event also fires onConnect for all devices that already are
         /// connected and have loaded your game.
         /// This event also fires OnCustomDeviceStateChange for all devices that are
         /// connected, have loaded your game and have set a custom Device State.
@@ -122,36 +122,38 @@ namespace NDream.AirConsole {
 
         /// <summary>
         /// Gets called when a device joins/leaves a game session or updates its DeviceState (custom DeviceState, profile pic, nickname).
-        /// This is function is also called every time OnConnect, OnDisconnect or OnCustomDeviceStateChange is called. It's like their root function.
+        /// This is function is also called every time OnConnect, OnDisconnect or OnCustomDeviceStateChange is called. It's like their root function.<br />
+        /// Check <see cref="OnDeviceStateChange"/> for the event handler parameters.
         /// </summary>
-        /// <param name="device_id">the device ID that changed its DeviceState.</param>
-        /// <param name="data"> the data of that device. If undefined, the device has left.</param>
+        /// <param name="deviceId">the device ID that changed its DeviceState.</param>
+        /// <param name="deviceData"> the data of that device. If undefined, the device has left.</param>
         public event OnDeviceStateChange onDeviceStateChange;
 
         /// <summary>
-        /// Gets called when a device has connected and loaded the game.
+        /// Gets called when a device has connected and loaded the game.<br />
+        /// Check <see cref="OnConnect"/> for the event handler parameters.
         /// </summary>
-        /// <param name="device_id">the device ID that loaded the game.</param>
+        /// <param name="deviceId">the device ID that loaded the game.</param>
         public event OnConnect onConnect;
 
         /// <summary>
         /// Gets called when a device has left the game.
         /// </summary>
-        /// <param name="device_id">the device ID that left the game.</param>
+        /// <param name="deviceId">the device ID that left the game.</param>
         public event OnDisconnect onDisconnect;
 
         /// <summary>
         /// Gets called when a device updates it's custom DeviceState by calling SetCustomDeviceState or SetCustomDeviceStateProperty.
         /// Make sure you understand the power of device states: http://developers.airconsole.com/#/guides/device_ids_and_states
         /// </summary>
-        /// <param name="device_id">the device ID that changed its customDeviceState.</param>
-        /// <param name="cutsom_data">The custom DeviceState data value.</param>
+        /// <param name="deviceId">the device ID that changed its customDeviceState.</param>
+        /// <param name="customDeviceStateData">The custom DeviceState data value.</param>
         public event OnCustomDeviceStateChange onCustomDeviceStateChange;
 
         /// <summary>
         /// Gets called when a device updates it's profile pic, nickname or email.
         /// </summary>
-        /// <param name="device_id">The device_id that changed its profile.</param>
+        /// <param name="deviceId">The device_id that changed its profile.</param>
         public event OnDeviceProfileChange onDeviceProfileChange;
 
         /// <summary>
@@ -163,7 +165,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Gets called when an advertisement is finished or no advertisement was shown.
         /// </summary>
-        /// <param name="ad_was_shown">True if an ad was shown and onAdShow was called.</param>
+        /// <param name="adWasShown">True if an ad was shown and onAdShow was called.</param>
         public event OnAdComplete onAdComplete;
 
         /// <summary>
@@ -198,7 +200,7 @@ namespace NDream.AirConsole {
 
         /// <summary>
         /// Gets called when a device becomes premium or when a premium device connects.
-        /// <param name="device_id">The device id of the premium device.</param>
+        /// <param name="deviceId">The device id of the premium device.</param>
         /// </summary>
         public event OnPremium onPremium;
 
@@ -465,7 +467,7 @@ namespace NDream.AirConsole {
         /// Gets a translation for the users current language See http://developers.airconsole.com/#!/guides/translations
         /// </summary>
         /// <param name="id">The id of the translation string.</param>
-        /// <param name="id">Values that should be used for replacement in the translated string. E.g. if a translated string is "Hi %name%" and values is {"name": "Tom"} then this will be replaced to "Hi Tom".</param>
+        /// <param name="values">Values that should be used for replacement in the translated string. E.g. if a translated string is "Hi %name%" and values is {"name": "Tom"} then this will be replaced to "Hi Tom".</param>
         public string GetTranslation(string id, Dictionary<string, string> values = null) {
             string result = null;
 
@@ -643,8 +645,8 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Sets a property in the custom DeviceState of this device.
         /// </summary>
-        /// <param name="data">The property name.</param>
-        /// <param name="data">The property value.</param>
+        /// <param name="key">The property name.</param>
+        /// <param name="value">The property value.</param>
         public void SetCustomDeviceStateProperty(string key, object value) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -673,7 +675,7 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
-        /// Requests that AirConsole shows a multiscreen advertisment.
+        /// Requests that AirConsole shows a multiscreen advertisement.
         /// onAdShow is called on all connected devices if an advertisement
         /// is shown (in this event please mute all sounds).
         /// onAdComplete is called on all connected devices when the
@@ -1069,8 +1071,9 @@ namespace NDream.AirConsole {
             "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
         public string androidGameVersion;
 
-        [Tooltip("Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
-                 + "On Android Automotive please use OnSafeAreaChanged")]
+        [Tooltip(
+            "Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+            + "On Android Automotive please use OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1210,7 +1213,7 @@ namespace NDream.AirConsole {
             try {
                 int deviceId = (int)msg["device_id"];
                 AllocateDeviceSlots(deviceId);
-                JToken deviceData = (JToken)msg["device_data"];
+                JToken deviceData = msg["device_data"];
                 if (deviceData != null && deviceData.HasValues) {
                     _devices[deviceId] = deviceData;
                 } else {
@@ -1626,9 +1629,9 @@ namespace NDream.AirConsole {
         /// </summary>
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
 
-        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)] 
+        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)]
         public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
-        
+
         /// <summary>
         /// Returns an array of device_ids of the active players previously set by the
         /// screen by calling setActivePlayers. The first device_id in the array is the
@@ -1776,7 +1779,7 @@ namespace NDream.AirConsole {
 
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
-                    AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                    AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
                     AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                     AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
@@ -1798,8 +1801,8 @@ namespace NDream.AirConsole {
 
 #if !UNITY_EDITOR
                     webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
-                    webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
                     webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
                     webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
                     webViewLoadingImage.sprite = webViewLoadingSprite;
