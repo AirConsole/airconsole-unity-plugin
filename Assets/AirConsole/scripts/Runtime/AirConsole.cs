@@ -1071,8 +1071,9 @@ namespace NDream.AirConsole {
             "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
         public string androidGameVersion;
 
-        [Tooltip("Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
-                 + "On Android Automotive please use OnSafeAreaChanged")]
+        [Tooltip(
+            "Resize mode to allow space for AirConsole Default UI on Android TV. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+            + "On Android Automotive please use OnSafeAreaChanged")]
         public AndroidUIResizeMode androidUIResizeMode;
 
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
@@ -1212,7 +1213,7 @@ namespace NDream.AirConsole {
             try {
                 int deviceId = (int)msg["device_id"];
                 AllocateDeviceSlots(deviceId);
-                JToken deviceData = (JToken)msg["device_data"];
+                JToken deviceData = msg["device_data"];
                 if (deviceData != null && deviceData.HasValues) {
                     _devices[deviceId] = deviceData;
                 } else {
@@ -1628,9 +1629,9 @@ namespace NDream.AirConsole {
         /// </summary>
         public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
 
-        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)] 
+        [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)]
         public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
-        
+
         /// <summary>
         /// Returns an array of device_ids of the active players previously set by the
         /// screen by calling setActivePlayers. The first device_id in the array is the
@@ -1778,7 +1779,7 @@ namespace NDream.AirConsole {
 
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
-                    AndroidJavaClass up = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
+                    AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
                     AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                     AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
@@ -1800,8 +1801,8 @@ namespace NDream.AirConsole {
 
 #if !UNITY_EDITOR
                     webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                    webViewLoadingBG = (new GameObject("WebViewLoadingBG")).AddComponent<UnityEngine.UI.Image>();
-                    webViewLoadingImage = (new GameObject("WebViewLoadingImage")).AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
+                    webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
                     webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
                     webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
                     webViewLoadingImage.sprite = webViewLoadingSprite;
