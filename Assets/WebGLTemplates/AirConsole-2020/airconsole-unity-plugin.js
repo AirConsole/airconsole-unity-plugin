@@ -161,9 +161,9 @@ App.prototype.initAirConsole = function() {
     var me = this;
     var translation = window.AIRCONSOLE_TRANSLATION;   
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
-    var androidNativeGameSizing = window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING;
 
-    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players, "supportsNativeGameSizing": androidNativeGameSizing });
+    // TODO(android-automotive): Replace supportsNativeGameSizing information from new DOM object containing init information from Unity.
+    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players, "supportsNativeGameSizing": true });
     
     const version = me.airconsole.version.split('.');
     if(version.length < 3 || parseInt(version[0]) < 1 || parseInt(version[1]) < 10) {
