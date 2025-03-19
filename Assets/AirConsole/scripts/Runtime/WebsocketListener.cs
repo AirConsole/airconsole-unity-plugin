@@ -88,7 +88,7 @@ namespace NDream.AirConsole {
             this.webViewObject = webViewObject;
         }
 #else
-        public WebsocketListener() {
+        public WebsocketListener () {
             IgnoreExtensions = true;
         }
 #endif
@@ -111,9 +111,7 @@ namespace NDream.AirConsole {
         protected override void OnClose(CloseEventArgs e) {
             isReady = false;
 
-            if (onClose != null) {
-                onClose();
-            }
+            onClose?.Invoke();
 
             if (Settings.debug.info) {
                 Debug.Log("AirConsole: screen.html disconnected");
@@ -133,95 +131,78 @@ namespace NDream.AirConsole {
 
         public void ProcessMessage(string data) {
             try {
-                // parse json string
                 JObject msg = JObject.Parse(data);
+                string action = msg.SelectToken("action")?.Value<string>();
 
-                if ((string)msg["action"] == "onReady") {
-                    isReady = true;
+                switch (action) {
+                    case "onReady": {
+                        isReady = true;
 
-                    if (onReady != null) {
-                        onReady(msg);
-                    }
+                        onReady?.Invoke(msg);
 
-                    if (Settings.debug.info) {
-                        Debug.Log("AirConsole: Connections are ready!");
+                        if (Settings.debug.info) {
+                            Debug.Log("AirConsole: Connections are ready!");
+                        }
+
+                        break;
                     }
-                } else if ((string)msg["action"] == "onMessage") {
-                    if (onMessage != null) {
-                        onMessage(msg);
-                    }
-                } else if ((string)msg["action"] == "onDeviceStateChange") {
-                    if (onDeviceStateChange != null) {
-                        onDeviceStateChange(msg);
-                    }
-                } else if ((string)msg["action"] == "onConnect") {
-                    if (onConnect != null) {
-                        onConnect(msg);
-                    }
-                } else if ((string)msg["action"] == "onDisconnect") {
-                    if (onDisconnect != null) {
-                        onDisconnect(msg);
-                    }
-                } else if ((string)msg["action"] == "onCustomDeviceStateChange") {
-                    if (onCustomDeviceStateChange != null) {
-                        onCustomDeviceStateChange(msg);
-                    }
-                } else if ((string)msg["action"] == "onDeviceProfileChange") {
-                    if (onDeviceProfileChange != null) {
-                        onDeviceProfileChange(msg);
-                    }
-                } else if ((string)msg["action"] == "onAdShow") {
-                    if (onAdShow != null) {
-                        onAdShow(msg);
-                    }
-                } else if ((string)msg["action"] == "onAdComplete") {
-                    if (onAdComplete != null) {
-                        onAdComplete(msg);
-                    }
-                } else if ((string)msg["action"] == "onGameEnd") {
-                    if (onGameEnd != null) {
-                        onGameEnd(msg);
-                    }
-                } else if ((string)msg["action"] == "onHighScores") {
-                    if (onHighScores != null) {
-                        onHighScores(msg);
-                    }
-                } else if ((string)msg["action"] == "onHighScoreStored") {
-                    if (onHighScoreStored != null) {
-                        onHighScoreStored(msg);
-                    }
-                } else if ((string)msg["action"] == "onPersistentDataStored") {
-                    if (onPersistentDataStored != null) {
-                        onPersistentDataStored(msg);
-                    }
-                } else if ((string)msg["action"] == "onPersistentDataLoaded") {
-                    if (onPersistentDataLoaded != null) {
-                        onPersistentDataLoaded(msg);
-                    }
-                } else if ((string)msg["action"] == "onPremium") {
-                    if (onPremium != null) {
-                        onPremium(msg);
-                    }
-                } else if ((string)msg["action"] == "onPause") {
-                    if (onPause != null) {
-                        onPause(msg);
-                    }
-                } else if ((string)msg["action"] == "onResume") {
-                    if (onResume != null) {
-                        onResume(msg);
-                    }
-                } else if ((string)msg["action"] == "onLaunchApp") {
-                    if (onLaunchApp != null) {
-                        onLaunchApp(msg);
-                    }
-                } else if ((string)msg["action"] == "onUnityWebviewResize") {
-                    if (onUnityWebviewResize != null) {
-                        onUnityWebviewResize(msg);
-                    }
-                } else if ((string)msg["action"] == "onUnityWebviewPlatformReady") {
-                    if (onUnityWebviewPlatformReady != null) {
-                        onUnityWebviewPlatformReady(msg);
-                    }
+                    case "onMessage":
+                        onMessage?.Invoke(msg);
+                        break;
+                    case "onDeviceStateChange":
+                        onDeviceStateChange?.Invoke(msg);
+                        break;
+                    case "onConnect":
+                        onConnect?.Invoke(msg);
+                        break;
+                    case "onDisconnect":
+                        onDisconnect?.Invoke(msg);
+                        break;
+                    case "onCustomDeviceStateChange":
+                        onCustomDeviceStateChange?.Invoke(msg);
+                        break;
+                    case "onDeviceProfileChange":
+                        onDeviceProfileChange?.Invoke(msg);
+                        break;
+                    case "onAdShow":
+                        onAdShow?.Invoke(msg);
+                        break;
+                    case "onAdComplete":
+                        onAdComplete?.Invoke(msg);
+                        break;
+                    case "onGameEnd":
+                        onGameEnd?.Invoke(msg);
+                        break;
+                    case "onHighScores":
+                        onHighScores?.Invoke(msg);
+                        break;
+                    case "onHighScoreStored":
+                        onHighScoreStored?.Invoke(msg);
+                        break;
+                    case "onPersistentDataStored":
+                        onPersistentDataStored?.Invoke(msg);
+                        break;
+                    case "onPersistentDataLoaded":
+                        onPersistentDataLoaded?.Invoke(msg);
+                        break;
+                    case "onPremium":
+                        onPremium?.Invoke(msg);
+                        break;
+                    case "onPause":
+                        onPause?.Invoke(msg);
+                        break;
+                    case "onResume":
+                        onResume?.Invoke(msg);
+                        break;
+                    case "onLaunchApp":
+                        onLaunchApp?.Invoke(msg);
+                        break;
+                    case "onUnityWebviewResize":
+                        onUnityWebviewResize?.Invoke(msg);
+                        break;
+                    case "onUnityWebviewPlatformReady":
+                        onUnityWebviewPlatformReady?.Invoke(msg);
+                        break;
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
@@ -236,15 +217,20 @@ namespace NDream.AirConsole {
         }
 
         public void Message(JObject data) {
-            if (Application.platform == RuntimePlatform.WebGLPlayer) {
-                Application.ExternalCall("window.app.processUnityData", data.ToString()); //TODO: External Call is obsolete?
-            } else if (Application.platform == RuntimePlatform.Android) {
+            switch (Application.platform) {
+                case RuntimePlatform.WebGLPlayer:
+                    Application.ExternalCall("window.app.processUnityData", data.ToString()); //TODO: External Call is obsolete?
+                    break;
+                case RuntimePlatform.Android: {
 #if UNITY_ANDROID
-                string serialized = JsonConvert.ToString(data.ToString());
-                webViewObject.EvaluateJS("androidUnityPostMessage(" + serialized + ");");
+                    string serialized = JsonConvert.ToString(data.ToString());
+                    webViewObject.EvaluateJS("androidUnityPostMessage(" + serialized + ");");
 #endif
-            } else {
-                Send(data.ToString());
+                    break;
+                }
+                default:
+                    Send(data.ToString());
+                    break;
             }
         }
     }
