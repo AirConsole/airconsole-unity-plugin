@@ -1,85 +1,37 @@
 ﻿#if !DISABLE_AIRCONSOLE
 using UnityEngine;
-using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Serialization.Formatters;
 using System;
+using Newtonsoft.Json;
 using WebSocketSharp;
 using WebSocketSharp.Server;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace NDream.AirConsole {
-    // event delegates
-    public delegate void OnReadyInternal(JObject data);
-
-    public delegate void OnMessageInternal(JObject data);
-
-    public delegate void OnDeviceStateChangeInternal(JObject data);
-
-    public delegate void OnConnectInternal(JObject data);
-
-    public delegate void OnDisconnectInternal(JObject data);
-
-    public delegate void OnCustomDeviceStateChangeInternal(JObject data);
-
-    public delegate void OnDeviceProfileChangeInternal(JObject data);
-
-    public delegate void OnAdShowInternal(JObject data);
-
-    public delegate void OnAdCompleteInternal(JObject data);
-
-    public delegate void OnGameEndInternal(JObject data);
-
-    public delegate void OnHighScoresInternal(JObject data);
-
-    public delegate void OnHighScoreStoredInternal(JObject data);
-
-    public delegate void OnPersistentDataStoredInternal(JObject data);
-
-    public delegate void OnPersistentDataLoadedInternal(JObject data);
-
-    public delegate void OnPremiumInternal(JObject data);
-
-    public delegate void OnPauseInternal(JObject data);
-
-    public delegate void OnResumeInternal(JObject data);
-
-    public delegate void OnLaunchAppInternal(JObject data);
-
-    public delegate void OnUnityWebviewResizeInternal(JObject data);
-
-    public delegate void OnUnityWebviewPlatformReadyInternal(JObject data);
-
-    public delegate void OnCloseInternal();
-
     public class WebsocketListener : WebSocketBehavior {
-        // events
-        public event OnReadyInternal onReady;
-        public event OnCloseInternal onClose;
-        public event OnMessageInternal onMessage;
-        public event OnDeviceStateChangeInternal onDeviceStateChange;
-        public event OnConnectInternal onConnect;
-        public event OnDisconnectInternal onDisconnect;
-        public event OnCustomDeviceStateChangeInternal onCustomDeviceStateChange;
-        public event OnDeviceProfileChangeInternal onDeviceProfileChange;
-        public event OnAdShowInternal onAdShow;
-        public event OnAdCompleteInternal onAdComplete;
-        public event OnGameEndInternal onGameEnd;
-        public event OnHighScoresInternal onHighScores;
-        public event OnHighScoreStoredInternal onHighScoreStored;
-        public event OnPersistentDataStoredInternal onPersistentDataStored;
-        public event OnPersistentDataLoadedInternal onPersistentDataLoaded;
-        public event OnPremiumInternal onPremium;
-        public event OnPauseInternal onPause;
-        public event OnResumeInternal onResume;
-        public event OnLaunchAppInternal onLaunchApp;
-        public event OnUnityWebviewResizeInternal onUnityWebviewResize;
-        public event OnUnityWebviewPlatformReadyInternal onUnityWebviewPlatformReady;
-
+        public event Action<JObject> onReady;
+        public event Action onClose;
+        public event Action<JObject> onMessage;
+        public event Action<JObject> onDeviceStateChange;
+        public event Action<JObject> onConnect;
+        public event Action<JObject> onDisconnect;
+        public event Action<JObject> onCustomDeviceStateChange;
+        public event Action<JObject> onDeviceProfileChange;
+        public event Action<JObject> onAdShow;
+        public event Action<JObject> onAdComplete;
+        public event Action<JObject> onGameEnd;
+        public event Action<JObject> onHighScores;
+        public event Action<JObject> onHighScoreStored;
+        public event Action<JObject> onPersistentDataStored;
+        public event Action<JObject> onPersistentDataLoaded;
+        public event Action<JObject> onPremium;
+        public event Action<JObject> onPause;
+        public event Action<JObject> onResume;
+        public event Action<JObject> onLaunchApp;
+        public event Action<JObject> onUnityWebviewResize;
+        public event Action<JObject> onUnityWebviewPlatformReady;
         public event Action<JObject> OnSetSafeArea;
 
-        private bool isReady;
+        private bool _isReady;
 
 #if UNITY_ANDROID
         private WebViewObject webViewObject;
@@ -89,7 +41,7 @@ namespace NDream.AirConsole {
             this.webViewObject = webViewObject;
         }
 #else
-        public WebsocketListener () {
+        public WebsocketListener() {
             IgnoreExtensions = true;
         }
 #endif
@@ -110,7 +62,7 @@ namespace NDream.AirConsole {
         }
 
         protected override void OnClose(CloseEventArgs e) {
-            isReady = false;
+            _isReady = false;
 
             onClose?.Invoke();
 
@@ -137,7 +89,7 @@ namespace NDream.AirConsole {
 
                 switch (action) {
                     case "onReady": {
-                        isReady = true;
+                        _isReady = true;
 
                         onReady?.Invoke(msg);
 
@@ -216,9 +168,7 @@ namespace NDream.AirConsole {
             }
         }
 
-        public bool IsReady() {
-            return isReady;
-        }
+        public bool IsReady() => _isReady;
 
         public void Message(JObject data) {
             switch (Application.platform) {
