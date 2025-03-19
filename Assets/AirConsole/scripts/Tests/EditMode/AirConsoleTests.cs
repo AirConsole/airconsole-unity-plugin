@@ -2,6 +2,7 @@
 using System.Collections;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.TestTools;
 
@@ -32,6 +33,10 @@ namespace NDream.AirConsole.EditMode.Tests {
         [UnityTest]
         [Timeout(300)]
         public IEnumerator SetSafeArea_WithValidMessage_SafeAreaChangedIsInvoked() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
             bool testIsDone = false;
             JObject expectedMessage = JObject.FromObject(
                 new {
