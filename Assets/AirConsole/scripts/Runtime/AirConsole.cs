@@ -1828,21 +1828,8 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 PrepareWebviewOverlay();
-#if UNITY_EDITOR
-                // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                 CreateAndroidWebview(connectionUrl);
-#else
-                if (_dataProviderPlugin.DataProviderInitialized) {
-                    string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
-                    // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
-                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
-                    CreateAndroidWebview(connectionUrl); 
-                } else {
-                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
-                    _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
-                }
-#endif
             } else {
                 AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
                 if (Settings.debug.error) {
@@ -1878,7 +1865,7 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
-            AirConsoleLogger.LogDevelopment($"Received connection url {connectionUrl}");
+            AirConsoleLogger.LogDevelopment($"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                 if (Application.isPlaying) {
@@ -1908,9 +1895,9 @@ namespace NDream.AirConsole {
                     url += "&bundle-version=" + pInfo.Get<int>("versionCode");
 #endif
 
-                    url += "&game-id=" + Application.identifier;
-                    url += "&game-version=" + androidGameVersion;
-                    url += "&unity-version=" + Application.unityVersion;
+                url += "&game-id=" + Application.identifier;
+                url += "&game-version=" + androidGameVersion;
+                url += "&unity-version=" + Application.unityVersion;
 
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
