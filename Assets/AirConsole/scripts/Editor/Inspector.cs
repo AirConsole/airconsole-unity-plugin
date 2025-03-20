@@ -1,7 +1,10 @@
 ﻿#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
+using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
+using Debug = UnityEngine.Debug;
 
 namespace NDream.AirConsole.Editor {
     [CustomEditor(typeof(AirConsole))]
@@ -14,10 +17,13 @@ namespace NDream.AirConsole.Editor {
         private SerializedProperty gameVersion;
         private bool translationValue;
         private bool inactivePlayersSilencedValue;
+        private bool nativeGameSizingSupportedValue;
         private const string TRANSLATION_ACTIVE = "var AIRCONSOLE_TRANSLATION = true;";
         private const string TRANSLATION_INACTIVE = "var AIRCONSOLE_TRANSLATION = false;";
         private const string INACTIVE_PLAYERS_SILENCED_ACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = true;";
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
+        private const string ANDROID_NATIVE_GAME_SIZING_ACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = true;";
+        private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
 
         private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
 
@@ -27,20 +33,27 @@ namespace NDream.AirConsole.Editor {
         }
 
         public void Awake() {
-            if (File.Exists(SettingsPath)) {
-                string persistedSettings = File.ReadAllText(SettingsPath);
-                translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
-                // We want player silencing to be active by default
-                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+            if (!File.Exists(SettingsPath)) {
+                return;
             }
+
+            string persistedSettings = File.ReadAllText(SettingsPath);
+            translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
+            inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+            nativeGameSizingSupportedValue = serializedObject.FindProperty("nativeGameSizingSupported").boolValue;
         }
 
         public void OnEnable() {
-            // get logos
+            LoadResources();
+            SetupStyle();
+        }
+
+        private void LoadResources() {
             bg = (Texture2D)Resources.Load("AirConsoleBg");
             logo = (Texture)Resources.Load("AirConsoleLogoText");
+        }
 
-            // setup style for airconsole logo
+        private void SetupStyle() {
             styleBlack.normal.background = bg;
             styleBlack.normal.textColor = Color.white;
             styleBlack.alignment = TextAnchor.MiddleRight;
@@ -53,23 +66,85 @@ namespace NDream.AirConsole.Editor {
         public override void OnInspectorGUI() {
             controller = (AirConsole)target;
 
-            // show logo & version
+            ShowLogoAndVersion();
+            ShowDefaultProperties();
+            DrawSettingsToggles();
+
+#if UNITY_ANDROID
+            ValidateAndroidGameVersion();
+#endif
+
+            ShowAdditionalProperties();
+            ShowButtons();
+        }
+
+        private void ShowLogoAndVersion() {
             EditorGUILayout.BeginHorizontal(styleBlack, GUILayout.Height(30));
             GUILayout.Label(logo, GUILayout.Width(128), GUILayout.Height(30));
             GUILayout.FlexibleSpace();
             GUILayout.Label("v" + Settings.VERSION, styleBlack);
             EditorGUILayout.EndHorizontal();
+        }
 
-            // show default inspector property editor withouth script reference
+        private void ShowDefaultProperties() {
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("controllerHtml"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("autoScaleCanvas"));
-            DrawTranslationsToggle();
-            DrawPlayerSilencingToggle();
+        }
 
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
+        [Conditional("UNITY_ANDROID")]
+        private void AndroidOnlyHelpBox(string message, MessageType messageType = MessageType.Info) {
+            EditorGUILayout.HelpBox(message, messageType, true);
+        }
+
+        private void DrawSettingsToggles() {
+            DrawToggle("Translation", ref translationValue);
+            DrawToggle("Silence Player", ref inactivePlayersSilencedValue);
+
+            DrawToggle(new GUIContent("Native Game Sizing", "Enables SafeArea support with fullscreen webview overlay"),
+                ref nativeGameSizingSupportedValue);
+            if (!nativeGameSizingSupportedValue) {
+                AndroidOnlyHelpBox("Android for Automotive requires you to enable this and to implement the OnSafeAreaChanged "
+                                   + "event handler provided by the AirConsole instance, enabling you to only render your game content"
+                                   + " in relevant area", MessageType.Warning);
+            }
+
+            serializedObject.FindProperty("nativeGameSizingSupported").boolValue = nativeGameSizingSupportedValue;
+        }
+
+        private void DrawToggle(string label, ref bool value) {
+            bool oldValue = value;
+            value = EditorGUILayout.Toggle(label, value);
+            if (oldValue != value) {
+                WriteConstructorSettings(SettingsPath);
+            }
+        }
+
+        private void DrawToggle(GUIContent content, ref bool value) {
+            bool oldValue = value;
+            value = EditorGUILayout.Toggle(content, value);
+            if (oldValue != value) {
+                WriteConstructorSettings(SettingsPath);
+            }
+        }
+
+        private void ValidateAndroidGameVersion() {
+            string androidGameVersion = serializedObject.FindProperty("androidGameVersion").stringValue;
+            if (string.IsNullOrEmpty(androidGameVersion) || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
+                EditorGUILayout.HelpBox("Please enter a valid Game Version for Android", MessageType.Error);
+            }
+        }
+
+        private void ShowAdditionalProperties() {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
+            if (serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > (int)AndroidUIResizeMode.ResizeCamera
+                && nativeGameSizingSupportedValue) {
+                AndroidOnlyHelpBox("Android with native game sizing requires SafeAreas.\n"
+                                   + "In this mode, AirConsole no longer supports UI Reference Resolution Scaling.",
+                    MessageType.Warning);
+            }
+
             EditorGUILayout.PropertyField(serializedObject.FindProperty("webViewLoadingSprite"));
 
             EditorGUILayout.PropertyField(serializedObject.FindProperty("browserStartMode"));
@@ -78,8 +153,9 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("LocalIpOverride"));
 
             serializedObject.ApplyModifiedProperties();
+        }
 
-
+        private void ShowButtons() {
             EditorGUILayout.BeginHorizontal(styleBlack);
             // check if a port was exported
             if (File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
@@ -106,27 +182,15 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void DrawTranslationsToggle() {
-            bool oldTranslationValue = translationValue;
-            translationValue = EditorGUILayout.Toggle("Translation", translationValue);
-            if (oldTranslationValue != translationValue) {
-                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
-                WriteConstructorSettings(path);
-            }
-        }
-
-        private void DrawPlayerSilencingToggle() {
-            bool oldInactivePlayersSilencedValue = inactivePlayersSilencedValue;
-            inactivePlayersSilencedValue = EditorGUILayout.Toggle("Silence Player", inactivePlayersSilencedValue);
-            if (oldInactivePlayersSilencedValue != inactivePlayersSilencedValue) {
-                string path = Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
-                WriteConstructorSettings(path);
-            }
-        }
-
         private void WriteConstructorSettings(string path) {
-            File.WriteAllText(path,
-                $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}");
+            try {
+                File.WriteAllText(path,
+                    $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
+                    + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
+                    + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
+            } catch (IOException e) {
+                Debug.LogError($"Failed to write settings file at {path}: {e.Message}");
+            }
         }
 
         private static void MigrateVersion250(string originalPath, string newPath) {
@@ -146,7 +210,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void OpenUpgradeInstructions() {
             Application.OpenURL(
-                "https://github.com/AirConsole/airconsole-unity-plugin/blob/master/Assets/AirConsole/Upgrade_Plugin_Version.md");
+                "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version");
         }
     }
 }

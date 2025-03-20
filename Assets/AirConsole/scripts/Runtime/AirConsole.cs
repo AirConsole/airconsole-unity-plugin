@@ -1089,6 +1089,10 @@ namespace NDream.AirConsole {
         [Tooltip("Loading Sprite to be displayed at the start of the game.")]
         public Sprite webViewLoadingSprite;
 
+        [Tooltip("Enable SafeArea support with fullscreen webview overlay for Android.")]
+        [SerializeField]
+        private bool nativeGameSizingSupported;
+
         [Header("Development Settings")]
         [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
         public StartMode browserStartMode;
@@ -2020,29 +2024,29 @@ namespace NDream.AirConsole {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
 
-#if !AIRCONSOLE_AUTOMOTIVE
-            AdaptUGuiLayout();
-#endif
+            if (!nativeGameSizingSupported) {
+                AdaptUGuiLayout();
+            }
         }
-#endif
-
-#if UNITY_ANDROID
+        
         private void AdaptUGuiLayout() {
-            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
-                UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
+            if (androidUIResizeMode != AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                return;
+            }
 
-                for (int i = 0; i < allCanvasScalers.Length; ++i) {
-                    if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {
-                        continue;
-                    }
+            UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
 
-                    allCanvasScalers[i].referenceResolution =
-                        new Vector2(allCanvasScalers[i].referenceResolution.x,
-                            allCanvasScalers[i].referenceResolution.y
-                            / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight())
-                            * allCanvasScalers[i].referenceResolution.y);
-                    fixedCanvasScalers.Add(allCanvasScalers[i]);
+            for (int i = 0; i < allCanvasScalers.Length; ++i) {
+                if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {
+                    continue;
                 }
+
+                allCanvasScalers[i].referenceResolution =
+                    new Vector2(allCanvasScalers[i].referenceResolution.x,
+                        allCanvasScalers[i].referenceResolution.y
+                        / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight())
+                        * allCanvasScalers[i].referenceResolution.y);
+                fixedCanvasScalers.Add(allCanvasScalers[i]);
             }
         }
 #endif
