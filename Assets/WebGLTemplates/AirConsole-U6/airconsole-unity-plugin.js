@@ -1,6 +1,6 @@
 /**
  * Copyright by N-Dream AG 2025.
- * @version 2.5.6
+ * @version 2.6.0
  */
 
 /**
@@ -91,6 +91,7 @@ App.prototype.updateProgressBar = function(progress_bar, progress) {
 
 App.prototype.startNativeApp = function() {
     var me = this;
+    me.game_container.style.display = 'none';
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({ action: "onGameEnd" }));
@@ -148,7 +149,7 @@ App.prototype.validateNotLatestApi = function () {
             const url = window.location.pathname;
             const fileName = url.substring(url.lastIndexOf('/')+1);
             alert(`Please update ${fileName} to the latest version. airconsole-latest.js must not be referenced.`);
-            window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/master/README.md#upgrading-from-v214--to-v250');
+            window.open('https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version');
             throw new Error(`The usage of the AirConsole API must be updated in ${fileName}`);
         };
     }
@@ -160,13 +161,14 @@ App.prototype.initAirConsole = function() {
     var me = this;
     var translation = window.AIRCONSOLE_TRANSLATION;   
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
+    var androidNativeGameSizing = window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING;
 
-    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players });
+    me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players, "supportsNativeGameSizing": androidNativeGameSizing });
     
     const version = me.airconsole.version.split('.');
-    if(version.length < 3 || version[0] < 1 || version[1] < 9) {
-        confirm('Unity AirConsole Plugin 2.5.0 requires at minimum the AirConsole API version 1.9.0. Please review the upgrade instructions');
-        window.open('https://github.com/AirConsole/airconsole-unity-plugin/blob/release/2.5.0/README.md#upgrading-from-v214--to-v250');
+    if(version.length < 3 || parseInt(version[0]) < 1 || parseInt(version[1]) < 10) {
+        confirm('Unity AirConsole Plugin 2.6.0 requires at minimum the AirConsole API version 1.10.0. Please review the upgrade instructions');
+        window.open('https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version');
     }
 
     me.airconsole.onMessage = function (from, data) {
@@ -185,9 +187,17 @@ App.prototype.initAirConsole = function() {
             "devices": me.airconsole.devices,
             "server_time_offset": me.airconsole.server_time_offset,
             "location": document.location.href,
-            "translations": me.airconsole.translations
+            "translations": me.airconsole.translations,
+            "gameSafeArea": me.airconsole.gameSafeArea
         });
     };
+
+    me.airconsole.onSetSafeArea = function (safeArea) {
+        me.postToUnity({
+            action: 'onSetSafeArea',
+            safeArea: safeArea
+        });
+    }
 
     me.airconsole.onDeviceStateChange = function (device_id, device_data) {
         me.postToUnity({

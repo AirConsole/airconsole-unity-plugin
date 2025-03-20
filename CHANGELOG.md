@@ -6,8 +6,13 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+
+## [2.6.0]
+
 ### Added
 
+- Support for platform driven safe render areas: These provide games with a pixelRect based area in which the game is allowed to render. Platform specific overlays will always be rendered outside this pixel rect. Check AirConsole:OnSafeAreaChanged and the NDream.AirConsole.OnSafeAreaChanged delegate.s
 - Automatically set androidVersionCode to `seconds since 2025-01-01T00:00:00` to ensure conflict free builds.
 - We now automatically update the AndroidManifest as necessary for AirConsole to work on Android. We also remove old settings that are no longer necessary or conflict with Unity 2022 or Unity 6.
 - AirConsole validates that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
