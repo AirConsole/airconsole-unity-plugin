@@ -1,4 +1,4 @@
-using System;
+#if !DISABLE_AIRCONSOLE
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -14,9 +14,7 @@ namespace NDream.AirConsole.Editor {
         private Button resetButton;
         private Button aspect16By9Button;
 
-        private bool wasConnected;
-
-        [MenuItem("Window/AirConsole/Tester SafeArea")]
+        [MenuItem("Window/AirConsole/SafeArea Tester")]
         public static void ShowWindow() {
             SafeAreaTester wnd = GetWindow<SafeAreaTester>();
             wnd.titleContent = new GUIContent("SafeArea Tester");
@@ -30,15 +28,15 @@ namespace NDream.AirConsole.Editor {
             widthField = new FloatField("Width") { value = 1 };
             heightField = new FloatField("Height") { value = 1 };
             applyButton = new Button(OnApplyButtonClicked) {
-                text = "Apply",
+                text = "Apply coordinates",
                 focusable = false
             };
             resetButton = new Button(OnResetButtonClicked) {
-                text = "Reset",
+                text = "Reset coordinates",
                 focusable = false
             };
             aspect16By9Button = new Button(OnSet16By9Clicked) {
-                text = "16x9",
+                text = "Use 16x9",
                 focusable = false
             };
 
@@ -47,13 +45,13 @@ namespace NDream.AirConsole.Editor {
             widthField.value = 1;
             heightField.value = 1;
 
-            Label titleLabel = new("Safe Area Tester");
-            root.Add(titleLabel);
+            root.Add(CreateHeader("Coordinates", false));
             root.Add(leftField);
             root.Add(topField);
             root.Add(widthField);
             root.Add(heightField);
 
+            root.Add(CreateHeader("Actions"));
             VisualElement flexBoxHorizontal = CreateFlexBoxHorizontal();
             flexBoxHorizontal.Add(applyButton);
             flexBoxHorizontal.Add(resetButton);
@@ -64,61 +62,30 @@ namespace NDream.AirConsole.Editor {
             Ensure01FloatRange(leftField);
             Ensure01FloatRange(widthField);
             Ensure01FloatRange(heightField);
-            root.RegisterCallback<KeyDownEvent>(OnKeyDown);
         }
 
-        private VisualElement CreateFlexBoxHorizontal() {
+        private static VisualElement CreateFlexBoxHorizontal() {
             VisualElement flexBoxHorizontal = new();
             flexBoxHorizontal.style.flexDirection = FlexDirection.Row;
+            flexBoxHorizontal.style.flexWrap = new StyleEnum<Wrap>(Wrap.Wrap);
             return flexBoxHorizontal;
         }
 
-        private static void Ensure01FloatRange(FloatField field) =>
+        private static Label CreateHeader(string text, bool hasTopMargin = true) {
+            Label label = new(text);
+            if (hasTopMargin) {
+                label.style.marginTop = new StyleLength(20);
+            }
+
+            label.style.unityFontStyleAndWeight = FontStyle.Bold;
+            return label;
+        }
+
+        private static void Ensure01FloatRange(FloatField field) {
             field.RegisterValueChangedCallback(evt => {
                 field.value = Mathf.Clamp01(evt.newValue);
                 evt.PreventDefault();
             });
-
-        private void OnKeyDown(KeyDownEvent evt) {
-            if (wasConnected) {
-                if (AirConsole.instance) {
-                    wasConnected = true;
-                    AirConsole.instance.OnSafeAreaChanged += OnSafeAreaChanged;
-                }
-            }
-
-            switch (evt.keyCode) {
-                case KeyCode.Tab: {
-                    Focusable currentFocusedElement = rootVisualElement.focusController.focusedElement;
-                    if (currentFocusedElement == leftField) {
-                        topField.Focus();
-                    } else if (currentFocusedElement == topField) {
-                        widthField.Focus();
-                    } else if (currentFocusedElement == widthField) {
-                        heightField.Focus();
-                    } else if (currentFocusedElement == heightField) {
-                        leftField.Focus();
-                    }
-
-                    break;
-                }
-                case KeyCode.R: {
-                    OnResetButtonClicked();
-                    evt.PreventDefault();
-                    break;
-                }
-                case KeyCode.A: {
-                    OnSet16By9Clicked();
-                    evt.PreventDefault();
-                    break;
-                }
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter: {
-                    OnApplyButtonClicked();
-                    evt.PreventDefault();
-                    break;
-                }
-            }
         }
 
         private void OnSafeAreaChanged(Rect obj) {
@@ -130,7 +97,6 @@ namespace NDream.AirConsole.Editor {
 
         private void OnEnable() {
             if (AirConsole.instance) {
-                wasConnected = true;
                 AirConsole.instance.OnSafeAreaChanged += OnSafeAreaChanged;
             }
         }
@@ -140,7 +106,6 @@ namespace NDream.AirConsole.Editor {
                 AirConsole.instance.OnSafeAreaChanged -= OnSafeAreaChanged;
             }
         }
-
 
         private void OnApplyButtonClicked() {
             JObject msg = new();
@@ -152,8 +117,6 @@ namespace NDream.AirConsole.Editor {
             };
             msg["safeArea"] = safeAreaObj;
             AirConsole.instance.SetSafeArea(msg);
-
-            Debug.Log($"Apply button clicked for safe area: {safeAreaObj}");
         }
 
         private void OnResetButtonClicked() {
@@ -186,3 +149,4 @@ namespace NDream.AirConsole.Editor {
         }
     }
 }
+#endif
