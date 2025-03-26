@@ -1953,6 +1953,8 @@ namespace NDream.AirConsole {
                     }
                 }
 
+                AirConsoleLogger.LogDevelopment(
+                    $"OnLaunchApp for {msg}, launch intent: {launchIntent != null}, gameId: {gameId}, Application.identifier: {Application.identifier} gameVersion: {gameVersion}");
                 if (launchIntent != null && gameId != Application.identifier) {
                     ca.Call("startActivity", launchIntent);
                 } else {
