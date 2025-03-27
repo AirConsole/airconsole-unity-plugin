@@ -1827,7 +1827,7 @@ namespace NDream.AirConsole {
 
 #if !UNITY_EDITOR
         private void OnConnectUrlReceived (string connectionUrl) {
-            _dataProviderPlugin.OnConnectionUrlReceived -= OnConnectUrlReceived;
+            _androidDataProvider.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 AirConsoleLogger.LogDevelopment($"OnConnectUrlReceived: {connectionUrl}");
@@ -1850,15 +1850,15 @@ namespace NDream.AirConsole {
                 string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                 CreateAndroidWebview(connectionUrl);
 #else
-                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_dataProviderPlugin.IsTvDevice()}, IsAutomotiveDevice: {_dataProviderPlugin.IsAutomotiveDevice()}, IsNormalDevice: {_dataProviderPlugin.IsNormalDevice()}");
-                if (_dataProviderPlugin.DataProviderInitialized) {
+                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
+                if (_androidDataProvider.DataProviderInitialized) {
                     // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
-                    string connectionUrl = _dataProviderPlugin.ConnectionUrl;
+                    string connectionUrl = _androidDataProvider.ConnectionUrl;
                     AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
                     CreateAndroidWebview(connectionUrl); 
                 } else {
                     AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
-                    _dataProviderPlugin.OnConnectionUrlReceived += OnConnectUrlReceived; 
+                    _androidDataProvider.OnConnectionUrlReceived += OnConnectUrlReceived; 
                 }
 #endif
             } else {
@@ -1885,7 +1885,7 @@ namespace NDream.AirConsole {
             webViewLoadingBG.color = Color.black;
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
             webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
-            if (_dataProviderPlugin != null && _dataProviderPlugin.IsAutomotiveDevice()) {
+            if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
             } else {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
