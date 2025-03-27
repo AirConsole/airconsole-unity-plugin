@@ -1,0 +1,84 @@
+#if UNITY_ANDROID && !UNITY_EDITOR
+#define AIRCONSOLE_ANDROID
+#endif
+
+namespace NDream.AirConsole.Android.Plugin {
+    using System;
+    using UnityEngine;
+
+    internal class AndroidDataProvider {
+        private const int UI_MODE_TYPE_NORMAL = 1;
+        private const int UI_MODE_TYPE_CAR = 3;
+        private const int UI_MODE_TYPE_TELEVISION = 4;
+
+#if AIRCONSOLE_ANDROID
+        private AndroidJavaObject _dataProviderHelper;
+
+        internal bool DataProviderInitialized { get; private set; }
+        internal string ConnectionUrl { get; private set; }
+        internal event Action<string> OnConnectionUrlReceived;
+
+        private bool CheckLibrary() {
+            if (_dataProviderHelper != null) {
+                return true;
+            }
+
+            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+
+            _dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
+
+            return _dataProviderHelper != null;
+        }
+#endif
+
+        internal AndroidDataProvider() {
+#if AIRCONSOLE_ANDROID
+            if (!CheckLibrary()) {
+                Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
+                return;
+            }
+
+            // Get the current Android activity context
+            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
+            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+
+            UnityPluginStringCallback callback = new(
+                url => {
+                    DataProviderInitialized = true;
+                    ConnectionUrl = url;
+                    OnConnectionUrlReceived?.Invoke(url);
+                    Debug.Log($"Received URL: {url}");
+                },
+                error => { Debug.LogError($"DataProviderPlugin initialization failed with {error}"); }
+            );
+
+            // Create an instance of your Java plugin class
+            _dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
+            _dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
+#endif
+            AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        internal bool IsTvDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_TELEVISION;
+
+        // ReSharper disable once UnusedMember.Global
+        internal bool IsAutomotiveDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_CAR;
+
+        // ReSharper disable once UnusedMember.Global
+        internal bool IsNormalDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_NORMAL;
+
+        private int GetUiModeTypeMask() {
+#if AIRCONSOLE_ANDROID
+            if (!CheckLibrary()) {
+                Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
+                return UI_MODE_TYPE_NORMAL;
+            }
+
+            return _dataProviderHelper.Call<int>("getUiModeTypeMask");
+#endif
+            return UI_MODE_TYPE_NORMAL;
+        }
+    }
+}
