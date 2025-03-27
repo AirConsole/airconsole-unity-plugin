@@ -137,6 +137,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         private void ShowAdditionalProperties() {
+            EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
             if (serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > (int)AndroidUIResizeMode.ResizeCamera
                 && nativeGameSizingSupportedValue) {

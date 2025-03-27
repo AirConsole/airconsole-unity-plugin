@@ -56,7 +56,7 @@ namespace NDream.AirConsole {
 #endif
         }
 
-        public void UpdateViewView() {
+        public void UpdateWebView() {
 #if WEBVIEWMANAGER_ACTIVE
             switch (_currentState) {
                 case WebViewState.Hidden:
