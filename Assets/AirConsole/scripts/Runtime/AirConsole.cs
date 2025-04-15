@@ -1118,10 +1118,12 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
+            Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
+            
             defaultScreenHeight = Screen.height;
             _androidImmersiveService = new AndroidImmersiveService();
-
-            _androidDataProvider = new AndroidDataProvider();
+            _androidAudioFocusService = new();
+            _androidDataProvider = new();
 #endif
         }
 
@@ -1231,8 +1233,7 @@ namespace NDream.AirConsole {
 
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
-            AirConsoleLogger.LogDevelopment(
-                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
+            AirConsoleLogger.LogDevelopment($"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
@@ -1719,6 +1720,10 @@ namespace NDream.AirConsole {
         private int webViewHeight;
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
+
+        private AndroidImmersiveService _androidImmersiveService;
+        private AudioFocusService _androidAudioFocusService;
+        private AndroidDataProvider _androidDataProvider;
 #endif
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1730,8 +1735,6 @@ namespace NDream.AirConsole {
         private bool _safeAreaWasSet;
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
-        private AndroidDataProvider _androidDataProvider;
-        private AndroidImmersiveService _androidImmersiveService;
 
         // unity singleton handling
         private static AirConsole _instance;
@@ -1922,8 +1925,7 @@ namespace NDream.AirConsole {
                 url += connectionUrl;
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
-                    AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
-                    AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                    AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                     AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
 
@@ -1948,9 +1950,9 @@ namespace NDream.AirConsole {
         }
 
         private void OnLaunchApp(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg}");
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
+            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
 
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
@@ -1962,12 +1964,18 @@ namespace NDream.AirConsole {
                 // Quit the Unity Player first and give it the time to close all the threads (Default)
                 if (!quitAfterLaunchIntent) {
                     Application.Quit();
-                    System.Threading.Thread.Sleep(2000);
+                    if (_androidDataProvider == null || !_androidDataProvider.IsAutomotiveDevice()) {
+                        AirConsoleLogger.LogDevelopment($"Quit and sleep for 2000ms");
+                        System.Threading.Thread.Sleep(2000); 
+                    } else {
+                        // TODO(GT-62)
+                        _webViewManager?.DestroyWebview();
+                        AirConsoleLogger.LogDevelopment($"Quit immediately");
+                    }
                 }
 
                 // Start the main AirConsole App
-                AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
-                AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                 AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                 AndroidJavaObject launchIntent = null;
                 try {
@@ -1992,13 +2000,12 @@ namespace NDream.AirConsole {
                     Application.OpenURL("market://details?id=" + gameId);
                 }
 
-                up.Dispose();
-                ca.Dispose();
                 packageManager.Dispose();
                 launchIntent.Dispose();
 
                 // Quitting after launch intent was the pre v2.5 way
                 if (quitAfterLaunchIntent) {
+                    AirConsoleLogger.LogDevelopment($"Quit after launch intent");
                     Application.Quit();
                 }
             }

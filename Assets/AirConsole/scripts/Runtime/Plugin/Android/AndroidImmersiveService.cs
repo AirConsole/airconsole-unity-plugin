@@ -11,9 +11,7 @@ namespace NDream.AirConsole.Android.Plugin {
 
         public AndroidImmersiveService() {
 #if AIRCONSOLE_ANDROID
-            // Get the current Android activity context
-            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
-            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
+            AndroidJavaObject context = UnityAndroidObjectProvider.GetUnityContext(); 
 
             // Create an instance of your Java plugin class
             _androidImmersiveService = new AndroidJavaObject("com.airconsole.unityandroidlibrary.AndroidImmersiveService", context);
