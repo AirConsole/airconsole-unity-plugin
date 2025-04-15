@@ -22,8 +22,8 @@ namespace NDream.AirConsole {
 
         internal WebViewManager(WebViewObject webViewObject, int defaultScreenHeight) {
             _webViewObject = webViewObject;
-            _webViewObject.SetMargins(0,0,0,0);
-            
+            _webViewObject.SetMargins(0, 0, 0, 0);
+
             _defaultScreenHeight = defaultScreenHeight;
         }
 
@@ -58,6 +58,11 @@ namespace NDream.AirConsole {
 
         public void UpdateWebView() {
 #if WEBVIEWMANAGER_ACTIVE
+            if (_webViewObject == null) {
+                throw new UnityException(
+                    "WebViewManager.UpdateWebView(): WebViewManager:DestroyWeb was called. Webview can not be used anymore.");
+            }
+
             switch (_currentState) {
                 case WebViewState.Hidden:
                     _webViewObject.SetMargins(0, 0, 0, _defaultScreenHeight);
@@ -74,6 +79,14 @@ namespace NDream.AirConsole {
             }
 
             _webViewObject.SetVisibility(_currentState != WebViewState.Hidden && !Application.isEditor);
+#endif
+        }
+
+        public void DestroyWebview() {
+            AirConsoleLogger.LogDevelopment("WebViewManager.DestroyWebview()");
+#if WEBVIEWMANAGER_ACTIVE
+            GameObject.DestroyImmediate(_webViewObject.gameObject);
+            _webViewObject = null;
 #endif
         }
     }
