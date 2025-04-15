@@ -176,6 +176,10 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureAndroidPlayerSettings() {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+            if (PlayerSettings.muteOtherAudioSources) {
+                Debug.Log("AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
+                PlayerSettings.muteOtherAudioSources = false;
+            }
 
             if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
                 Debug.LogWarning("To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"

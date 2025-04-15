@@ -3,7 +3,6 @@
 // This class is used in AndroidJNI of DataProviderPlugin.cs
 // ReSharper disable UnusedMember.Global
 // ReSharper disable UnusedType.Global
-
 namespace NDream.AirConsole.Android.Plugin {
     using System;
     using UnityEngine;
