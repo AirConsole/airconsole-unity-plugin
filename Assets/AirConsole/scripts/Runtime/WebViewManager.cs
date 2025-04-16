@@ -38,7 +38,7 @@ namespace NDream.AirConsole {
         }
 
         internal void RequestStateTransition(WebViewState newState) {
-            Debug.Log($"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
+            AirConsoleLogger.LogDevelopment($"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
             // When the SafeArea has been activated, we do not allow any other state transitions anymore.
             // The only thing allowed after this is for the safe area itself to change.
             if (_isSafeAreaActive) {

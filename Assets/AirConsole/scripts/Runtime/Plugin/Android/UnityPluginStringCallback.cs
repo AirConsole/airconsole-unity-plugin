@@ -27,7 +27,7 @@ namespace NDream.AirConsole.Android.Plugin {
                 AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message: {message}");
                 _successCallback.Invoke(message);
             } else {
-                Debug.LogWarning("Success callback is not assigned.");
+                AirConsoleLogger.LogDevelopment("Success callback is not assigned.");
             }
         }
 
@@ -35,10 +35,13 @@ namespace NDream.AirConsole.Android.Plugin {
         // ReSharper disable once InconsistentNaming
         public void onFailure(string error) {
             if (_failureCallback != null) {
-                Debug.LogError($"UnityPluginStringCallback failed with error: {error}");
+                if (Settings.debug.error) {
+                    AirConsoleLogger.LogError($"UnityPluginStringCallback failed with error: {error}");
+                }
+
                 _failureCallback.Invoke(error);
             } else {
-                Debug.LogWarning("Failure callback is not assigned.");
+                AirConsoleLogger.LogDevelopment("Failure callback is not assigned.");
             }
         }
     }

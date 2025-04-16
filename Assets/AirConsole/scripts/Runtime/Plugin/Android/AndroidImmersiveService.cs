@@ -18,7 +18,7 @@ namespace NDream.AirConsole.Android.Plugin {
             if (_androidImmersiveService != null) {
                 _androidImmersiveService.Call("maintainImmersiveModeOnSystemUIChange");
             } else {
-                Debug.LogError("AndroidImmersiveService is not found. Immersive mode will not be maintained.");
+                AirConsoleLogger.Log("AndroidImmersiveService is not found. Immersive mode will not be maintained.");
             }
 #else
             AirConsoleLogger.LogDevelopment("AndroidImmersiveService created.");

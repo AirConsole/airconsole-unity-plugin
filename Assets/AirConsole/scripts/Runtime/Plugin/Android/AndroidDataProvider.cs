@@ -33,7 +33,7 @@ namespace NDream.AirConsole.Android.Plugin {
         internal AndroidDataProvider() {
 #if AIRCONSOLE_ANDROID
             if (!CheckLibrary()) {
-                Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
+                AirConsoleLogger.LogWarning("AndroidDataProvider native could not be initialized");
                 return;
             }
 
@@ -42,9 +42,9 @@ namespace NDream.AirConsole.Android.Plugin {
                     DataProviderInitialized = true;
                     ConnectionUrl = url;
                     OnConnectionUrlReceived?.Invoke(url);
-                    Debug.Log($"Received URL: {url}");
+                    AirConsoleLogger.LogDevelopment($"Received URL: {url}");
                 },
-                error => { Debug.LogError($"DataProviderPlugin initialization failed with {error}"); }
+                error => { AirConsoleLogger.Log($"AndroidDataProvider initialization failed with {error}"); }
             );
 
             _dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
@@ -76,7 +76,7 @@ namespace NDream.AirConsole.Android.Plugin {
         private int GetUiModeTypeMask() {
 #if AIRCONSOLE_ANDROID
             if (!CheckLibrary()) {
-                Debug.LogWarning("DataProviderPlugin native plugin could not be initialized");
+                AirConsoleLogger.LogWarning("AndroidDataProvider native could not be initialized");
                 return UI_MODE_TYPE_NORMAL;
             }
 
