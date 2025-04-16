@@ -1152,6 +1152,7 @@ namespace NDream.AirConsole {
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
+            wsListener.OnUpdateContentProvider += OnUpdateContentProvider;
 #else
             wsListener = new WebsocketListener();
 #endif
@@ -1972,6 +1973,7 @@ namespace NDream.AirConsole {
                     }
                 }
 
+#if UNITY_ANDROID && !UNITY_EDITOR
                 // Start the main AirConsole App
                 AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                 AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -2000,6 +2002,7 @@ namespace NDream.AirConsole {
 
                 packageManager.Dispose();
                 launchIntent.Dispose();
+#endif
 
                 // Quitting after launch intent was the pre v2.5 way
                 if (quitAfterLaunchIntent) {
