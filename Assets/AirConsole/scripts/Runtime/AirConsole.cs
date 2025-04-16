@@ -1918,9 +1918,8 @@ namespace NDream.AirConsole {
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
-                    true, false);
-                // , false,
-                // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                    true, false,
+                    _androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice() ? "automotive-crwebview-user-agent" : "");
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
