@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System;
+using System.Threading;
 using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp;
 using WebSocketSharp.Server;
@@ -2007,8 +2008,21 @@ namespace NDream.AirConsole {
                 if (quitAfterLaunchIntent) {
                     AirConsoleLogger.LogDevelopment($"Quit after launch intent");
                     Application.Quit();
+                    return;
+                }
+
+                if (_androidDataProvider != null || !_androidDataProvider.IsAutomotiveDevice()) {
+                    Thread.Sleep(2000);
+                    FinishActivity();
                 }
             }
+        }
+
+        private void FinishActivity() {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            AndroidJavaObject activity = UnityAndroidObjectProvider.GetUnityActivity(); 
+            activity.Call("finish");
+#endif
         }
 
         private void OnUnityWebviewResize(JObject msg) {
