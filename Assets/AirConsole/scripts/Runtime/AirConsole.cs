@@ -2028,7 +2028,7 @@ namespace NDream.AirConsole {
         private void OnUnityWebviewResize(JObject msg) {
             AirConsoleLogger.LogDevelopment($"OnUnityWebviewResize w/ msg {msg}");
             if (_devices.Count > 0) {
-                Debug.Log("screen device data: " + _devices[0].ToString());
+                Debug.Log($"screen device data: {_devices[0]}");
             }
 
             int h = Screen.height;
@@ -2078,9 +2078,9 @@ namespace NDream.AirConsole {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
 
-            if (!nativeGameSizingSupported) {
-                AdaptUGuiLayout();
-            }
+#if !AIRCONSOLE_AUTOMOTIVE
+            AdaptUGuiLayout();
+#endif
         }
         
         private void AdaptUGuiLayout() {
@@ -2103,6 +2103,53 @@ namespace NDream.AirConsole {
                 fixedCanvasScalers.Add(allCanvasScalers[i]);
             }
         }
+
+        /// <summary>
+        /// Called when there is an update for the content provider.
+        /// </summary>
+        /// <param name="messsage">The message received.</param>
+        private void OnUpdateContentProvider(JObject messsage) {
+            string connectCode = (string)messsage["connectCode"];
+            string uid = (string)messsage["uid"];
+
+            if (!string.IsNullOrEmpty(connectCode) && !string.IsNullOrEmpty(uid)) {
+                _androidDataProvider?.WriteClientIdentification(connectCode, uid);
+            }
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is an automotive device.
+        /// </summary>
+        /// <returns>True if the device is an automotive device, otherwise false.</returns>
+        public bool IsAutomotiveDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_androidDataProvider == null) {
+                AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _androidDataProvider.IsAutomotiveDevice();
+#endif
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is a TV device.
+        /// </summary>
+        /// <returns>True if the device is a TV device, otherwise false.</returns>
+        public bool IsTVDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_androidDataProvider == null) {
+                AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _androidDataProvider.IsTvDevice();
+#endif
+        }
 #endif
 #endif
 
@@ -2111,9 +2158,19 @@ namespace NDream.AirConsole {
                 ? (float)msg[name]
                 : defaultValue;
         }
-
         #endregion
 
+        #region AirConsole Internal
+
+        internal event Action<bool> OnApplicationFocusChanged;
+
+        private void OnApplicationFocus(bool hasFocus) {
+            OnApplicationFocusChanged?.Invoke(hasFocus);
+        }
+
+        #endregion AirConsole Internal
+
 #endif
+
     }
 }

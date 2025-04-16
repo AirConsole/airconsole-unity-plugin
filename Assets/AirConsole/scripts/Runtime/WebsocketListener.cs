@@ -1,12 +1,13 @@
 ﻿#if !DISABLE_AIRCONSOLE
-using UnityEngine;
-using System;
-using Newtonsoft.Json;
-using WebSocketSharp;
-using WebSocketSharp.Server;
-using Newtonsoft.Json.Linq;
 
 namespace NDream.AirConsole {
+    using UnityEngine;
+    using System;
+    using WebSocketSharp;
+    using WebSocketSharp.Server;
+    using Newtonsoft.Json;
+    using Newtonsoft.Json.Linq;
+    
     public class WebsocketListener : WebSocketBehavior {
         public event Action<JObject> onReady;
         public event Action onClose;
@@ -163,11 +164,6 @@ namespace NDream.AirConsole {
                     case "client_update_content_provider":
                         OnUpdateContentProvider?.Invoke(msg);
                         break;
-                }
-            } catch (Exception e) {
-                if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
-                    Debug.LogError(e.StackTrace);
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
