@@ -81,14 +81,6 @@ namespace NDream.AirConsole {
             _webViewObject.SetVisibility(_currentState != WebViewState.Hidden && !Application.isEditor);
 #endif
         }
-
-        public void DestroyWebview() {
-            AirConsoleLogger.LogDevelopment("WebViewManager.DestroyWebview()");
-#if WEBVIEWMANAGER_ACTIVE
-            GameObject.DestroyImmediate(_webViewObject.gameObject);
-            _webViewObject = null;
-#endif
-        }
     }
 }
 

@@ -1968,8 +1968,6 @@ namespace NDream.AirConsole {
                         AirConsoleLogger.LogDevelopment($"Quit and sleep for 2000ms");
                         System.Threading.Thread.Sleep(2000); 
                     } else {
-                        // TODO(GT-62)
-                        _webViewManager?.DestroyWebview();
                         AirConsoleLogger.LogDevelopment($"Quit immediately");
                     }
                 }
