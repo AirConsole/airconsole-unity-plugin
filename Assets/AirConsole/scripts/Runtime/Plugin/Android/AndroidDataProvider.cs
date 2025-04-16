@@ -23,9 +23,7 @@ namespace NDream.AirConsole.Android.Plugin {
                 return true;
             }
 
-            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
-            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-
+            AndroidJavaObject context = UnityAndroidObjectProvider.GetUnityContext(); 
             _dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
 
             return _dataProviderHelper != null;
@@ -39,10 +37,6 @@ namespace NDream.AirConsole.Android.Plugin {
                 return;
             }
 
-            // Get the current Android activity context
-            AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer");
-            AndroidJavaObject context = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
-
             UnityPluginStringCallback callback = new(
                 url => {
                     DataProviderInitialized = true;
@@ -53,8 +47,6 @@ namespace NDream.AirConsole.Android.Plugin {
                 error => { Debug.LogError($"DataProviderPlugin initialization failed with {error}"); }
             );
 
-            // Create an instance of your Java plugin class
-            _dataProviderHelper = new AndroidJavaObject("com.airconsole.unityandroidlibrary.DataProviderService", context);
             _dataProviderHelper.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
 #endif
             AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
