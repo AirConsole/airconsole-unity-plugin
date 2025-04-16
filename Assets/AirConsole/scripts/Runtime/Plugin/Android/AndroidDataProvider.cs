@@ -60,6 +60,18 @@ namespace NDream.AirConsole.Android.Plugin {
             AirConsoleLogger.LogDevelopment("DataProviderPlugin created.");
         }
 
+        /// <summary>
+        /// Writes client identification related information using the native library
+        /// </summary>
+        /// <param name="connectCode">The screen connectCode to write.</param>
+        /// <param name="uid">The screen uid to write.</param>
+        internal void WriteClientIdentification(String connectCode, String uid) {
+            AirConsoleLogger.LogDevelopment($"WriteClientIdentification w/ connectCode: {connectCode}, uid: {uid}");
+#if AIRCONSOLE_ANDROID
+            _dataProviderHelper.Call("writeClientIdentification", connectCode, uid);
+#endif
+        }
+
         // ReSharper disable once UnusedMember.Global
         internal bool IsTvDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_TELEVISION;
 
