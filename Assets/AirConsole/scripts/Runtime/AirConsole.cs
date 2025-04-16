@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System;
+using System.Threading;
+using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
@@ -66,6 +68,47 @@ namespace NDream.AirConsole {
     public delegate void OnSafeAreaChanged(Rect newSafeArea);
 
     public class AirConsole : MonoBehaviour {
+        #region airconsole unity config
+
+        [Tooltip("The controller html file for your game")]
+        public UnityEngine.Object controllerHtml;
+
+        [Tooltip("Automatically scale the game canvas")]
+        public bool autoScaleCanvas = true;
+
+        [FormerlySerializedAs("androidTvGameVersion")]
+        [Header("Android Settings")]
+        [Tooltip(
+            "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        public string androidGameVersion;
+
+        [Tooltip(
+            "Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
+            + "Use this together with OnSafeAreaChanged")]
+        public AndroidUIResizeMode androidUIResizeMode;
+
+        [Tooltip("Loading Sprite to be displayed at the start of the game.")]
+        public Sprite webViewLoadingSprite;
+
+        [Tooltip("Enable SafeArea support with fullscreen webview overlay for Android.")]
+        [SerializeField]
+        private bool nativeGameSizingSupported;
+
+        [Header("Development Settings")]
+        [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
+        public StartMode browserStartMode;
+
+        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
+        public string devGameId;
+
+        [Tooltip("Language used in the simulator during play mode.")]
+        public string devLanguage;
+
+        [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
+        public string LocalIpOverride;
+
+        #endregion
+        
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
@@ -1065,51 +1108,6 @@ namespace NDream.AirConsole {
 
         #endregion
 
-#endif
-
-        #region airconsole unity config
-
-        [Tooltip("The controller html file for your game")]
-        public UnityEngine.Object controllerHtml;
-
-        [Tooltip("Automatically scale the game canvas")]
-        public bool autoScaleCanvas = true;
-
-        [FormerlySerializedAs("androidTvGameVersion")]
-        [Header("Android Settings")]
-        [Tooltip(
-            "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
-        public string androidGameVersion;
-
-        [Tooltip(
-            "Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv\n"
-            + "Use this together with OnSafeAreaChanged")]
-        public AndroidUIResizeMode androidUIResizeMode;
-
-        [Tooltip("Loading Sprite to be displayed at the start of the game.")]
-        public Sprite webViewLoadingSprite;
-
-        [Tooltip("Enable SafeArea support with fullscreen webview overlay for Android.")]
-        [SerializeField]
-        private bool nativeGameSizingSupported;
-
-        [Header("Development Settings")]
-        [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
-        public StartMode browserStartMode;
-
-        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
-        public string devGameId;
-
-        [Tooltip("Language used in the simulator during play mode.")]
-        public string devLanguage;
-
-        [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
-        public string LocalIpOverride;
-
-        #endregion
-
-#if !DISABLE_AIRCONSOLE
-
         #region unity functions
 
         protected void Awake() {
@@ -1121,7 +1119,12 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
+            Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
+            
             defaultScreenHeight = Screen.height;
+            _androidImmersiveService = new AndroidImmersiveService();
+            _androidAudioFocusService = new();
+            _androidDataProvider = new();
 #endif
         }
 
@@ -1150,6 +1153,7 @@ namespace NDream.AirConsole {
             wsListener.onLaunchApp += OnLaunchApp;
             wsListener.onUnityWebviewResize += OnUnityWebviewResize;
             wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
+            wsListener.OnUpdateContentProvider += OnUpdateContentProvider;
 #else
             wsListener = new WebsocketListener();
 #endif
@@ -1231,8 +1235,7 @@ namespace NDream.AirConsole {
 
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
-            AirConsoleLogger.LogDevelopment(
-                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
+            AirConsoleLogger.LogDevelopment($"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
@@ -1719,6 +1722,10 @@ namespace NDream.AirConsole {
         private int webViewHeight;
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
+
+        private AndroidImmersiveService _androidImmersiveService;
+        private AudioFocusService _androidAudioFocusService;
+        private AndroidDataProvider _androidDataProvider;
 #endif
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1823,6 +1830,18 @@ namespace NDream.AirConsole {
             return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
         }
 
+#if !UNITY_EDITOR
+        private void OnConnectUrlReceived (string connectionUrl) {
+            _androidDataProvider.OnConnectionUrlReceived -= OnConnectUrlReceived;
+            eventQueue.Enqueue(delegate {
+                // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                AirConsoleLogger.LogDevelopment($"OnConnectUrlReceived: {connectionUrl}");
+                CreateAndroidWebview(connectionUrl);
+            });
+            
+        }
+#endif
+
         private string ComputeUrlVersion(string version) {
             string[] split = version.Split('.');
             return $"{split[0]}.{split[1]}{split[2]}";
@@ -1832,8 +1851,21 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 PrepareWebviewOverlay();
+#if UNITY_EDITOR
                 string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                 CreateAndroidWebview(connectionUrl);
+#else
+                AirConsoleLogger.LogDevelopment($"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
+                if (_androidDataProvider.DataProviderInitialized) {
+                    // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                    string connectionUrl = _androidDataProvider.ConnectionUrl;
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+                    CreateAndroidWebview(connectionUrl); 
+                } else {
+                    AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
+                    _androidDataProvider.OnConnectionUrlReceived += OnConnectUrlReceived; 
+                }
+#endif
             } else {
                 AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
                 if (Settings.debug.error) {
@@ -1858,7 +1890,11 @@ namespace NDream.AirConsole {
             webViewLoadingBG.color = Color.black;
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
             webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
-            webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
+            if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
+                webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+            } else {
+                webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+            }
             webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             webViewLoadingImage.preserveAspect = true;
 
@@ -1883,16 +1919,14 @@ namespace NDream.AirConsole {
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
-                    true, false);
-                // , false,
-                // null); //"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36");
+                    true, false,
+                    _androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice() ? "automotive-crwebview-user-agent" : "");
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
 #if !UNITY_EDITOR
                     // Get bundle version ("Bundle Version Code" in Unity)
-                    AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
-                    AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                    AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                     AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
 
@@ -1917,9 +1951,9 @@ namespace NDream.AirConsole {
         }
 
         private void OnLaunchApp(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg}");
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
+            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
 
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
@@ -1931,12 +1965,17 @@ namespace NDream.AirConsole {
                 // Quit the Unity Player first and give it the time to close all the threads (Default)
                 if (!quitAfterLaunchIntent) {
                     Application.Quit();
-                    System.Threading.Thread.Sleep(2000);
+                    if (_androidDataProvider == null || !_androidDataProvider.IsAutomotiveDevice()) {
+                        AirConsoleLogger.LogDevelopment($"Quit and sleep for 2000ms");
+                        System.Threading.Thread.Sleep(2000); 
+                    } else {
+                        AirConsoleLogger.LogDevelopment($"Quit immediately");
+                    }
                 }
 
+#if UNITY_ANDROID && !UNITY_EDITOR
                 // Start the main AirConsole App
-                AndroidJavaClass up = new("com.unity3d.player.UnityPlayer");
-                AndroidJavaObject ca = up.GetStatic<AndroidJavaObject>("currentActivity");
+                AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                 AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
                 AndroidJavaObject launchIntent = null;
                 try {
@@ -1953,28 +1992,43 @@ namespace NDream.AirConsole {
                     }
                 }
 
+                AirConsoleLogger.LogDevelopment(
+                    $"OnLaunchApp for {msg}, launch intent: {launchIntent != null}, gameId: {gameId}, Application.identifier: {Application.identifier} gameVersion: {gameVersion}");
                 if (launchIntent != null && gameId != Application.identifier) {
                     ca.Call("startActivity", launchIntent);
                 } else {
                     Application.OpenURL("market://details?id=" + gameId);
                 }
 
-                up.Dispose();
-                ca.Dispose();
                 packageManager.Dispose();
                 launchIntent.Dispose();
+#endif
 
                 // Quitting after launch intent was the pre v2.5 way
                 if (quitAfterLaunchIntent) {
+                    AirConsoleLogger.LogDevelopment($"Quit after launch intent");
                     Application.Quit();
+                    return;
+                }
+
+                if (_androidDataProvider != null || !_androidDataProvider.IsAutomotiveDevice()) {
+                    Thread.Sleep(2000);
+                    FinishActivity();
                 }
             }
+        }
+
+        private void FinishActivity() {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            AndroidJavaObject activity = UnityAndroidObjectProvider.GetUnityActivity(); 
+            activity.Call("finish");
+#endif
         }
 
         private void OnUnityWebviewResize(JObject msg) {
             AirConsoleLogger.LogDevelopment($"OnUnityWebviewResize w/ msg {msg}");
             if (_devices.Count > 0) {
-                Debug.Log("screen device data: " + _devices[0].ToString());
+                Debug.Log($"screen device data: {_devices[0]}");
             }
 
             int h = Screen.height;
@@ -2024,9 +2078,9 @@ namespace NDream.AirConsole {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
 
-            if (!nativeGameSizingSupported) {
-                AdaptUGuiLayout();
-            }
+#if !AIRCONSOLE_AUTOMOTIVE
+            AdaptUGuiLayout();
+#endif
         }
         
         private void AdaptUGuiLayout() {
@@ -2049,6 +2103,53 @@ namespace NDream.AirConsole {
                 fixedCanvasScalers.Add(allCanvasScalers[i]);
             }
         }
+
+        /// <summary>
+        /// Called when there is an update for the content provider.
+        /// </summary>
+        /// <param name="messsage">The message received.</param>
+        private void OnUpdateContentProvider(JObject messsage) {
+            string connectCode = (string)messsage["connectCode"];
+            string uid = (string)messsage["uid"];
+
+            if (!string.IsNullOrEmpty(connectCode) && !string.IsNullOrEmpty(uid)) {
+                _androidDataProvider?.WriteClientIdentification(connectCode, uid);
+            }
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is an automotive device.
+        /// </summary>
+        /// <returns>True if the device is an automotive device, otherwise false.</returns>
+        public bool IsAutomotiveDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_androidDataProvider == null) {
+                AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _androidDataProvider.IsAutomotiveDevice();
+#endif
+        }
+
+        // ReSharper disable once UnusedMember.Global
+        /// <summary>
+        /// Checks if the current device is a TV device.
+        /// </summary>
+        /// <returns>True if the device is a TV device, otherwise false.</returns>
+        public bool IsTVDevice() {
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return false;
+#else
+            if (_androidDataProvider == null) {
+                AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
+                return false;
+            }
+            return _androidDataProvider.IsTvDevice();
+#endif
+        }
 #endif
 #endif
 
@@ -2057,8 +2158,19 @@ namespace NDream.AirConsole {
                 ? (float)msg[name]
                 : defaultValue;
         }
-
         #endregion
+
+        #region AirConsole Internal
+
+        internal event Action<bool> OnApplicationFocusChanged;
+
+        private void OnApplicationFocus(bool hasFocus) {
+            OnApplicationFocusChanged?.Invoke(hasFocus);
+        }
+
+        #endregion AirConsole Internal
+
+#endif
+
     }
 }
-#endif
