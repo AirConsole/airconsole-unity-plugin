@@ -10,8 +10,10 @@ namespace NDream.AirConsole.Android.Plugin {
 
         internal AudioFocusService()
         {
+#if AIRCONSOLE_ANDROID
             AndroidJavaObject context = UnityAndroidObjectProvider.GetUnityContext(); 
             audioFocusPlugin = new AndroidJavaObject("com.airconsole.unityandroidlibrary.AudioFocusService", context);
+#endif
             RequestFocus();
             AirConsole.instance.OnApplicationFocusChanged += OnApplicationFocus;
         }
@@ -30,13 +32,17 @@ namespace NDream.AirConsole.Android.Plugin {
 
         private void RequestFocus()
         {
+#if AIRCONSOLE_ANDROID
             bool granted = audioFocusPlugin.Call<bool>("requestAudioFocus");
             AirConsoleLogger.Log("Audio focus granted: " + granted);
+#endif
         }
 
         private void AbandonFocus()
         {
+#if AIRCONSOLE_ANDROID
             audioFocusPlugin.Call("abandonAudioFocus");
+#endif
         } 
     }
 }
