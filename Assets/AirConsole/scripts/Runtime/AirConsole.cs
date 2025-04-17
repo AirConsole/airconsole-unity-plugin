@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿#if !UNITY_EDITOR
+#define NOT_UNITY_EDITOR
+#endif
+using UnityEngine;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System;
@@ -107,7 +110,7 @@ namespace NDream.AirConsole {
         public string LocalIpOverride;
 
         #endregion
-        
+
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
@@ -1116,8 +1119,8 @@ namespace NDream.AirConsole {
 
             defaultScreenHeight = Screen.height;
             _androidImmersiveService = new AndroidImmersiveService();
-            _androidAudioFocusService = new();
-            _androidDataProvider = new();
+            _androidAudioFocusService = new AudioFocusService();
+            _androidDataProvider = new AndroidDataProvider();
 #endif
         }
 
@@ -1125,9 +1128,9 @@ namespace NDream.AirConsole {
 #if UNITY_EDITOR
             _runtimeConfigurator = new EditorRuntimeConfigurator();
 #elif UNITY_ANDROID
-            runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
+            _runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
 #else
-            runtimeConfigurator = new WebGLRuntimeConfigurator();
+            _runtimeConfigurator = new WebGLRuntimeConfigurator();
 #endif
 
 #if UNITY_ANDROID
@@ -1255,6 +1258,12 @@ namespace NDream.AirConsole {
 
         private void OnDisable() {
             StopWebsocketServer();
+        }
+
+        private void OnDestroy() {
+#if UNITY_ANDROID
+            _androidAudioFocusService?.Destroy();
+#endif
         }
 
         public static T ACFindObjectOfType<T>() where T : UnityEngine.Object {
@@ -1391,11 +1400,9 @@ namespace NDream.AirConsole {
         }
 
         private void OnReady(JObject msg) {
-#if UNITY_ANDROID && !UNITY_EDITOR
-			if (webViewLoadingCanvas != null){
-				GameObject.Destroy (webViewLoadingCanvas.gameObject);
-			}
-#endif
+            if (webViewLoadingCanvas) {
+                Destroy(webViewLoadingCanvas.gameObject);
+            }
 
             // parse server_time_offset
             _server_time_offset = (int)msg["server_time_offset"];
@@ -1715,7 +1722,6 @@ namespace NDream.AirConsole {
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
 
-#if UNITY_ANDROID
         private WebViewObject webViewObject;
         private Canvas webViewLoadingCanvas;
         private UnityEngine.UI.Image webViewLoadingImage;
@@ -1727,7 +1733,6 @@ namespace NDream.AirConsole {
         private AndroidImmersiveService _androidImmersiveService;
         private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
-#endif
 
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1875,12 +1880,10 @@ namespace NDream.AirConsole {
             }
         }
 
+        [Conditional("UNITY_ANDROID")]
+        [Conditional("NOT_UNITY_EDITOR")]
         private void PrepareWebviewOverlay() {
-            //Display loading Screen
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
-
-
-#if !UNITY_EDITOR
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
@@ -1891,17 +1894,17 @@ namespace NDream.AirConsole {
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
             webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
             if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
-                webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width, Screen.height);
+                webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             } else {
-                webViewLoadingImage.rectTransform.sizeDelta = new Vector2 (Screen.width / 2, Screen.height / 2);
+                webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
             }
+
             webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             webViewLoadingImage.preserveAspect = true;
 
             if (webViewLoadingSprite == null) {
                 webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
             }
-#endif
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
@@ -2082,7 +2085,7 @@ namespace NDream.AirConsole {
             AdaptUGuiLayout();
 #endif
         }
-        
+
         private void AdaptUGuiLayout() {
             if (androidUIResizeMode != AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 return;
@@ -2171,6 +2174,5 @@ namespace NDream.AirConsole {
         #endregion AirConsole Internal
 
 #endif
-
     }
 }

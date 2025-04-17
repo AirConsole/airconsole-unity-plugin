@@ -1,7 +1,6 @@
 ﻿#if !DISABLE_AIRCONSOLE
 using UnityEngine;
 using UnityEditor;
-using System.Collections;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;

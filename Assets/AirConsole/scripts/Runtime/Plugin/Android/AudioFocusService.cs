@@ -1,28 +1,23 @@
 #if !DISABLE_AIRCONSOLE
-#if UNITY_ANDROID && !UNITY_EDITOR
-#define AIRCONSOLE_ANDROID
-#endif
 
 namespace NDream.AirConsole.Android.Plugin {
     using UnityEngine;
+
     internal class AudioFocusService {
-        private AndroidJavaObject audioFocusPlugin;
+        private readonly AndroidJavaObject _audioFocusService;
 
-        internal AudioFocusService()
-        {
-#if AIRCONSOLE_ANDROID
-            AndroidJavaObject context = UnityAndroidObjectProvider.GetUnityContext(); 
-            audioFocusPlugin = new AndroidJavaObject("com.airconsole.unityandroidlibrary.AudioFocusService", context);
-#endif
+        internal AudioFocusService() {
+            AirConsoleLogger.LogDevelopment("AudioFocusService created.");
+            _audioFocusService = UnityAndroidObjectProvider.GetInstanceOfClass("com.airconsole.unityandroidlibrary.AudioFocusService");
             RequestFocus();
-            AirConsole.instance.OnApplicationFocusChanged += OnApplicationFocus;
+            AirConsole.instance.OnApplicationFocusChanged += HandleApplicationFocusChanged;
         }
 
-        internal void Destroy () {
-            AirConsole.instance.OnApplicationFocusChanged -= OnApplicationFocus;
+        internal void Destroy() {
+            AirConsole.instance.OnApplicationFocusChanged -= HandleApplicationFocusChanged;
         }
 
-        private void OnApplicationFocus(bool hasFocus) {
+        private void HandleApplicationFocusChanged(bool hasFocus) {
             if (hasFocus) {
                 RequestFocus();
             } else {
@@ -30,20 +25,21 @@ namespace NDream.AirConsole.Android.Plugin {
             }
         }
 
-        private void RequestFocus()
-        {
-#if AIRCONSOLE_ANDROID
-            bool granted = audioFocusPlugin.Call<bool>("requestAudioFocus");
-            AirConsoleLogger.Log("Audio focus granted: " + granted);
-#endif
+        private void RequestFocus() {
+            AirConsoleLogger.LogDevelopment("AudioFocusService requesting focus");
+
+            if (_audioFocusService == null) {
+                return;
+            }
+
+            bool granted = _audioFocusService.Call<bool>("requestAudioFocus");
+            AirConsoleLogger.LogDevelopment("Audio focus granted: " + granted);
         }
 
-        private void AbandonFocus()
-        {
-#if AIRCONSOLE_ANDROID
-            audioFocusPlugin.Call("abandonAudioFocus");
-#endif
-        } 
+        private void AbandonFocus() {
+            AirConsoleLogger.LogDevelopment("AudioFocusService abandoning focus.");
+            _audioFocusService?.Call("abandonAudioFocus");
+        }
     }
 }
 #endif
