@@ -32,9 +32,7 @@ namespace NDream.AirConsole.Editor {
             EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!", true);
         }
 
-        public static bool IsSupportedUnityVersion() {
-            return Settings.IsUnity2022OrHigher();
-        }
+        public static bool IsSupportedUnityVersion() => Settings.IsUnity2022OrHigher();
     }
 
     public abstract class UnityPlatform {
@@ -69,7 +67,9 @@ namespace NDream.AirConsole.Editor {
     }
 
     public abstract class ProjectConfigurationCheck : IPreprocessBuildWithReport {
-        public int callbackOrder => 0;
+        public int callbackOrder {
+            get => 0;
+        }
 
         public void OnPreprocessBuild(BuildReport report) {
             CheckSettings(report.summary.platform);
@@ -213,8 +213,8 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.renderOutsideSafeArea = true;
 
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
-            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel23) {
-                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel23;
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel27) {
+                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel27;
             }
 
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
