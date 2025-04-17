@@ -1129,11 +1129,12 @@ namespace NDream.AirConsole {
         }
 
         protected void Start() {
-            // application has to run in background
-#if UNITY_ANDROID && !UNITY_EDITOR
-            Application.runInBackground = false;
+#if UNITY_EDITOR
+            _runtimeConfigurator = new EditorRuntimeConfigurator();
+#elif UNITY_ANDROID
+            runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
 #else
-            Application.runInBackground = true;
+            runtimeConfigurator = new WebGLRuntimeConfigurator();
 #endif
 
             // register all incoming events
@@ -1244,6 +1245,8 @@ namespace NDream.AirConsole {
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
+
+            _runtimeConfigurator?.RefreshConfiguration();
 
 #if UNITY_ANDROID
             //back button on TV remotes
@@ -1738,7 +1741,8 @@ namespace NDream.AirConsole {
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
 
-        // unity singleton handling
+        private IRuntimeConfigurator _runtimeConfigurator;
+
         private static AirConsole _instance;
 
         private void StopWebsocketServer() {
