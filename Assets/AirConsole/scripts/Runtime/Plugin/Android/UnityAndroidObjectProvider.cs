@@ -4,7 +4,6 @@
 #endif
 
 namespace NDream.AirConsole.Android.Plugin {
-    using System.Diagnostics;
     using UnityEngine;
 
     internal abstract class UnityAndroidObjectProvider {
