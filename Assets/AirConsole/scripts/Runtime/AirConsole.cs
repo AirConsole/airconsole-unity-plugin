@@ -1,15 +1,14 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System;
+using System.Diagnostics;
 using System.Threading;
 using NDream.AirConsole.Android.Plugin;
-using WebSocketSharp;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.Serialization;
+using Debug = UnityEngine.Debug;
 #if UNITY_ANDROID
 using UnityEngine.SceneManagement;
 #elif UNITY_WEBGL
@@ -271,9 +270,7 @@ namespace NDream.AirConsole {
         /// Determines whether the AirConsole Unity Plugin is ready. Use onReady event instead if possible.
         /// </summary>
         /// <returns><c>true</c> if the AirConsole Unity Plugin is ready; otherwise, <c>false</c>.</returns>
-        public bool IsAirConsoleUnityPluginReady() {
-            return wsListener != null && wsListener.IsReady();
-        }
+        public bool IsAirConsoleUnityPluginReady() => wsListener != null && wsListener.IsReady();
 
         /// <summary>
         /// Sends a message to another device.
@@ -401,9 +398,7 @@ namespace NDream.AirConsole {
         /// part of the active players, this function returns -1.
         /// </summary>
         /// <param name="device_id">Device id.</param>
-        public int ConvertDeviceIdToPlayerNumber(int device_id) {
-            return _players.IndexOf(device_id);
-        }
+        public int ConvertDeviceIdToPlayerNumber(int device_id) => _players.IndexOf(device_id);
 
         /// <summary>
         /// Returns the globally unique id of a device.
@@ -592,9 +587,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
         /// <param name="size">The size of in pixels of the picture. Default is 64.</param>
-        public string GetProfilePicture(string uid, int size = 64) {
-            return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + uid + "&size=" + size;
-        }
+        public string GetProfilePicture(string uid, int size = 64) => $"{Settings.AIRCONSOLE_PROFILE_PICTURE_URL}{uid}&size={size}";
 
         /// <summary>
         /// Returns the url to a profile picture of a user.
@@ -1120,7 +1113,7 @@ namespace NDream.AirConsole {
             gameObject.name = "AirConsole";
 #if UNITY_ANDROID
             Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
-            
+
             defaultScreenHeight = Screen.height;
             _androidImmersiveService = new AndroidImmersiveService();
             _androidAudioFocusService = new();
@@ -1129,14 +1122,14 @@ namespace NDream.AirConsole {
         }
 
         protected void Start() {
-            // application has to run in background
-#if UNITY_ANDROID && !UNITY_EDITOR
-            Application.runInBackground = false;
+#if UNITY_EDITOR
+            _runtimeConfigurator = new EditorRuntimeConfigurator();
+#elif UNITY_ANDROID
+            runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
 #else
-            Application.runInBackground = true;
+            runtimeConfigurator = new WebGLRuntimeConfigurator();
 #endif
 
-            // register all incoming events
 #if UNITY_ANDROID
             InitWebView();
 
@@ -1226,16 +1219,16 @@ namespace NDream.AirConsole {
             };
             SafeArea = safeArea;
 
-            if ((androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
-                 || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution)
-                && Camera.main != null) {
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution
+                && Camera.main) {
                 AirConsoleLogger.LogDevelopment($"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
                 Camera.main.pixelRect = safeArea;
             }
 
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
-            AirConsoleLogger.LogDevelopment($"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
+            AirConsoleLogger.LogDevelopment(
+                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
@@ -1244,6 +1237,8 @@ namespace NDream.AirConsole {
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
+
+            _runtimeConfigurator?.RefreshConfiguration();
 
 #if UNITY_ANDROID
             //back button on TV remotes
@@ -1693,17 +1688,23 @@ namespace NDream.AirConsole {
         /// Provides access to the device data of all devices in the game.
         /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
         /// </summary>
-        public ReadOnlyCollection<JToken> Devices => _devices.AsReadOnly();
+        public ReadOnlyCollection<JToken> Devices {
+            get => _devices.AsReadOnly();
+        }
 
         [Obsolete("GetActivePlayerDeviceIds has been replaced with ActivePlayerDeviceIds", true)]
-        public ReadOnlyCollection<int> GetActivePlayerDeviceIds => _players.AsReadOnly();
+        public ReadOnlyCollection<int> GetActivePlayerDeviceIds {
+            get => _players.AsReadOnly();
+        }
 
         /// <summary>
         /// Returns an array of device_ids of the active players previously set by the
         /// screen by calling setActivePlayers. The first device_id in the array is the
         /// first player, the second device_id in the array is the second player, ...
         /// </summary>
-        public ReadOnlyCollection<int> ActivePlayerDeviceIds => _players.AsReadOnly();
+        public ReadOnlyCollection<int> ActivePlayerDeviceIds {
+            get => _players.AsReadOnly();
+        }
 
         /// <summary>
         /// The currently valid safe area in camera coordinates. Valid pixelRect for cameras to render in.
@@ -1711,9 +1712,9 @@ namespace NDream.AirConsole {
         /// <remarks>Can be directly assigned to the camera.pixelRect</remarks>
         public Rect SafeArea { get; private set; } = new(0, 0, Screen.width, Screen.height);
 
-        // private vars
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
+
 #if UNITY_ANDROID
         private WebViewObject webViewObject;
         private Canvas webViewLoadingCanvas;
@@ -1727,6 +1728,7 @@ namespace NDream.AirConsole {
         private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
 #endif
+
         private List<JToken> _devices = new();
         private int _device_id;
         private int _server_time_offset;
@@ -1738,7 +1740,8 @@ namespace NDream.AirConsole {
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
 
-        // unity singleton handling
+        private IRuntimeConfigurator _runtimeConfigurator;
+
         private static AirConsole _instance;
 
         private void StopWebsocketServer() {
@@ -1826,9 +1829,7 @@ namespace NDream.AirConsole {
         }
 
 #if UNITY_ANDROID
-        private int GetScaledWebViewHeight() {
-            return (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
-        }
+        private int GetScaledWebViewHeight() => (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
 
 #if !UNITY_EDITOR
         private void OnConnectUrlReceived (string connectionUrl) {
@@ -1857,7 +1858,6 @@ namespace NDream.AirConsole {
 #else
                 AirConsoleLogger.LogDevelopment($"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
                 if (_androidDataProvider.DataProviderInitialized) {
-                    // string connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                     string connectionUrl = _androidDataProvider.ConnectionUrl;
                     AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
                     CreateAndroidWebview(connectionUrl); 
@@ -1967,7 +1967,7 @@ namespace NDream.AirConsole {
                     Application.Quit();
                     if (_androidDataProvider == null || !_androidDataProvider.IsAutomotiveDevice()) {
                         AirConsoleLogger.LogDevelopment($"Quit and sleep for 2000ms");
-                        System.Threading.Thread.Sleep(2000); 
+                        Thread.Sleep(2000);
                     } else {
                         AirConsoleLogger.LogDevelopment($"Quit immediately");
                     }
@@ -2153,11 +2153,11 @@ namespace NDream.AirConsole {
 #endif
 #endif
 
-        private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) {
-            return !string.IsNullOrEmpty((string)msg[name])
+        private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) =>
+            !string.IsNullOrEmpty((string)msg[name])
                 ? (float)msg[name]
                 : defaultValue;
-        }
+
         #endregion
 
         #region AirConsole Internal
