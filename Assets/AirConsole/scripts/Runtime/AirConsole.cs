@@ -122,7 +122,7 @@ namespace NDream.AirConsole {
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
         // ReSharper disable once UnusedMember.Global
         public static string Version {
-            get => IsAndroidRuntime ? instance.androidGameVersion : string.Empty;
+            get => IsAndroidOrEditor ? instance.androidGameVersion : string.Empty;
         }
 
         /// <summary>
@@ -1104,7 +1104,7 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 
-            if (IsAndroidRuntime) {
+            if (IsAndroidOrEditor) {
                 Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
@@ -1117,13 +1117,13 @@ namespace NDream.AirConsole {
         protected void Start() {
             if (Application.isEditor) {
                 _runtimeConfigurator = new EditorRuntimeConfigurator();
-            } else if (IsAndroidNativeRuntime) {
+            } else if (IsAndroidRuntime) {
                 _runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
             } else {
                 _runtimeConfigurator = new WebGLRuntimeConfigurator();
             }
 
-            if (IsAndroidRuntime) {
+            if (IsAndroidOrEditor) {
                 InitWebView();
 
                 SceneManager.sceneLoaded += OnAndroidSceneLoaded;
@@ -1134,7 +1134,7 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebSockets() {
-            if (IsAndroidRuntime) {
+            if (IsAndroidOrEditor) {
                 wsListener = new WebsocketListener(webViewObject);
                 wsListener.onLaunchApp += OnLaunchApp;
                 wsListener.onUnityWebviewResize += OnUnityWebviewResize;
@@ -1234,7 +1234,7 @@ namespace NDream.AirConsole {
 
             _runtimeConfigurator?.RefreshConfiguration();
 
-            if (IsAndroidNativeRuntime) {
+            if (IsAndroidRuntime) {
                 //back button on TV remotes
                 if (Input.GetKeyDown(KeyCode.Escape)) {
                     Application.Quit();
@@ -1252,7 +1252,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnDestroy() {
-            if (IsAndroidNativeRuntime) {
+            if (IsAndroidRuntime) {
                 _androidAudioFocusService?.Destroy();
             }
         }
@@ -1704,11 +1704,17 @@ namespace NDream.AirConsole {
             get => _players.AsReadOnly();
         }
 
-        internal static bool IsAndroidNativeRuntime {
+        /// <summary>
+        /// True, if this is the Android platform running on the device, not the editor.
+        /// </summary>
+        internal static bool IsAndroidRuntime {
             get => Application.platform == RuntimePlatform.Android;
         }
 
-        internal static bool IsAndroidRuntime {
+        /// <summary>
+        /// True, if this is the android platform running on the device or the Unity editor.
+        /// </summary>
+        internal static bool IsAndroidOrEditor {
             get => Application.platform == RuntimePlatform.Android || Application.isEditor;
         }
 
@@ -1854,7 +1860,7 @@ namespace NDream.AirConsole {
                 if (Application.isEditor) {
                     string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                     CreateAndroidWebview(connectionUrl);
-                } else if (IsAndroidNativeRuntime) {
+                } else if (IsAndroidRuntime) {
                     AirConsoleLogger.LogDevelopment(
                         $"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
                     if (_androidDataProvider.DataProviderInitialized) {
@@ -1921,7 +1927,7 @@ namespace NDream.AirConsole {
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
-                if (IsAndroidNativeRuntime) {
+                if (IsAndroidRuntime) {
                     // Get bundle version ("Bundle Version Code" in Unity)
                     AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
                     AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -1970,7 +1976,7 @@ namespace NDream.AirConsole {
                     }
                 }
 
-                if (IsAndroidNativeRuntime) {
+                if (IsAndroidRuntime) {
                     LaunchNativeAirConsoleStore(msg, gameId, gameVersion);
                 }
 
@@ -2020,7 +2026,7 @@ namespace NDream.AirConsole {
         }
 
         private void FinishActivity() {
-            if (!IsAndroidNativeRuntime) {
+            if (!IsAndroidRuntime) {
                 return;
             }
 
@@ -2055,7 +2061,7 @@ namespace NDream.AirConsole {
         }
 
         private Rect GetCameraPixelRect() {
-            if (IsAndroidRuntime) {
+            if (IsAndroidOrEditor) {
                 if (_safeAreaWasSet) {
                     return SafeArea;
                 }
@@ -2125,7 +2131,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <returns>True if the device is an automotive device, otherwise false.</returns>
         public bool IsAutomotiveDevice() {
-            if (!IsAndroidNativeRuntime) {
+            if (!IsAndroidRuntime) {
                 return false;
             }
             
@@ -2142,7 +2148,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <returns>True if the device is a TV device, otherwise false.</returns>
         public bool IsTVDevice() {
-            if (!IsAndroidNativeRuntime) {
+            if (!IsAndroidRuntime) {
                 return false;
             }
             
