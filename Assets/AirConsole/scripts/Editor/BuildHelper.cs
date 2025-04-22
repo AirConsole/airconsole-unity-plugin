@@ -1,3 +1,4 @@
+using UnityEngine;
 #if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
 namespace NDream.AirConsole.Editor {
     using System.Diagnostics;
@@ -80,6 +81,10 @@ namespace NDream.AirConsole.Editor {
         /// </summary>
         /// <returns>True if there are changes, false otherwise.</returns>
         private static bool HasUncommittedChanges() {
+            if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".git"))) {
+                return false;
+            }
+            
             try {
                 ProcessStartInfo startInfo = new() {
                     FileName = "git",
@@ -107,6 +112,10 @@ namespace NDream.AirConsole.Editor {
         /// <param name="arguments">The git command arguments.</param>
         /// <returns>The output of the command.</returns>
         private static string RunGitCommand(string arguments) {
+            if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".git"))) {
+                return string.Empty;
+            }
+            
             try {
                 ProcessStartInfo startInfo = new() {
                     FileName = "git",
@@ -142,7 +151,7 @@ namespace NDream.AirConsole.Editor {
         /// <param name="scenes">Array of scenes to include in the build.</param>
         /// <param name="outputPath">The output path for the built project.</param>
         /// <param name="target">The target platform for the build.</param>
-        private static void BuildForPlatform(string[] scenes, string outputPath, BuildTarget target) {
+        private static bool BuildForPlatform(string[] scenes, string outputPath, BuildTarget target) {
             BuildPlayerOptions buildPlayerOptions = new() {
                 scenes = scenes,
                 locationPathName = outputPath,
@@ -159,7 +168,16 @@ namespace NDream.AirConsole.Editor {
                 case BuildResult.Failed:
                     AirConsoleLogger.LogError("Build failed.");
                     break;
+                case BuildResult.Cancelled:
+                    AirConsoleLogger.LogError("Build cancelled.");
+                    return false;
+                case BuildResult.Unknown:
+                    string msg = $"Unknown build result. Terminating build for {target} now.";
+                    AirConsoleLogger.LogError(msg);
+                    throw new UnityException(msg);
             }
+
+            return true;
         }
 
         /// <summary>
@@ -211,6 +229,11 @@ namespace NDream.AirConsole.Editor {
 
         private static bool CommitPendingChanges(out string timestamp, out string commitHash) {
             timestamp = DateTime.Now.ToString("yyyyMMdd-HHmm");
+
+            if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".git"))) {
+                commitHash = "unknown";
+                return false;
+            }
 
             if (HasUncommittedChanges()) {
                 string commitResult = RunGitCommand($"commit -am \"build: {timestamp}\"");
