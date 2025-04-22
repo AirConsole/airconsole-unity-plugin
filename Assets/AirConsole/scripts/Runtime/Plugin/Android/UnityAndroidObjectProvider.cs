@@ -1,16 +1,14 @@
 #if !DISABLE_AIRCONSOLE
-#if UNITY_ANDROID && !UNITY_EDITOR
-#define AIRCONSOLE_ANDROID
-#endif
 
 namespace NDream.AirConsole.Android.Plugin {
     using UnityEngine;
 
     internal abstract class UnityAndroidObjectProvider {
+        // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetUnityContext() {
-#if !AIRCONSOLE_ANDROID
-            throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
-#endif
+            if (!AirConsole.IsAndroidOrEditor) {
+                throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
+            }
 
 #if UNITY_6000_0_OR_NEWER
             return UnityEngine.Android.AndroidApplication.currentContext;
@@ -20,10 +18,12 @@ namespace NDream.AirConsole.Android.Plugin {
             return unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
         }
 
+        // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetUnityActivity() {
-#if !AIRCONSOLE_ANDROID
-            throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
-#endif
+            if (!AirConsole.IsAndroidOrEditor) {
+                throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
+            }
+            
 #if UNITY_6000_0_OR_NEWER
             return UnityEngine.Android.AndroidApplication.currentActivity;
 #endif
@@ -32,11 +32,13 @@ namespace NDream.AirConsole.Android.Plugin {
             return unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
         }
 
+        // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetInstanceOfClass(string className) {
             AndroidJavaObject result = null;
-#if AIRCONSOLE_ANDROID
-            result = new AndroidJavaObject(className, GetUnityContext());
-#endif
+            if (AirConsole.IsAndroidOrEditor) {
+                result = new AndroidJavaObject(className, GetUnityContext());
+            }
+
             AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");
             return result;
         }
