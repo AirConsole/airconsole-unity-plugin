@@ -51,19 +51,6 @@ namespace NDream.AirConsole.Editor {
 
             EditorGUILayout.LabelField("Webserver is running", Extentions.webserver.IsRunning().ToString());
 
-            GUILayout.BeginHorizontal();
-
-            GUILayout.Space(150);
-            if (GUILayout.Button("Stop", GUILayout.MaxWidth(60))) {
-                Extentions.webserver.Stop();
-            }
-
-            if (GUILayout.Button("Restart", GUILayout.MaxWidth(60))) {
-                Extentions.webserver.Restart();
-            }
-
-            GUILayout.EndHorizontal();
-
             groupEnabled = EditorGUILayout.BeginToggleGroup("Debug Settings", groupEnabled);
 
             Settings.debug.info = EditorGUILayout.Toggle("Info", Settings.debug.info);

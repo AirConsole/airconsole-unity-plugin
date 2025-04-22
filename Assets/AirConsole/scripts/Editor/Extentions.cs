@@ -12,11 +12,6 @@ namespace NDream.AirConsole.Editor {
 
         static Extentions() {
             InitSettings();
-
-            if (webserver != null) {
-                webserver.Start();
-            }
-
             PlayMode.PlayModeChanged += OnPlayModeStateChanged;
         }
 

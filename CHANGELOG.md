@@ -17,6 +17,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 - We now automatically update the AndroidManifest as necessary for AirConsole to work on Android. We also remove old settings that are no longer necessary or conflict with Unity 2022 or Unity 6.
 - AirConsole validates that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
 
+### Changed
+
+- AirConsole now opens the socket server during playmode and closes it again afterwards to avoid the need to restart the editor.
+
 ### Removed
 
 - AndroidManifest: The plugin no longer ships with a custom AndroidManifest.
