@@ -1,5 +1,5 @@
-﻿#if !UNITY_EDITOR
-#define NOT_UNITY_EDITOR
+﻿#if !UNITY_EDITOR && UNITY_ANDROID
+#define AIRCONSOLE_ANDROID_RUNTIME
 #endif
 using UnityEngine;
 using System.Collections.Generic;
@@ -1875,8 +1875,7 @@ namespace NDream.AirConsole {
             }
         }
 
-        [Conditional("UNITY_ANDROID")]
-        [Conditional("NOT_UNITY_EDITOR")]
+        [Conditional("AIRCONSOLE_ANDROID_RUNTIME")]
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
