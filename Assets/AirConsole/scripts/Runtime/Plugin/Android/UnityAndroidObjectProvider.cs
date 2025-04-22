@@ -6,7 +6,7 @@ namespace NDream.AirConsole.Android.Plugin {
     internal abstract class UnityAndroidObjectProvider {
         // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetUnityContext() {
-            if (!AirConsole.IsAndroidOrEditor) {
+            if (!AirConsole.IsAndroidRuntime) {
                 throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
             }
 
@@ -20,7 +20,7 @@ namespace NDream.AirConsole.Android.Plugin {
 
         // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetUnityActivity() {
-            if (!AirConsole.IsAndroidOrEditor) {
+            if (!AirConsole.IsAndroidRuntime) {
                 throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
             }
             
@@ -35,7 +35,7 @@ namespace NDream.AirConsole.Android.Plugin {
         // ReSharper disable once MemberCanBePrivate.Global
         internal static AndroidJavaObject GetInstanceOfClass(string className) {
             AndroidJavaObject result = null;
-            if (AirConsole.IsAndroidOrEditor) {
+            if (AirConsole.IsAndroidRuntime) {
                 result = new AndroidJavaObject(className, GetUnityContext());
             }
 
