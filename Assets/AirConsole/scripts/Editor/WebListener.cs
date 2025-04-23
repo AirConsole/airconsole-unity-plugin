@@ -20,13 +20,6 @@ namespace NDream.AirConsole.Editor {
             startUpPath = path;
         }
 
-        private void HandlePlaymodeStop(PlayModeStateChange change) {
-            if (change is PlayModeStateChange.ExitingEditMode or PlayModeStateChange.ExitingPlayMode) {
-                Stop();
-                EditorApplication.playModeStateChanged -= HandlePlaymodeStop;
-            }
-        }
-
         public void Start() {
             if (listener == null) {
                 listener = new HttpListener();
@@ -148,6 +141,13 @@ namespace NDream.AirConsole.Editor {
                     return "application/javascript";
                 default:
                     return "application/octet-stream";
+            }
+        }
+
+        private void HandlePlaymodeStop(PlayModeStateChange change) {
+            if (change is PlayModeStateChange.ExitingEditMode or PlayModeStateChange.ExitingPlayMode) {
+                Stop();
+                EditorApplication.playModeStateChanged -= HandlePlaymodeStop;
             }
         }
 
