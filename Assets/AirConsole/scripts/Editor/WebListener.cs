@@ -4,6 +4,7 @@ using System.Threading;
 using System.Net;
 using System.IO;
 using System.Text;
+using UnityEditor;
 using UnityEngine;
 
 namespace NDream.AirConsole.Editor {
@@ -13,7 +14,7 @@ namespace NDream.AirConsole.Editor {
         private string startUpPath;
         private string prefix;
         private HttpListenerContext request;
-        private Thread t;
+        private Thread listenerThread;
 
         public void SetPath(string path) {
             startUpPath = path;
@@ -24,22 +25,25 @@ namespace NDream.AirConsole.Editor {
                 listener = new HttpListener();
             }
 
-            prefix = string.Format("http://*:{0}/", Settings.webServerPort.ToString());
-
-            if (!listener.IsListening) {
-                listener.Start();
-
-                if (!listener.Prefixes.Contains(prefix)) {
-                    listener.Prefixes.Add(prefix);
-                }
-
-                if (t != null && t.IsAlive) {
-                    t.Abort();
-                }
-
-                t = new Thread(new ThreadStart(ClientListener));
-                t.Start();
+            if (listener.IsListening) {
+                return;
             }
+
+            AirConsoleLogger.LogDevelopment("Starting WebListener");
+            EditorApplication.playModeStateChanged += HandlePlaymodeStop;
+            listener.Start();
+
+            prefix = $"http://*:{Settings.webServerPort}/";
+            if (!listener.Prefixes.Contains(prefix)) {
+                listener.Prefixes.Add(prefix);
+            }
+
+            if (listenerThread != null && listenerThread.IsAlive) {
+                listenerThread.Abort();
+            }
+
+            listenerThread = new Thread(ClientListener);
+            listenerThread.Start();
         }
 
         public bool IsRunning() {
@@ -140,14 +144,17 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        public void Stop() {
-            t.Abort();
-            listener.Stop();
+        private void HandlePlaymodeStop(PlayModeStateChange change) {
+            if (change is PlayModeStateChange.ExitingEditMode or PlayModeStateChange.ExitingPlayMode) {
+                Stop();
+                EditorApplication.playModeStateChanged -= HandlePlaymodeStop;
+            }
         }
 
-        public void Restart() {
-            Stop();
-            Start();
+        private void Stop() {
+            AirConsoleLogger.LogDevelopment("Stopping WebListener");
+            listenerThread.Abort();
+            listener.Stop();
         }
     }
 }
