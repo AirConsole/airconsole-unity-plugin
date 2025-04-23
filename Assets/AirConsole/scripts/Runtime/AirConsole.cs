@@ -1922,18 +1922,12 @@ namespace NDream.AirConsole {
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
-                    true, false,
-                    _androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice() ? "automotive-crwebview-user-agent" : "");
+                    true, false);
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
                 if (IsAndroidRuntime) {
-                    // Get bundle version ("Bundle Version Code" in Unity)
-                    AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
-                    AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
-                    AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
-
-                    url += "&bundle-version=" + pInfo.Get<int>("versionCode");
+                    url += $"&bundle-version={GetAndroidBundleVersionCode()}";
                 }
 
                 url += "&game-id=" + Application.identifier;
@@ -1951,6 +1945,14 @@ namespace NDream.AirConsole {
                 webViewObject.EnableWebviewDebugging(true);
                 InitWebSockets();
             }
+        }
+
+        private static int GetAndroidBundleVersionCode() {
+            AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
+            AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
+            AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
+
+            return pInfo.Get<int>("versionCode");
         }
 
         private void OnLaunchApp(JObject msg) {
