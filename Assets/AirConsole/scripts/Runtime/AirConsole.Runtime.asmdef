@@ -19,7 +19,9 @@
         "websocket-sharp.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_2022_3_OR_NEWER"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
