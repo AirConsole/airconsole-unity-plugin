@@ -2,9 +2,9 @@
     "name": "AirConsole.Runtime",
     "rootNamespace": "NDream.AirConsole",
     "references": [
-        "unity-webview",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "com.airconsole.unity-webview.runtime"
     ],
     "includePlatforms": [
         "Android",

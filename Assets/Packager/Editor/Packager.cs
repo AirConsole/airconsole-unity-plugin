@@ -91,15 +91,11 @@ namespace NDream.Unity
             EditorApplication.LockReloadAssemblies();
 
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
             AssetDatabase.Refresh();
 
             AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Plugins", "Assets/WebGLTemplates" }, outputPath,
                 ExportPackageOptions.Recurse);
 
-            File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
-            File.Move(Path.Combine(targetPath, "unity-webview.asmdef.meta"), Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"));
             MoveSubDirectories(targetPath, webviewPackagePathAssets);
             DeleteAssetDatabaseDirectory(targetPath);
             AssetDatabase.Refresh();
