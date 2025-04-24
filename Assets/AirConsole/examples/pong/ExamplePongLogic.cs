@@ -1,15 +1,16 @@
-﻿using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using UnityEngine;
-using UnityEngine.UI;
+﻿namespace NDream.AirConsole.Examples {
+    using System.Collections.Generic;
+    using Newtonsoft.Json.Linq;
+    using UnityEngine;
+    using UnityEngine.UI;
 
-namespace NDream.AirConsole.Examples {
     public class ExamplePongLogic : MonoBehaviour {
         public Rigidbody2D racketLeft;
         public Rigidbody2D racketRight;
         public Rigidbody2D ball;
         public float ballSpeed = 10f;
         public Text uiText;
+
 #if !DISABLE_AIRCONSOLE
         private int scoreRacketLeft;
         private int scoreRacketRight;
