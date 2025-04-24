@@ -1,7 +1,7 @@
 {
   "dependencies": {
     "com.airconsole.unity-webview": {
-      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment",
+      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.5",
       "depth": 0,
       "source": "git",
       "dependencies": {},

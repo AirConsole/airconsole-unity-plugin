@@ -99,11 +99,17 @@ namespace NDream.Unity
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
             RemoveControllersFromWebGlTemplates();
             RemoveAirConsolePreferences();
+            // TODO(2.6.0): Remove these 2 lines when unity-webview is ready
+            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
+            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
             AssetDatabase.Refresh();
 
             AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Plugins", "Assets/WebGLTemplates" }, outputPath,
                 ExportPackageOptions.Recurse);
 
+            // TODO(2.6.0): Remove these 2 lines when unity-webview is ready
+            File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
+            File.Move(Path.Combine(targetPath, "unity-webview.asmdef.meta"), Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"));
             MoveSubDirectories(targetPath, webviewPackagePathAssets);
             DeleteAssetDatabaseDirectory(targetPath);
             AssetDatabase.Refresh();

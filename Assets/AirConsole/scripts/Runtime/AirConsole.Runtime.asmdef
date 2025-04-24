@@ -4,7 +4,7 @@
     "references": [
         "Unity.TextMeshPro",
         "UnityEngine.UI",
-        "com.airconsole.unity-webview.runtime"
+        "unity-webview"
     ],
     "includePlatforms": [
         "Android",
