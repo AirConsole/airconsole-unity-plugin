@@ -21,8 +21,6 @@ namespace NDream.Unity
             EditorApplication.UnlockReloadAssemblies();
         }
 
-
-
         [MenuItem("Tools/AirConsole/Package Plugin")]
         public static void Export() {
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
@@ -52,6 +50,14 @@ namespace NDream.Unity
             OpenPath(outputPath);
         }
 
+        private static void RemoveControllersFromWebGlTemplates() => Directory
+            .GetFiles(Path.Combine(Application.dataPath, "WebGlTemplates"), "controller.html", SearchOption.AllDirectories)
+            .ToList()
+            .ForEach(File.Delete);
+
+        private static void RemoveAirConsolePreferences() =>
+            File.Delete(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
+        
         private static bool VerifyReleaseVersionExists(string version) =>
             File.Exists(Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{version}.unitypackage")));
 
@@ -91,6 +97,8 @@ namespace NDream.Unity
             EditorApplication.LockReloadAssemblies();
 
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
+            RemoveControllersFromWebGlTemplates();
+            RemoveAirConsolePreferences();
             AssetDatabase.Refresh();
 
             AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Plugins", "Assets/WebGLTemplates" }, outputPath,
