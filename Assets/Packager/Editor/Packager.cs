@@ -115,7 +115,7 @@ namespace NDream.Unity
         private static void AddPackageToGit() {
             ProcessStartInfo startInfo = new() {
                 FileName = "git",
-                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v2.*"))}"
+                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}"
             };
             Process proc = new() {
                 StartInfo = startInfo
