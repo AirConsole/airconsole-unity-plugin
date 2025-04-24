@@ -14,7 +14,9 @@
         "Newtonsoft.Json.dll"
     ],
     "autoReferenced": false,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_2022_3_OR_NEWER"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }

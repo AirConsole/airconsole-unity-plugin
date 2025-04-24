@@ -6,6 +6,7 @@ using NDream.AirConsole;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
 using Debug = UnityEngine.Debug;
@@ -19,12 +20,61 @@ namespace NDream.Unity
         public static void UnlockAssemblies() {
             EditorApplication.UnlockReloadAssemblies();
         }
-        
+
         [MenuItem("Tools/AirConsole/Package Plugin")]
-        public static void Export()
-        {
-            Debug.ClearDeveloperConsole();
+        public static void Export() {
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
+            ExportPackage(outputPath);
+            DeleteOldUnityPackages(outputPath, Settings.VERSION);
+
+            AddPackageToGit();
+
+            OpenPath(outputPath);
+        }
+
+        [MenuItem("Tools/AirConsole/Package Plugin Release Candidate")]
+        public static void ExportReleaseCandidate() {
+            if (VerifyReleaseVersionExists(Settings.VERSION)) {
+                EditorUtility.DisplayDialog("Package Error",
+                    $"Version {Settings.VERSION} already exists.\nYou can not create a release candidate for it",
+                    "OK");
+                AirConsoleLogger.LogError($"Exporting unitypackage for release version {Settings.VERSION} not allowed.");
+                return;
+            }
+
+            int rcVersion = GetNextReleaseCandidateVersion(Settings.VERSION);
+            string outputPath =
+                Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}-rc{rcVersion}.unitypackage"));
+            ExportPackage(outputPath);
+            AddPackageToGit();
+            OpenPath(outputPath);
+        }
+
+        private static void RemoveControllersFromWebGlTemplates() => Directory
+            .GetFiles(Path.Combine(Application.dataPath, "WebGlTemplates"), "controller.html", SearchOption.AllDirectories)
+            .ToList()
+            .ForEach(File.Delete);
+
+        private static void RemoveAirConsolePreferences() =>
+            File.Delete(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
+        
+        private static bool VerifyReleaseVersionExists(string version) =>
+            File.Exists(Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{version}.unitypackage")));
+
+        private static int GetNextReleaseCandidateVersion(string version) {
+            string[] files = Directory.GetFiles(Path.GetFullPath("Builds"),
+                $"airconsole-unity-plugin-v{version}-rc*.unitypackage");
+            Regex extractVersion = new($"airconsole-unity-plugin-v.*-rc([0-9]+).unitypackage");
+            string fileName = files.LastOrDefault();
+            if (File.Exists(fileName)) {
+                return int.Parse(extractVersion.Match(fileName).Groups[1].Value) + 1;
+            }
+
+            return 1;
+        }
+
+        private static void ExportPackage(string outputPath) {
+            Debug.ClearDeveloperConsole();
             Debug.Log($"Exporting to {outputPath}");
 
             string packageCache = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "PackageCache"));
@@ -47,40 +97,38 @@ namespace NDream.Unity
             EditorApplication.LockReloadAssemblies();
 
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
+            RemoveControllersFromWebGlTemplates();
+            RemoveAirConsolePreferences();
             AssetDatabase.Refresh();
 
             AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Plugins", "Assets/WebGLTemplates" }, outputPath,
                 ExportPackageOptions.Recurse);
 
-            File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
-            File.Move(Path.Combine(targetPath, "unity-webview.asmdef.meta"), Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"));
             MoveSubDirectories(targetPath, webviewPackagePathAssets);
             DeleteAssetDatabaseDirectory(targetPath);
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
 
-            DeleteOldUnityPackages(outputPath, Settings.VERSION);
+        }
 
-            ProcessStartInfo startInfo = new()
-            {
+        private static void OpenPath(string outputPath) {
+            Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
+        }
+
+        private static void AddPackageToGit() {
+            ProcessStartInfo startInfo = new() {
                 FileName = "git",
-                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v2.*"))}",
+                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}"
             };
-            Process proc = new()
-            {
-                StartInfo = startInfo,
+            Process proc = new() {
+                StartInfo = startInfo
             };
-            if(proc.Start()) {
+            if (proc.Start()) {
                 proc.WaitForExit();
-            }
-            else {
+            } else {
                 Debug.LogError("Failed to add package to git");
             }
-
-            Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
 
         private static void DeleteAssetDatabaseDirectory(string targetPath) {
@@ -94,8 +142,9 @@ namespace NDream.Unity
 
         private static void DeleteOldUnityPackages(string outputPath, string newVersion) {
             string[] files = Directory.GetFiles(Path.GetDirectoryName(outputPath), "airconsole-unity-plugin-*.*");
+            Regex releaseVersionRegex = new($"airconsole-unity-plugin-v{newVersion}.unitypackage");
             foreach (string file in files) {
-                if (!file.Contains(newVersion)) {
+                if (!releaseVersionRegex.IsMatch(file)) {
                     File.Delete(file);
                 }
             }

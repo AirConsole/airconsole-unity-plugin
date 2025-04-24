@@ -1,12 +1,13 @@
 {
-    "name": "AirConsole.Editor",
-    "rootNamespace": "NDream.AirConsole.Editor",
+    "name": "AirConsole.Examples",
+    "rootNamespace": "NDream.AirConsole.Examples",
     "references": [
-        "AirConsole.Runtime",
-        "UnityEditor.UI"
+        "AirConsole.Runtime"
     ],
     "includePlatforms": [
-        "Editor"
+        "Android",
+        "Editor",
+        "WebGL"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

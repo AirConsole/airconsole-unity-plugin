@@ -2,9 +2,9 @@
     "name": "AirConsole.Runtime",
     "rootNamespace": "NDream.AirConsole",
     "references": [
-        "unity-webview",
         "Unity.TextMeshPro",
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "com.airconsole.unity-webview.runtime"
     ],
     "includePlatforms": [
         "Android",
@@ -19,7 +19,9 @@
         "websocket-sharp.dll"
     ],
     "autoReferenced": true,
-    "defineConstraints": [],
+    "defineConstraints": [
+        "UNITY_2022_3_OR_NEWER"
+    ],
     "versionDefines": [],
     "noEngineReferences": false
 }
