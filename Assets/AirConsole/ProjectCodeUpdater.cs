@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -14,6 +15,12 @@ namespace NDream.Unity {
 
         [InitializeOnLoadMethod]
         public static void ValidateProjectForImport() {
+            bool isInPluginProject =
+                File.Exists(Path.GetFullPath(Path.Combine(Application.dataPath, "Packager", "Editor", "Packager.cs")));
+            if (isInPluginProject) {
+                return;
+            }
+            
             string pathToAirConsole =
                 Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "scripts", "AirConsole.cs"));
             bool upgradeInstructionsNoFollowed = File.Exists(pathToAirConsole);
@@ -32,12 +39,6 @@ namespace NDream.Unity {
         }
 
         private static void ImportCodePackage() {
-            bool isInPluginProject =
-                File.Exists(Path.GetFullPath(Path.Combine(Application.dataPath, "Packager", "Editor", "Packager.cs")));
-            if (isInPluginProject) {
-                return;
-            }
-
             string packagePath = CodePackagePath;
             if (File.Exists(packagePath)) {
                 AssetDatabase.ImportPackage(packagePath, false);
