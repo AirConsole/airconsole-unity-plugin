@@ -1,10 +1,9 @@
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using UnityEditor;
-using UnityEngine;
-
+#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 namespace NDream.Unity {
+    using System.IO;
+    using UnityEditor;
+    using UnityEngine;
+    
     /// <summary>
     /// This is responsible to guide developers through the possible steps for a project upgrade to 2.6.0.
     /// </summary>
@@ -50,3 +49,4 @@ namespace NDream.Unity {
         }
     }
 }
+#endif
