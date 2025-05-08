@@ -97,25 +97,55 @@ namespace NDream.Unity
             EditorApplication.LockReloadAssemblies();
 
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
-            RemoveControllersFromWebGlTemplates();
-            RemoveAirConsolePreferences();
-            // TODO(2.6.0): Remove these 2 lines when unity-webview is ready
             File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
             File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
+            RemoveControllersFromWebGlTemplates();
+            RemoveAirConsolePreferences();
             AssetDatabase.Refresh();
 
-            AssetDatabase.ExportPackage(new[] { "Assets/AirConsole", "Assets/Plugins", "Assets/WebGLTemplates" }, outputPath,
-                ExportPackageOptions.Recurse);
+            string packagePath = PackageCode();
+            AssetDatabase.Refresh();
+            CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
+            AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
 
-            // TODO(2.6.0): Remove these 2 lines when unity-webview is ready
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef.meta"), Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"));
             MoveSubDirectories(targetPath, webviewPackagePathAssets);
             DeleteAssetDatabaseDirectory(targetPath);
+            CleanupCodePackage();
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
 
+        }
+
+        private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleDirectories) {
+            airconsoleDirectories = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
+                .Where(it => !it.ToLower().Contains("scripts")
+                             && !it.ToLower().Contains("unity-webview")
+                             && !it.ToLower().Contains("examples"))
+                .Select(it => it.Replace(Application.dataPath, "Assets"));
+            airconsoleDirectories = airconsoleDirectories.Append(packagePath);
+            airconsoleDirectories = airconsoleDirectories.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
+            airconsoleDirectories = airconsoleDirectories.Append("Assets/WebGLTemplates");
+        }
+
+        private static string PackageCode() {
+            string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
+
+            AssetDatabase.ExportPackage(
+                new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
+                unityPackagePath,
+                ExportPackageOptions.Recurse);
+            return unityPackagePath.Replace(Application.dataPath, "Assets");
+        }
+
+        private static void CleanupCodePackage() {
+            string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
+
+            if (File.Exists(unityPackagePath)) {
+                File.Delete(unityPackagePath);
+            }
         }
 
         private static void OpenPath(string outputPath) {
@@ -163,7 +193,6 @@ namespace NDream.Unity
 
             IEnumerable<string> sources = Directory.GetDirectories(sourcePath);
             sources = sources.Concat(Directory.GetFiles(sourcePath));
-            Debug.Log($"Files to copy:\n{string.Join("\n", sources)}");
             foreach (string source in sources) {
                 string target = Path.Combine(targetPath, Path.GetFileName(source));
                 Directory.Move(source, target);
