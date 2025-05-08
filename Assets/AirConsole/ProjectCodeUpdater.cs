@@ -23,9 +23,9 @@ namespace NDream.Unity {
             
             string pathToAirConsole =
                 Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "scripts", "AirConsole.cs"));
-            bool upgradeInstructionsNoFollowed = File.Exists(pathToAirConsole);
+            bool upgradeInstructionsNotFollowed = File.Exists(pathToAirConsole);
 
-            if (upgradeInstructionsNoFollowed) {
+            if (upgradeInstructionsNotFollowed) {
                 string upgradeInstructionUrl =
                     "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version";
                 EditorUtility.DisplayDialog("Upgrade Error",
