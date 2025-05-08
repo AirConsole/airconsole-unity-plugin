@@ -1227,10 +1227,7 @@ namespace NDream.AirConsole {
         }
 
         protected void Update() {
-            // dispatch event queue on main unity thread
-            while (eventQueue.Count > 0) {
-                eventQueue.Dequeue().Invoke();
-            }
+            ProcessEvents();
 
             _runtimeConfigurator?.RefreshConfiguration();
 
@@ -1239,6 +1236,13 @@ namespace NDream.AirConsole {
                 if (Input.GetKeyDown(KeyCode.Escape)) {
                     Application.Quit();
                 }
+            }
+        }
+
+        private void ProcessEvents() {
+            // dispatch event queue on main unity thread
+            while (eventQueue.Count > 0) {
+                eventQueue.Dequeue().Invoke();
             }
         }
 
@@ -1800,6 +1804,9 @@ namespace NDream.AirConsole {
 
         public void ProcessJS(string data) {
             wsListener.ProcessMessage(data);
+#if UNITY_WEBGL && !UNITY_EDITOR
+            ProcessEvents();
+#endif
         }
 
         private JToken GetDevice(int deviceId) {
