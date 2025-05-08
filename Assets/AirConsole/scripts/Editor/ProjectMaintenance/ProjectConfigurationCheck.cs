@@ -10,8 +10,17 @@ using UnityEngine.Rendering;
 
 namespace NDream.AirConsole.Editor {
     internal abstract class EditorNotificationService {
-        internal static void InvokeError(string message, bool addAirConsoleDisable = false) {
-            EditorUtility.DisplayDialog("Unsupported", message, "I understand");
+        /// <summary>
+        /// Displays an error dialog and logs an error message, optionally providing instructions to disable AirConsole.
+        /// </summary>
+        /// <param name="message">The error message to display and log.</param>
+        /// <param name="addAirConsoleDisable">
+        /// If true, appends instructions to disable AirConsole to the error message.
+        /// </param>
+        /// <param name="title">The title of the error dialog. Defaults to "Unsupported".</param>
+        /// <exception cref="UnityException">Always thrown with the provided error message.</exception>
+        internal static void InvokeError(string message, bool addAirConsoleDisable = false, string title = "Unsupported") {
+            EditorUtility.DisplayDialog(title, message, "I understand");
             if (addAirConsoleDisable) {
                 message +=
                     "\nTo disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.";
