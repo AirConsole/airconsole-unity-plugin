@@ -1,13 +1,12 @@
 ﻿#if !DISABLE_AIRCONSOLE
-using UnityEngine;
-using UnityEditor;
-using UnityEditor.Callbacks;
-using System.IO;
-using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
+    using UnityEditor;
+    using UnityEditor.Callbacks;
+    using System.IO;
+
     public class PostBuildProcess {
-        [PostProcessBuildAttribute(1)]
+        [PostProcessBuild(1)]
         public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject) {
             if (target == BuildTarget.WebGL) {
                 // Check if screen.html already exists
