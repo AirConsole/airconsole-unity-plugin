@@ -8,6 +8,8 @@ namespace NDream.AirConsole.Editor {
     using UnityEditor.Android;
 
     public class AndroidGradleProcessor : IPostGenerateGradleAndroidProject {
+        private const string PROGUARD_CLASSMEMBERS = "-keepclasseswithmembers class com.airconsole.unityandroidlibrary.** {*;}";
+
         public int callbackOrder {
             get => 999;
         }
@@ -15,8 +17,19 @@ namespace NDream.AirConsole.Editor {
         public void OnPostGenerateGradleAndroidProject(string basePath) {
             UpdateMainGradleProperties(Path.GetFullPath(Path.Combine(basePath, "..")), "gradle.properties");
             UpdateMainGradleTemplate(Path.GetFullPath(basePath), "build.gradle");
+            UpdateProGuard(Path.GetFullPath(basePath), "proguard-unity.txt");
+            AirConsoleLogger.LogDevelopment("Updated gradle files for AirConsole Android build");
+        }
 
-            Debug.Log("Updated gradle files for AirConsole Android build");
+        private void UpdateProGuard(string basePath, string proguardUnityTxt) {
+            string filePath = Path.Combine(basePath, proguardUnityTxt);
+            string fileText = File.ReadAllText(filePath);
+
+            if (!fileText.Contains(PROGUARD_CLASSMEMBERS)) {
+                fileText += $"\n{PROGUARD_CLASSMEMBERS}";
+            }
+
+            File.WriteAllText(filePath, fileText);
         }
 
         private static void UpdateMainGradleTemplate(string basePath, string gradleTemplateName) {
