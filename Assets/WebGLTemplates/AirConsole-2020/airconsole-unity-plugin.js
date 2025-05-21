@@ -103,7 +103,7 @@ App.prototype.startNativeApp = function() {
     // forward WebView postMessage data from parent window
     window.addEventListener("message", function (event) {
         if (event.data["action"] == "androidunity") {
-                window.app.processUnityData(event.data["data_string"]);
+            window.app.processUnityData(event.data["data_string"]);
         }
     });
     // tell webView screen.html is ready
