@@ -32,6 +32,7 @@ namespace NDream.AirConsole {
         public event Action<JObject> onUnityWebviewPlatformReady;
         public event Action<JObject> OnSetSafeArea;
         public event Action<JObject> OnUpdateContentProvider;
+        public event Action<JObject> OnPlatformReady;
 
         private bool _isReady;
 
@@ -169,6 +170,9 @@ namespace NDream.AirConsole {
                         break;
                     case "client_update_content_provider":
                         OnUpdateContentProvider?.Invoke(msg);
+                        break;
+                    case "platformReady":
+                        OnPlatformReady?.Invoke(msg);
                         break;
                 }
             } catch (Exception e) {

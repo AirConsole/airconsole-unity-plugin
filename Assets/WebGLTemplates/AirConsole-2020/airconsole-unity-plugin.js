@@ -103,7 +103,7 @@ App.prototype.startNativeApp = function() {
     // forward WebView postMessage data from parent window
     window.addEventListener("message", function (event) {
         if (event.data["action"] == "androidunity") {
-            window.app.processUnityData(event.data["data_string"]);
+                window.app.processUnityData(event.data["data_string"]);
         }
     });
     // tell webView screen.html is ready
@@ -408,6 +408,11 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.storePersistentData(data.key, data.value, data.uid);
     } else if (data.action == "setImmersiveState") {
         this.airconsole.setImmersiveState(data.state);
+    } else if (data.action == "platform_ready") {
+        me.postToUnity({
+            "action": "platformReady",
+            "data": data
+        });
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }
