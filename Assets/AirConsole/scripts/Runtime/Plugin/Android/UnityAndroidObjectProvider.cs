@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 #if !DISABLE_AIRCONSOLE
 
 namespace NDream.AirConsole.Android.Plugin {
@@ -37,6 +39,19 @@ namespace NDream.AirConsole.Android.Plugin {
             AndroidJavaObject result = null;
             if (AirConsole.IsAndroidRuntime) {
                 result = new AndroidJavaObject(className, GetUnityContext());
+            }
+
+            AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");
+            return result;
+        }
+
+        // ReSharper disable once MemberCanBePrivate.Global
+        internal static AndroidJavaObject GetInstanceOfClass(string className, params object[] parameters) {
+            AndroidJavaObject result = null;
+            if (AirConsole.IsAndroidRuntime) {
+                IEnumerable<object> parametersList = new List<object>(parameters);
+                parametersList = parametersList.Prepend(GetUnityContext());
+                result = new AndroidJavaObject(className, parametersList.ToArray());
             }
 
             AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");

@@ -222,8 +222,8 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.renderOutsideSafeArea = true;
 
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
-            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel27) {
-                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel27;
+            if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel26) {
+                PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
             }
 
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;

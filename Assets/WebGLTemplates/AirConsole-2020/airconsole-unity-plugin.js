@@ -408,6 +408,11 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.storePersistentData(data.key, data.value, data.uid);
     } else if (data.action == "setImmersiveState") {
         this.airconsole.setImmersiveState(data.state);
+    } else if (data.action == "platform_ready") {
+        me.postToUnity({
+            "action": "platformReady",
+            "data": data
+        });
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }

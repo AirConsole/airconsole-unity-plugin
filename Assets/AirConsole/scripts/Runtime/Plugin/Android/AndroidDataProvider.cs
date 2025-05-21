@@ -34,7 +34,6 @@ namespace NDream.AirConsole.Android.Plugin {
                     DataProviderInitialized = true;
                     ConnectionUrl = url;
                     OnConnectionUrlReceived?.Invoke(url);
-                    AirConsoleLogger.LogDevelopment($"Received URL: {url}");
                 },
                 error => { AirConsoleLogger.Log($"AndroidDataProvider initialization failed with {error}"); }
             );

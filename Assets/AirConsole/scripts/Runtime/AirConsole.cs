@@ -1110,6 +1110,7 @@ namespace NDream.AirConsole {
                 defaultScreenHeight = Screen.height;
                 _androidImmersiveService = new AndroidImmersiveService();
                 _androidAudioFocusService = new AudioFocusService();
+                _offlineOverlayService = new OfflineOverlayService();
                 _androidDataProvider = new AndroidDataProvider();
             }
         }
@@ -1140,10 +1141,11 @@ namespace NDream.AirConsole {
                 wsListener.onUnityWebviewResize += OnUnityWebviewResize;
                 wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
                 wsListener.OnUpdateContentProvider += OnUpdateContentProvider;
+                wsListener.OnPlatformReady += HandlePlatformReady;
             } else {
                 wsListener = new WebsocketListener();
             }
-            
+
             wsListener.OnSetSafeArea += OnSetSafeArea;
             wsListener.onReady += OnReady;
             wsListener.onClose += OnClose;
@@ -1183,6 +1185,11 @@ namespace NDream.AirConsole {
 
         private void OnSetSafeArea(JObject msg) {
             SetSafeArea(msg);
+        }
+
+        private void HandlePlatformReady(JObject msg) {
+            AirConsoleLogger.LogDevelopment($"HandlePlatformReady: {msg}");
+            _offlineOverlayService?.ReportPlatformReady();
         }
 
         internal void SetSafeArea(JObject msg) {
@@ -1238,7 +1245,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
-
+        
         private void ProcessEvents() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
@@ -1247,7 +1254,6 @@ namespace NDream.AirConsole {
         }
 
         private void OnApplicationQuit() {
-            Debug.Log("OnApplicationQuit");
             StopWebsocketServer();
         }
 
@@ -1258,6 +1264,7 @@ namespace NDream.AirConsole {
         private void OnDestroy() {
             if (IsAndroidRuntime) {
                 _androidAudioFocusService?.Destroy();
+                _offlineOverlayService?.Destroy();
             }
         }
 
@@ -1742,6 +1749,7 @@ namespace NDream.AirConsole {
         private AndroidImmersiveService _androidImmersiveService;
         private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
+        private OfflineOverlayService _offlineOverlayService;
 
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1849,7 +1857,6 @@ namespace NDream.AirConsole {
             _androidDataProvider.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
-                AirConsoleLogger.LogDevelopment($"OnConnectUrlReceived: {connectionUrl}");
                 CreateAndroidWebview(connectionUrl);
             });
             
@@ -1892,24 +1899,24 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
-            webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
+            webViewLoadingBG.color = Color.black;
             webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
+            webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
+            webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
+
+            webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
             webViewLoadingImage.sprite = webViewLoadingSprite;
-            webViewLoadingBG.color = Color.black;
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
-            webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
             if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             } else {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
             }
-
-            webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             webViewLoadingImage.preserveAspect = true;
-
-            if (webViewLoadingSprite == null) {
+            if (!webViewLoadingSprite) {
                 webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
             }
         }
@@ -1925,11 +1932,21 @@ namespace NDream.AirConsole {
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
                     httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
-                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
+                    url => {
+                        AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
+                        if (IsAndroidOrEditor) {
+                            _offlineOverlayService?.ReportPlatformReady();
+                        }
+                    },
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
+
+                if (IsAndroidOrEditor && _offlineOverlayService == null) {
+                    _offlineOverlayService.OnReloadWebview += () => { webViewObject.Reload(); };
+                    _offlineOverlayService.InitializeOfflineCheck();
+                }
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
@@ -1953,7 +1970,7 @@ namespace NDream.AirConsole {
                 InitWebSockets();
             }
         }
-
+        
         private static int GetAndroidBundleVersionCode() {
             AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
             AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
