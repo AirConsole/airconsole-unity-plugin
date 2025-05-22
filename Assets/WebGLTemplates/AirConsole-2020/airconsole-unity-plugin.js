@@ -22,7 +22,6 @@ function App(container, canvas, web_config, progress_config) {
 
     if (me.is_editor) {
         me.setupEditorSocket();
-
     } else {
         me.initAirConsole();
 
@@ -380,6 +379,13 @@ App.prototype.postToUnity = function (data) {
 };
 
 App.prototype.processUnityData = function (data) {
+    const postPlatformMessage = (type) => {
+        const message = {
+            action: 'platformMessage',
+            type: type
+        };
+        window.parent.postMessage(message,"https://www.airconsole.com");
+    }
     var data = JSON.parse(data);
 
     if (data.action == "message") {
@@ -413,6 +419,11 @@ App.prototype.processUnityData = function (data) {
             "action": "platformReady",
             "data": data
         });
+    } else if (data.action == "sendPlatformMessage") {
+        const { type } = data;
+        if (type) {
+            postPlatformMessage(type);
+        }
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
     }
