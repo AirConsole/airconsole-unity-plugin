@@ -63,13 +63,17 @@ namespace NDream.AirConsole {
 
     public delegate void OnResume();
 
+<<<<<<< HEAD:Assets/AirConsole/scripts/Runtime/AirConsole.cs
+    public delegate void OnSafeAreaChanged(Rect newSafeArea);
+=======
     /// <summary>
     /// Gets called when the safe area of the screen changes.
-    /// This event provides information about the visible area of the screen where your
+    /// This event provides information about the visible area of the screen where your 
     /// game should display important content.
     /// </summary>
-    /// <param name="newSafeArea">The new safe area rectangle in pixel coordinates.</param>
-    public delegate void OnSafeAreaChanged(Rect newSafeArea);
+    /// <param name="safeArea">The new safe area rectangle in pixel coordinates.</param>
+    public delegate void OnSafeAreaChanged(Rect safeArea);
+>>>>>>> eadc687 (Implement Safe Area feature and OnSafeArea event handler):Assets/AirConsole/scripts/AirConsole.cs
 
     public class AirConsole : MonoBehaviour {
         #region airconsole unity config
@@ -261,15 +265,17 @@ namespace NDream.AirConsole {
         /// </summary>
         public event OnResume onResume;
 
-        internal event Action UnityDestroy;
-        internal event Action UnityResume;
-        internal event Action UnityPause;
-
         /// <summary>
+<<<<<<< HEAD:Assets/AirConsole/scripts/Runtime/AirConsole.cs
         /// Is invoked when the SafeArea of the device changes through the platform.
         /// </summary>
         /// <param name="newSafeArea">The new safe area as a camera pixelRect the game and game's UI must respect</param>
         /// <remarks>On Android Automotive targets, this event must be used to drive changes to Unity GUI / UIElement reference resolutions where necessary.</remarks>
+=======
+        /// Gets called when the safe area of the screen changes.
+        /// You should adjust your camera's viewport or UI elements to ensure they stay within this safe area.
+        /// </summary>
+>>>>>>> eadc687 (Implement Safe Area feature and OnSafeArea event handler):Assets/AirConsole/scripts/AirConsole.cs
         public event OnSafeAreaChanged OnSafeAreaChanged;
 
         /// <summary>
@@ -1100,6 +1106,47 @@ namespace NDream.AirConsole {
             };
             wsListener.Message(msg);
         }
+<<<<<<< HEAD:Assets/AirConsole/scripts/Runtime/AirConsole.cs
+=======
+        #endregion
+
+#endif
+
+        #region airconsole unity config
+
+        [Tooltip("The controller html file for your game")]
+        public UnityEngine.Object controllerHtml;
+
+        [Tooltip("Automatically scale the game canvas")]
+        public bool autoScaleCanvas = true;
+
+        [Tooltip("Enable Native Game Sizing for automotive platforms. When enabled, the game receives safe area changes via OnSafeAreaChanged event")]
+        public bool nativeGameSizing = false;
+
+        [Header("Android Settings")]
+        [Tooltip(
+            "The uploaded web version on the AirConsole Developer Console where your game retrieves its controller data. See details: https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        public string androidTvGameVersion;
+
+        [Tooltip("Resize mode to allow space for AirConsole Default UI. See https://developers.airconsole.com/#!/guides/unity-androidtv")]
+        public AndroidUIResizeMode androidUIResizeMode;
+
+        [Tooltip("Loading Sprite to be displayed at the start of the game.")]
+        public Sprite webViewLoadingSprite;
+
+        [Header("Development Settings")]
+        [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
+        public StartMode browserStartMode;
+
+        [Tooltip("Game Id to use for persistentData, HighScore and Translation functionalities")]
+        public string devGameId;
+
+        [Tooltip("Language used in the simulator during play mode.")]
+        public string devLanguage;
+
+        [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
+        public string LocalIpOverride;
+>>>>>>> eadc687 (Implement Safe Area feature and OnSafeArea event handler):Assets/AirConsole/scripts/AirConsole.cs
 
         #endregion
 
@@ -1114,12 +1161,12 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 
-            if (IsAndroidRuntime) {
+            if (IsAndroidOrEditor) {
                 Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
-                _pluginManager = new PluginManager(this);
                 _androidImmersiveService = new AndroidImmersiveService();
+                _androidAudioFocusService = new AudioFocusService();
                 _androidDataProvider = new AndroidDataProvider();
             }
         }
@@ -1150,11 +1197,10 @@ namespace NDream.AirConsole {
                 wsListener.onUnityWebviewResize += OnUnityWebviewResize;
                 wsListener.onUnityWebviewPlatformReady += OnUnityWebviewPlatformReady;
                 wsListener.OnUpdateContentProvider += OnUpdateContentProvider;
-                wsListener.OnPlatformReady += HandlePlatformReady;
             } else {
                 wsListener = new WebsocketListener();
             }
-
+            
             wsListener.OnSetSafeArea += OnSetSafeArea;
             wsListener.onReady += OnReady;
             wsListener.onClose += OnClose;
@@ -1174,6 +1220,7 @@ namespace NDream.AirConsole {
             wsListener.onPremium += OnPremium;
             wsListener.onPause += OnPause;
             wsListener.onResume += OnResume;
+            wsListener.onSafeAreaChanged += OnSafeAreaChanged;
 
             if (Application.isEditor) {
                 // start websocket connection
@@ -1194,11 +1241,6 @@ namespace NDream.AirConsole {
 
         private void OnSetSafeArea(JObject msg) {
             SetSafeArea(msg);
-        }
-
-        private void HandlePlatformReady(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"HandlePlatformReady: {msg}");
-            _pluginManager?.ReportPlatformReady();
         }
 
         internal void SetSafeArea(JObject msg) {
@@ -1254,7 +1296,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
-        
+
         private void ProcessEvents() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
@@ -1263,6 +1305,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnApplicationQuit() {
+            Debug.Log("OnApplicationQuit");
             StopWebsocketServer();
         }
 
@@ -1271,14 +1314,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnDestroy() {
-            UnityDestroy?.Invoke();
-        }
-
-        private void OnApplicationPause(bool pauseStatus) {
-            if (pauseStatus) {
-                UnityPause?.Invoke();
-            } else {
-                UnityResume?.Invoke();
+            if (IsAndroidRuntime) {
+                _androidAudioFocusService?.Destroy();
             }
         }
 
@@ -1707,6 +1744,53 @@ namespace NDream.AirConsole {
             }
         }
 
+<<<<<<< HEAD:Assets/AirConsole/scripts/Runtime/AirConsole.cs
+=======
+        private void OnSafeAreaChanged(JObject msg) {
+            try {
+                // Parse the safe area data
+                if (msg["safe_area"] != null) {
+                    float x = (float)msg["safe_area"]["x"];
+                    float y = (float)msg["safe_area"]["y"];
+                    float width = (float)msg["safe_area"]["width"];
+                    float height = (float)msg["safe_area"]["height"];
+                    
+                    // Update the stored safe area
+                    SafeArea = new Rect(x, y, width, height);
+
+                    // Dispatch the event
+                    if (OnSafeAreaChanged != null) {
+                        eventQueue.Enqueue(delegate () {
+                            if (OnSafeAreaChanged != null) {
+                                OnSafeAreaChanged(SafeArea);
+                            }
+                        });
+                    }
+
+                    if (Settings.debug.info) {
+                        Debug.Log($"AirConsole: OnSafeAreaChanged - x:{x}, y:{y}, width:{width}, height:{height}");
+                    }
+                }
+            } catch (Exception e) {
+                if (Settings.debug.error) {
+                    Debug.LogError("AirConsole: OnSafeAreaChanged - " + e.Message);
+                }
+            }
+        }
+
+        // TODO(2.6.0): Remove this property
+        [Obsolete("Please use GetServerTime(). This method will be removed in version 2.6.0.", true)]
+        public int server_time_offset => _server_time_offset;
+
+        // TODO(2.6.0): Remove this property
+        [Obsolete("device_id is deprecated, please use GetDeviceId() instead.\nThis method will be removed in version 2.6.0.", true)]
+        public int device_id => GetDeviceId();
+
+        // TODO(2.6.0): Remove this property
+        [Obsolete("Please use getter .Devices instead.\nThis property will be removed in version 2.6.0.", true)]
+        public ReadOnlyCollection<JToken> devices => _devices.AsReadOnly();
+
+>>>>>>> eadc687 (Implement Safe Area feature and OnSafeArea event handler):Assets/AirConsole/scripts/AirConsole.cs
         /// <summary>
         /// Provides access to the device data of all devices in the game.
         /// Use Devices[AirConsole.SCREEN]?["environment"] to access the environment information of the screen.
@@ -1749,6 +1833,17 @@ namespace NDream.AirConsole {
         /// <remarks>Can be directly assigned to the camera.pixelRect</remarks>
         public Rect SafeArea { get; private set; } = new(0, 0, Screen.width, Screen.height);
 
+<<<<<<< HEAD:Assets/AirConsole/scripts/Runtime/AirConsole.cs
+=======
+        /// <summary>
+        /// Gets the current safe area rectangle where all important game content should be displayed.
+        /// The safe area is automatically adjusted for different screen configurations and device constraints.
+        /// </summary>
+        /// <returns>A Rect representing the safe area in pixel coordinates.</returns>
+        public Rect SafeArea { get; private set; } = new Rect(0, 0, Screen.width, Screen.height);
+
+        // private vars
+>>>>>>> eadc687 (Implement Safe Area feature and OnSafeArea event handler):Assets/AirConsole/scripts/AirConsole.cs
         private WebSocketServer wsServer;
         private WebsocketListener wsListener;
 
@@ -1761,8 +1856,8 @@ namespace NDream.AirConsole {
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 
         private AndroidImmersiveService _androidImmersiveService;
+        private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
-        private PluginManager _pluginManager;
 
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1870,9 +1965,10 @@ namespace NDream.AirConsole {
             _androidDataProvider.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+                AirConsoleLogger.LogDevelopment($"OnConnectUrlReceived: {connectionUrl}");
                 CreateAndroidWebview(connectionUrl);
             });
-
+            
         }
 
         private string ComputeUrlVersion(string version) {
@@ -1912,24 +2008,24 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
-            webViewLoadingBG.color = Color.black;
-            webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
-            webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
-            webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
-
             webViewLoadingImage = new GameObject("WebViewLoadingImage").AddComponent<UnityEngine.UI.Image>();
+            webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
             webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
             webViewLoadingImage.sprite = webViewLoadingSprite;
+            webViewLoadingBG.color = Color.black;
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
+            webViewLoadingBG.rectTransform.localPosition = new Vector3(0, 0, 0);
             if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             } else {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
             }
+
+            webViewLoadingBG.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             webViewLoadingImage.preserveAspect = true;
-            if (!webViewLoadingSprite) {
+
+            if (webViewLoadingSprite == null) {
                 webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
             }
         }
@@ -1945,21 +2041,11 @@ namespace NDream.AirConsole {
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
                     httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
-                    url => {
-                        AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
-                        if (IsAndroidRuntime) {
-                            _pluginManager?.ReportPlatformReady();
-                        }
-                    },
+                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
-
-                if (IsAndroidRuntime && _pluginManager == null) {
-                    _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
-                    _pluginManager.InitializeOfflineCheck();
-                }
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
                 url += connectionUrl;
@@ -1983,7 +2069,7 @@ namespace NDream.AirConsole {
                 InitWebSockets();
             }
         }
-        
+
         private static int GetAndroidBundleVersionCode() {
             AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
             AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -2173,7 +2259,7 @@ namespace NDream.AirConsole {
             if (!IsAndroidRuntime) {
                 return false;
             }
-
+            
             if (_androidDataProvider == null) {
                 AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
                 return false;
@@ -2190,7 +2276,7 @@ namespace NDream.AirConsole {
             if (!IsAndroidRuntime) {
                 return false;
             }
-
+            
             if (_androidDataProvider == null) {
                 AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
                 return false;
@@ -2211,18 +2297,6 @@ namespace NDream.AirConsole {
 
         private void OnApplicationFocus(bool hasFocus) {
             OnApplicationFocusChanged?.Invoke(hasFocus);
-        }
-
-        /// <summary>
-        /// Sends a message to the platform.
-        /// </summary>
-        /// <param name="msg">The message to send.</param>
-        internal void SendPlatformMessage(JObject msg) {
-            if (!IsAirConsoleUnityPluginReady()) {
-                return;
-            }
-
-            wsListener.Message(msg);
         }
 
         #endregion AirConsole Internal
