@@ -1950,7 +1950,7 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidOrEditor && _pluginManager == null) {
+                if (IsAndroidOrEditor && _pluginManager != null) {
                     _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
                     _pluginManager.InitializeOfflineCheck();
                 }
