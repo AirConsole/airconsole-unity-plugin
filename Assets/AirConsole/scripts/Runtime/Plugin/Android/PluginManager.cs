@@ -64,10 +64,11 @@ namespace NDream.AirConsole.Android.Plugin {
             /// </summary>
             /// <param name="type">Type of the message as determined by the Android requirements.</param>
             internal static void SendPlatformMessage(string type) {
-                JObject msg = new();
-                msg.Add("action", "sendPlatformMessage");
-                msg.Add("type", type);
-                AirConsole.instance.PlatformMessage(msg);
+                JObject msg = new() {
+                    { "action", "sendPlatformMessage" },
+                    { "type", type }
+                };
+                AirConsole.instance.SendPlatformMessage(msg);
             }
         }
     }

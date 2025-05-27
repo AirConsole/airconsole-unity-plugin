@@ -2211,7 +2211,7 @@ namespace NDream.AirConsole {
         /// Sends a message to the platform.
         /// </summary>
         /// <param name="msg">The message to send.</param>
-        internal void PlatformMessage(JObject msg) {
+        internal void SendPlatformMessage(JObject msg) {
             if (!IsAirConsoleUnityPluginReady()) {
                 return;
             }
