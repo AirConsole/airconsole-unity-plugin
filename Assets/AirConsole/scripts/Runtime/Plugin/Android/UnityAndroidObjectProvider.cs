@@ -38,7 +38,7 @@ namespace NDream.AirConsole.Android.Plugin {
         internal static AndroidJavaObject GetInstanceOfClass(string className) {
             AndroidJavaObject result = null;
             if (AirConsole.IsAndroidRuntime) {
-                result = new AndroidJavaObject(className, GetUnityContext());
+                result = new AndroidJavaObject(className, GetUnityActivity());
             }
 
             AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");
@@ -50,7 +50,7 @@ namespace NDream.AirConsole.Android.Plugin {
             AndroidJavaObject result = null;
             if (AirConsole.IsAndroidRuntime) {
                 IEnumerable<object> parametersList = new List<object>(parameters);
-                parametersList = parametersList.Prepend(GetUnityContext());
+                parametersList = parametersList.Prepend(GetUnityActivity());
                 result = new AndroidJavaObject(className, parametersList.ToArray());
             }
 

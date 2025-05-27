@@ -255,6 +255,10 @@ namespace NDream.AirConsole {
         /// </summary>
         public event OnResume onResume;
 
+        internal event Action UnityDestroy;
+        internal event Action UnityResume;
+        internal event Action UnityPause;
+
         /// <summary>
         /// Is invoked when the SafeArea of the device changes through the platform.
         /// </summary>
@@ -1108,9 +1112,8 @@ namespace NDream.AirConsole {
                 Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
+                _pluginManager = new PluginManager(this);
                 _androidImmersiveService = new AndroidImmersiveService();
-                _androidAudioFocusService = new AudioFocusService();
-                _offlineOverlayService = new OfflineOverlayService();
                 _androidDataProvider = new AndroidDataProvider();
             }
         }
@@ -1189,7 +1192,7 @@ namespace NDream.AirConsole {
 
         private void HandlePlatformReady(JObject msg) {
             AirConsoleLogger.LogDevelopment($"HandlePlatformReady: {msg}");
-            _offlineOverlayService?.ReportPlatformReady();
+            _pluginManager?.ReportPlatformReady();
         }
 
         internal void SetSafeArea(JObject msg) {
@@ -1262,9 +1265,14 @@ namespace NDream.AirConsole {
         }
 
         private void OnDestroy() {
-            if (IsAndroidRuntime) {
-                _androidAudioFocusService?.Destroy();
-                _offlineOverlayService?.Destroy();
+            UnityDestroy?.Invoke();
+        }
+
+        private void OnApplicationPause(bool pauseStatus) {
+            if (pauseStatus) {
+                UnityPause?.Invoke();
+            } else {
+                UnityResume?.Invoke();
             }
         }
 
@@ -1747,9 +1755,8 @@ namespace NDream.AirConsole {
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 
         private AndroidImmersiveService _androidImmersiveService;
-        private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
-        private OfflineOverlayService _offlineOverlayService;
+        private PluginManager _pluginManager;
 
         private List<JToken> _devices = new();
         private int _device_id;
@@ -1935,7 +1942,7 @@ namespace NDream.AirConsole {
                     url => {
                         AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
                         if (IsAndroidOrEditor) {
-                            _offlineOverlayService?.ReportPlatformReady();
+                            _pluginManager?.ReportPlatformReady();
                         }
                     },
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
@@ -1943,9 +1950,9 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidOrEditor && _offlineOverlayService == null) {
-                    _offlineOverlayService.OnReloadWebview += () => { webViewObject.Reload(); };
-                    _offlineOverlayService.InitializeOfflineCheck();
+                if (IsAndroidOrEditor && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
+                    _pluginManager.InitializeOfflineCheck();
                 }
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
@@ -2198,6 +2205,18 @@ namespace NDream.AirConsole {
 
         private void OnApplicationFocus(bool hasFocus) {
             OnApplicationFocusChanged?.Invoke(hasFocus);
+        }
+
+        /// <summary>
+        /// Sends a message to the platform.
+        /// </summary>
+        /// <param name="msg">The message to send.</param>
+        internal void SendPlatformMessage(JObject msg) {
+            if (!IsAirConsoleUnityPluginReady()) {
+                return;
+            }
+
+            wsListener.Message(msg);
         }
 
         #endregion AirConsole Internal
