@@ -424,6 +424,7 @@ App.prototype.processUnityData = function (data) {
         const { type } = data;
         if (type) {
             postPlatformMessage(type);
+            console.debug(`sendPlatformMessage: ${JSON.stringify(data)}`);
         }
     } else if (data.action == "debug") {
         console.log("debug message:", data.data);
