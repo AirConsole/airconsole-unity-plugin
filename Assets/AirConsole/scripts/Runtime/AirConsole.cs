@@ -1114,8 +1114,6 @@ namespace NDream.AirConsole {
                 defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
                 _androidImmersiveService = new AndroidImmersiveService();
-                _androidAudioFocusService = new AudioFocusService();
-                _offlineOverlayService = new OfflineOverlayService();
                 _androidDataProvider = new AndroidDataProvider();
             }
         }
@@ -1194,7 +1192,6 @@ namespace NDream.AirConsole {
 
         private void HandlePlatformReady(JObject msg) {
             AirConsoleLogger.LogDevelopment($"HandlePlatformReady: {msg}");
-            _offlineOverlayService?.ReportPlatformReady();
             _pluginManager?.ReportPlatformReady();
         }
 
@@ -1268,11 +1265,6 @@ namespace NDream.AirConsole {
         }
 
         private void OnDestroy() {
-            if (IsAndroidRuntime) {
-                _androidAudioFocusService?.Destroy();
-                _offlineOverlayService?.Destroy();
-            }
-
             UnityDestroy?.Invoke();
         }
 
@@ -1763,9 +1755,7 @@ namespace NDream.AirConsole {
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 
         private AndroidImmersiveService _androidImmersiveService;
-        private AudioFocusService _androidAudioFocusService;
         private AndroidDataProvider _androidDataProvider;
-        private OfflineOverlayService _offlineOverlayService;
         private PluginManager _pluginManager;
 
         private List<JToken> _devices = new();
@@ -1952,7 +1942,6 @@ namespace NDream.AirConsole {
                     url => {
                         AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
                         if (IsAndroidOrEditor) {
-                            _offlineOverlayService?.ReportPlatformReady();
                             _pluginManager?.ReportPlatformReady();
                         }
                     },
@@ -1961,9 +1950,9 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidOrEditor && _offlineOverlayService == null) {
-                    _offlineOverlayService.OnReloadWebview += () => { webViewObject.Reload(); };
-                    _offlineOverlayService.InitializeOfflineCheck();
+                if (IsAndroidOrEditor && _pluginManager == null) {
+                    _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
+                    _pluginManager.InitializeOfflineCheck();
                 }
 
                 string url = Settings.AIRCONSOLE_BASE_URL;
@@ -2221,7 +2210,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Sends a message to the platform.
         /// </summary>
-        /// <param name="data">The data to send.</param>
+        /// <param name="msg">The message to send.</param>
         internal void PlatformMessage(JObject msg) {
             if (!IsAirConsoleUnityPluginReady()) {
                 return;

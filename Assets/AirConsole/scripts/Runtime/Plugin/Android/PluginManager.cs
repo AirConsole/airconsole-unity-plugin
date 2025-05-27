@@ -7,22 +7,33 @@ namespace NDream.AirConsole.Android.Plugin {
         private readonly AndroidJavaObject _service;
         private readonly AirConsole _airConsole;
 
+        internal event Action OnReloadWebview;
+
         internal PluginManager(AirConsole airConsole) {
             AirConsoleLogger.LogDevelopment($"{nameof(PluginManager)} created.");
 
-            GenericUnityPluginCallback<bool> callback = new(HandlePlatformPauseEvent);
-            _service =
-                UnityAndroidObjectProvider.GetInstanceOfClass("com.airconsole.unityandroidlibrary.PluginManager", callback);
+            GenericUnityPluginCallback<bool> pauseCallback = new(HandlePlatformPauseEvent);
 
-            airConsole.UnityPause += OnPause;
-            airConsole.UnityResume += OnResume;
-            airConsole.UnityDestroy += OnDestroy;
+            UnityPluginExecutionCallback reloadCallback = new(() => { OnReloadWebview?.Invoke(); });
+            _service =
+                UnityAndroidObjectProvider.GetInstanceOfClass("com.airconsole.unityandroidlibrary.PluginManager",
+                    pauseCallback,
+                    reloadCallback);
+
             _airConsole = airConsole;
+            _airConsole.UnityPause += OnPause;
+            _airConsole.UnityResume += OnResume;
+            _airConsole.UnityDestroy += OnDestroy;
         }
 
         internal void ReportPlatformReady() {
             AirConsoleLogger.LogDevelopment("ReportPlatformReady called.");
             _service.Call("reportPlatformReady");
+        }
+
+        internal void InitializeOfflineCheck() {
+            AirConsoleLogger.LogDevelopment("InitializeOfflineCheck called.");
+            _service.Call("initializeOfflineCheck");
         }
 
         private void OnPause() {
