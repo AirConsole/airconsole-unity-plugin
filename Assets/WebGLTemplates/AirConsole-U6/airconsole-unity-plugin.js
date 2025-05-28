@@ -385,7 +385,7 @@ App.prototype.processUnityData = function (data) {
             action: 'platformMessage',
             type: type
         };
-        window.parent.postMessage(message,"https://www.airconsole.com");
+        window.parent.postMessage(message,"*");
     }
     var data = JSON.parse(data);
 
