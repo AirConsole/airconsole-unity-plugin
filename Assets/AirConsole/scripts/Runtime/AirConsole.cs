@@ -1108,7 +1108,7 @@ namespace NDream.AirConsole {
             // important for unity webgl communication
             gameObject.name = "AirConsole";
 
-            if (IsAndroidOrEditor) {
+            if (IsAndroidRuntime) {
                 Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
@@ -1941,7 +1941,7 @@ namespace NDream.AirConsole {
                     httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
                     url => {
                         AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
-                        if (IsAndroidOrEditor) {
+                        if (IsAndroidRuntime) {
                             _pluginManager?.ReportPlatformReady();
                         }
                     },
@@ -1950,7 +1950,7 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidOrEditor && _pluginManager != null) {
+                if (IsAndroidRuntime && _pluginManager == null) {
                     _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
                     _pluginManager.InitializeOfflineCheck();
                 }
