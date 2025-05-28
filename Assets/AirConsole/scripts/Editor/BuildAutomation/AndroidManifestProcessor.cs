@@ -202,6 +202,7 @@ namespace NDream.AirConsole.Editor {
             RemoveAttributeIfPresent(applicationElement, "android", "label");
             RemoveAttributeIfPresent(applicationElement, "android", "isGame");
             RemoveAttributeIfPresent(applicationElement, "android", "banner");
+            RemoveAttributeIfPresent(applicationElement, "android", "exported");
             RemoveAttributeIfPresent(applicationElement, "xmlns", "tools");
         }
 
