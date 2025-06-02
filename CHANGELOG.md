@@ -6,30 +6,39 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
 ## [2.6.0]
 
-### Added
-
-- Support for platform driven safe render areas: These provide games with a pixelRect based area in which the game is allowed to render. Platform specific overlays will always be rendered outside this pixel rect. Check AirConsole:OnSafeAreaChanged and the NDream.AirConsole.OnSafeAreaChanged delegate.s
-- Automatically set androidVersionCode to `seconds since 2025-01-01T00:00:00` to ensure conflict free builds.
-- We now automatically update the AndroidManifest as necessary for AirConsole to work on Android. We also remove old settings that are no longer necessary or conflict with Unity 2022 or Unity 6.
-- AirConsole validates that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
-
-### Changed
-
-- AirConsole now opens the socket server during playmode and closes it again afterwards to avoid the need to restart the editor.
+Version 2.6.0 is a major release adding many features for game developers to create better performance experiences by default.
+As part of this, we have removed support for Unity before 2022 LTS.
 
 ### Removed
 
-- AndroidManifest: The plugin no longer ships with a custom AndroidManifest.
-- The obsoleted AirConsole properties `server_time_offset`, `device_id` and `devices` have been removed. Please use `GetServerTime(), GetDeviceId()`` and`.Devices` instead.
+- **BREAKING CHANGE:** Unity versions older than Unity 2022 are **no longer supported** with plugin version 2.6.0 and higher.
+- **BREAKING CHANGE:** The plugin no longer ships with a global _Plugins/Android_ directory. We now update AndroidManifest and gradle files as necessary.
+- The obsoleted AirConsole properties _server_time_offset_, _device_id_ and _devices_ have been removed. Please use _GetServerTime()_, _GetDeviceId()_ and _.Devices_ instead.
+- Python SDK handling has been removed. This feature was only required for WebGL builds with Unity 2019 on MacOS 12+
+
+### Added
+
+- Validation that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
+- Validation for platform project settings on WebGL and Android to ensure optimal performance and meeting requirements.
+- Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete _Assets/AirConole/scripts_ directory and _Assets/AirConsole/unity-webview_ directories are replaced with new instances.
+- **Android:** Support for platform driven safe render areas: On platforms that the Safe Area, the new API provides games with a pixelRect based screen area in which the game is allowed to render. Areas outside of this are dedicated to platform specific information overlayed on top. Check [AirConsole:OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) and the [NDream.AirConsole.OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) delegate.
+- **Android:** Automatically set androidVersionCode to _seconds since 2025-01-01T00:00:00_ to ensure conflict free builds.
+- **Android:** Automatically update the AndroidManifest as necessary for AirConsole to work on Android in TV and Automotive.
+- **Android:** Automatically update the AndroidManifest as necessary with Unity 2022 and Unity 6, removing old information.
+- **Android:** Automatically update all gradle related files as necessary for Unity 2022 and Unity 6 when building for Android.
+
+### Changed
+
+- AirConsole now opens the socket server during playmode and closes it again afterwards. This should address all cases where PlayMode would no longer work.
 
 ### Deprecated
 
-- `GetActivePlayerDeviceIds` has been deprecated and replaced with `ActivePlayerDeviceIds`
-- Python SDK handling has been removed. This feature was only required for Unity 2019 on MacOS 12+
+- _GetActivePlayerDeviceIds_ has been deprecated. Please use _ActivePlayerDeviceIds_ instead.
+
 ## [2.5.7] - 2025-03-12
 
 This release fixes an issue where AirConsole callbacks got delayed by at least one frame, incorrect Android Manifest outputs during builds
@@ -111,16 +120,16 @@ For completeness as this is a 2.5.0 rerelease, the 2.5.0 release notes are repea
 - Added :gift_heart:: Developers can now set the language to test with when running games in the editor. (Kudos to @bbeinder contributing
   #71)
 - Added :gift_heart:: Partner specific highscore
-    - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+  - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
+    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
-    - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-      partner environment (e.g. car brand).
+  - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
+    partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
-    - Support for Player Silencing in the AirConsole component. For more information visit
-      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+  - Support for Player Silencing in the AirConsole component. For more information visit
+    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.
@@ -152,16 +161,16 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 ### Added
 
 - Added :gift_heart:: Partner specific highscore
-    - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+  - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
+    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
-    - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-      partner environment (e.g. car brand).
+  - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
+    partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
-    - Support for Player Silencing in the AirConsole component. For more information visit
-      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+  - Support for Player Silencing in the AirConsole component. For more information visit
+    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.
