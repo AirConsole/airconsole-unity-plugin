@@ -63,6 +63,12 @@ namespace NDream.AirConsole {
 
     public delegate void OnResume();
 
+    /// <summary>
+    /// Gets called when the safe area of the screen changes.
+    /// This event provides information about the visible area of the screen where your
+    /// game should display important content.
+    /// </summary>
+    /// <param name="newSafeArea">The new safe area rectangle in pixel coordinates.</param>
     public delegate void OnSafeAreaChanged(Rect newSafeArea);
 
     public class AirConsole : MonoBehaviour {
@@ -1866,7 +1872,7 @@ namespace NDream.AirConsole {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 CreateAndroidWebview(connectionUrl);
             });
-            
+
         }
 
         private string ComputeUrlVersion(string version) {
@@ -2167,7 +2173,7 @@ namespace NDream.AirConsole {
             if (!IsAndroidRuntime) {
                 return false;
             }
-            
+
             if (_androidDataProvider == null) {
                 AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
                 return false;
@@ -2184,7 +2190,7 @@ namespace NDream.AirConsole {
             if (!IsAndroidRuntime) {
                 return false;
             }
-            
+
             if (_androidDataProvider == null) {
                 AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
                 return false;
