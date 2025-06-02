@@ -6,37 +6,38 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-### Fixed
+### Added
 
 ## [2.6.0]
 
-This is a major release adding many features for developers with support tooling to get the best experience without manual project maintenance.
-As part of that, we have also removed support for Unity before 2022 LTS.
+Version 2.6.0 is a major release adding many features for game developers to create better performance experiences by default.
+As part of this, we have removed support for Unity before 2022 LTS.
+
+### Removed
+
+- **BREAKING CHANGE:** Unity versions older than Unity 2022 are **no longer supported** with plugin version 2.6.0 and higher.
+- **BREAKING CHANGE:** The plugin no longer ships with a global _Plugins/Android_ directory. We now update AndroidManifest and gradle files as necessary.
+- The obsoleted AirConsole properties _server_time_offset_, _device_id_ and _devices_ have been removed. Please use _GetServerTime()_, _GetDeviceId()_ and _.Devices_ instead.
+- Python SDK handling has been removed. This feature was only required for WebGL builds with Unity 2019 on MacOS 12+
 
 ### Added
 
-- Support for platform driven safe render areas: On platforms that the Safe Area, the new API provides games with a pixelRect based screen area in which the game is allowed to render. Areas outside of this are dedicated to platform specific information overlayed on top. Check [AirConsole:OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) and the [NDream.AirConsole.OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) delegate.
-- Automatically set androidVersionCode to `seconds since 2025-01-01T00:00:00` to ensure conflict free builds.
-- Automatically update the AndroidManifest as necessary for AirConsole to work on Android in TV and Automobiles.
-- Automatically update the AndroidManifest as necessary with Unity 2022 and Unity 6, removing old information.
-- Automatically update all gradle related files as necessary for Unity 2022 and Unity 6 when building for Android.
 - Validation that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
 - Validation for platform project settings on WebGL and Android to ensure optimal performance and meeting requirements.
-- Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete `Assets/AirConole/scripts` directory and `Assets/AirConsole/unity-webview` directories are replaced with new instances.
+- Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete _Assets/AirConole/scripts_ directory and _Assets/AirConsole/unity-webview_ directories are replaced with new instances.
+- **Android:** Support for platform driven safe render areas: On platforms that the Safe Area, the new API provides games with a pixelRect based screen area in which the game is allowed to render. Areas outside of this are dedicated to platform specific information overlayed on top. Check [AirConsole:OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) and the [NDream.AirConsole.OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) delegate.
+- **Android:** Automatically set androidVersionCode to _seconds since 2025-01-01T00:00:00_ to ensure conflict free builds.
+- **Android:** Automatically update the AndroidManifest as necessary for AirConsole to work on Android in TV and Automotive.
+- **Android:** Automatically update the AndroidManifest as necessary with Unity 2022 and Unity 6, removing old information.
+- **Android:** Automatically update all gradle related files as necessary for Unity 2022 and Unity 6 when building for Android.
 
 ### Changed
 
 - AirConsole now opens the socket server during playmode and closes it again afterwards. This should address all cases where PlayMode would no longer work.
 
-### Removed
-
-- `Assets/Plugin`: The plugin no longer ships with a global Plugins/Android directory. We now update AndroidManifest and gradle files as necessary.
-- The obsoleted AirConsole properties `server_time_offset`, `device_id` and `devices` have been removed. Please use `GetServerTime(), GetDeviceId()`` and`.Devices` instead.
-- Python SDK handling has been removed. This feature was only required for Unity 2019 on MacOS 12+
-
 ### Deprecated
 
-- `GetActivePlayerDeviceIds` has been deprecated and replaced with `ActivePlayerDeviceIds`
+- _GetActivePlayerDeviceIds_ has been deprecated. Please use _ActivePlayerDeviceIds_ instead.
 
 ## [2.5.7] - 2025-03-12
 
