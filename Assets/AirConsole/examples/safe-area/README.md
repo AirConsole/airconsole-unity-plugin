@@ -21,6 +21,7 @@ To use these examples:
 The `FullscreenSafeAreaHandler.cs` script demonstrates how to adapt a single camera to fit within the safe area. This is the simplest implementation and works well for most single-player games.
 
 Key features:
+
 - Automatic adjustment of the main camera's pixel rect
 - Optional visual debug representation of the safe area bounds
 - Proper event subscription and cleanup
@@ -30,6 +31,7 @@ Key features:
 The `UISafeAreaHandler.cs` script shows how to handle safe area changes with UI cameras and canvas scaling. This approach ensures UI elements stay within visible bounds and are properly scaled.
 
 Key features:
+
 - Adjusts both the camera and canvas scaler
 - Maintains proper UI scaling regardless of safe area changes
 - Provides options for different scaling approaches (width, height, or mixed priority)
@@ -39,12 +41,12 @@ Key features:
 The `SplitScreenSafeAreaHandler.cs` script demonstrates how to handle complex split-screen setups with multiple players. It supports several configurations:
 
 Key features:
+
 - Two players horizontal layout (side by side)
 - Two players vertical layout (top and bottom)
-- Three players layout (top left, top right, bottom left) with an optional overview camera
+- Three players layout (top left, top right, bottom left) with the option to use a 4th camera for an overview camera
 - Four players layout (2x2 grid)
 - Customizable border width between screens
-- Visual debugging of each camera's area
 
 ## How to Use
 
@@ -56,6 +58,7 @@ Key features:
 ## Additional Information
 
 For more comprehensive documentation on the SafeArea feature, refer to:
+
 - [Safe Area Documentation](../../../docs/safe-area.md)
 - [AirConsole Developer Documentation](https://developers.airconsole.com/)
 
@@ -64,3 +67,4 @@ For more comprehensive documentation on the SafeArea feature, refer to:
 - Always unsubscribe from the `OnSafeAreaChanged` event when your component is destroyed
 - The safe area can change at runtime, so your implementation should be prepared to handle changes dynamically
 - When using `Native Game Sizing`, the legacy `AndroidUIResizeMode.ResizeCameraAndReferenceResolution` is no longer supported
+
