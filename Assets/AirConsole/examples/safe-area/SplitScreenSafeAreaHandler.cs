@@ -239,6 +239,7 @@ namespace NDream.AirConsole.Examples {
 
         private void OnEnable() {
             if (AirConsole.instance) {
+                AirConsole.instance.OnSafeAreaChanged -= HandleSafeAreaChanged;
                 AirConsole.instance.OnSafeAreaChanged += HandleSafeAreaChanged;
             }
         }

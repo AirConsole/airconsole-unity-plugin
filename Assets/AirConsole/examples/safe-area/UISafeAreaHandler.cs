@@ -58,14 +58,11 @@ namespace NDream.AirConsole.Examples {
         }
 
         private void Setup(string code) {
-            // Subscribe to safe area changes when AirConsole is ready
             if (AirConsole.instance && AirConsole.instance.IsAirConsoleUnityPluginReady()) {
-                // Apply the current safe area if available
                 if (AirConsole.instance.SafeArea.width > 0) {
                     HandleSafeAreaChanged(AirConsole.instance.SafeArea);
                 }
 
-                // Subscribe to future changes
                 AirConsole.instance.OnSafeAreaChanged += HandleSafeAreaChanged;
 
                 Debug.Log("UISafeAreaHandler: Subscribed to OnSafeAreaChanged events");
@@ -85,15 +82,12 @@ namespace NDream.AirConsole.Examples {
             }
 
             if (canvasScaler) {
-                // Adjust the canvas scaler to maintain proper UI scaling
                 AdjustCanvasScaler(newSafeArea);
             }
 
-            // If we're using a RectTransform for the canvas, adjust its anchors to match the safe area
             if (targetCanvas) {
                 RectTransform canvasRect = targetCanvas.GetComponent<RectTransform>();
                 if (canvasRect) {
-                    // Ensure the canvas adapts to the safe area
                     canvasRect.anchoredPosition = Vector2.zero;
                     canvasRect.sizeDelta = Vector2.zero;
                 }
@@ -114,7 +108,7 @@ namespace NDream.AirConsole.Examples {
 
             if (Mathf.Approximately(canvasScaler.matchWidthOrHeight, 1)) {
                 newReferenceResolution.x = originalReferenceResolution.y * safeAreaAspect;
-            } else if (canvasScaler.matchWidthOrHeight == 0) // Width-based scaling
+            } else if (canvasScaler.matchWidthOrHeight == 0) 
             {
                 newReferenceResolution.y = originalReferenceResolution.x / safeAreaAspect;
             } else {
@@ -135,6 +129,7 @@ namespace NDream.AirConsole.Examples {
 
         private void OnEnable() {
             if (AirConsole.instance) {
+                AirConsole.instance.OnSafeAreaChanged -= HandleSafeAreaChanged;
                 AirConsole.instance.OnSafeAreaChanged += HandleSafeAreaChanged;
             }
         }

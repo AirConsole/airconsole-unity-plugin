@@ -12,8 +12,6 @@ namespace NDream.AirConsole.Examples {
         [SerializeField]
         private Camera targetCamera;
 
-        private GameObject safeAreaVisualizer;
-
 #if !DISABLE_AIRCONSOLE
         private void Awake() {
             if (!targetCamera) {
@@ -51,6 +49,7 @@ namespace NDream.AirConsole.Examples {
 
         private void OnEnable() {
             if (AirConsole.instance) {
+                AirConsole.instance.OnSafeAreaChanged -= HandleSafeAreaChanged;
                 AirConsole.instance.OnSafeAreaChanged += HandleSafeAreaChanged;
             }
         }
