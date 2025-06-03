@@ -7,16 +7,7 @@ using UnityEngine;
 using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
-    public class AndroidManifestProcessor : IPreprocessBuildWithReport {
-        public int callbackOrder => 999;
-
-        public void OnPreprocessBuild(UnityEditor.Build.Reporting.BuildReport report) {
-            if (report.summary.platform != BuildTarget.Android) {
-                return;
-            }
-
-            UpdateAndroidManifest();
-        }
+    public abstract class AndroidManifestProcessor {
 
         private static void CreateDefaultUnityManifest(string targetPath) {
             if (string.IsNullOrEmpty(targetPath)) {
@@ -34,8 +25,8 @@ namespace NDream.AirConsole.Editor {
             File.Copy(unityManifestPath, targetPath);
         }
 
-        internal static void UpdateAndroidManifest() {
-            string manifestPath = GetManifestPath();
+        internal static void Execute(string projectPath) {
+            string manifestPath = Path.Combine(projectPath, "src", "main", "AndroidManifest.xml");
 
             AndroidManifestTransformer transformer = EnsureCustomManifestExists(manifestPath);
 
@@ -91,19 +82,6 @@ namespace NDream.AirConsole.Editor {
             return androidManifestTransformer;
         }
 
-        private static string GetManifestPath() {
-            string manifestPath = Path.Combine(Application.dataPath, "Plugins", "Android", "AndroidManifest.xml");
-
-            if (!File.Exists(manifestPath)) {
-                string[] manifestFiles = Directory.GetFiles(Application.dataPath, "AndroidManifest.xml", SearchOption.AllDirectories);
-                if (manifestFiles.Length > 0) {
-                    manifestPath = manifestFiles[0];
-                }
-            }
-
-            return manifestPath;
-        }
-
         private static void UpgradeManifest(AndroidManifestTransformer androidManifestTransformer) {
             androidManifestTransformer.Transform();
         }
@@ -145,7 +123,7 @@ namespace NDream.AirConsole.Editor {
 
             AddSupportsScreens(manifest, manifestElement);
             AddQueries(manifest, manifestElement);
-            AddUsesFeatureAndPermissions(manifest, namespaceManager, manifestElement);
+            AddUsesFeatureAndPermissions(manifest, manifestElement);
             UpdateApplicationAttributes(applicationElement);
 
             if (activityElement != null) {
@@ -253,45 +231,23 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private static void AddUsesFeatureAndPermissions(AndroidManifest manifest,
-            XmlNamespaceManager namespaceManager, XmlElement manifestElement) {
-            if (!Settings.IsUnity6OrHigher()) {
-                AddUsesFeature(manifest, manifestElement, "android.glEsVersion", "0x00020000");
-            } else {
-                RemoveGlEsVersion(manifest, namespaceManager);
-            }
-
-            AddUsesFeature(manifest, manifestElement, "android.software.leanback", null, "true");
-            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen", null, "false");
-            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen.multitouch", null, "false");
-            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen.multitouch.distinct", null, "false");
+        private static void AddUsesFeatureAndPermissions(AndroidManifest manifest, XmlElement manifestElement) {
+            AddUsesFeature(manifest, manifestElement, "android.software.leanback", "true");
+            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen", "false");
+            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen.multitouch", "false");
+            AddUsesFeature(manifest, manifestElement, "android.hardware.touchscreen.multitouch.distinct", "false");
 
             AddUsesPermission(manifest, manifestElement, "android.permission.INTERNET");
         }
 
-        private static void AddUsesFeature(AndroidManifest manifest, XmlElement manifestElement, string name, string glEsVersion = null,
-            string required = null) {
-            XmlElement usesFeature;
+        private static void AddUsesFeature(AndroidManifest manifest, XmlElement manifestElement, string name, string required = null) {
+            XmlElement usesFeature = GetOrCreateElement(manifest, manifestElement, "uses-feature",
+                node => GetAttributeValue(node, "android", "name", manifest.AndroidXmlNamespace) == name);
+            SetAttributeIfMissing(manifest, usesFeature, "android", "name", name, manifest.AndroidXmlNamespace);
 
-            if (glEsVersion != null) {
-                usesFeature = GetOrCreateElement(manifest, manifestElement, "uses-feature",
-                    node => GetAttributeValue(node, "android", "glEsVersion", manifest.AndroidXmlNamespace) == glEsVersion);
-                SetAttributeIfMissing(manifest, usesFeature, "android", "glEsVersion", glEsVersion, manifest.AndroidXmlNamespace);
-            } else {
-                usesFeature = GetOrCreateElement(manifest, manifestElement, "uses-feature",
-                    node => GetAttributeValue(node, "android", "name", manifest.AndroidXmlNamespace) == name);
-                SetAttributeIfMissing(manifest, usesFeature, "android", "name", name, manifest.AndroidXmlNamespace);
-
-                if (required != null) {
-                    SetAttributeIfMissing(manifest, usesFeature, "android", "required", required, manifest.AndroidXmlNamespace);
-                }
+            if (required != null) {
+                SetAttributeIfMissing(manifest, usesFeature, "android", "required", required, manifest.AndroidXmlNamespace);
             }
-        }
-
-        private static void RemoveGlEsVersion(AndroidManifest manifest, XmlNamespaceManager namespaceManager) {
-            XmlElement usesGlEsVersionElement =
-                manifest.SelectSingleNode("//uses-feature[@android:glEsVersion]", namespaceManager) as XmlElement;
-            usesGlEsVersionElement?.ParentNode.RemoveChild(usesGlEsVersionElement);
         }
 
         private static void RemoveUsesFeature(AndroidManifest manifest, XmlNamespaceManager namespaceManager, string name) {

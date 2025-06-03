@@ -1,27 +1,21 @@
-using UnityEngine;
 #if !DISABLE_AIRCONSOLE
 
 namespace NDream.AirConsole.Editor {
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using UnityEditor.Android;
 
-    public class AndroidGradleProcessor : IPostGenerateGradleAndroidProject {
+    internal abstract class AndroidGradleProcessor {
         private const string PROGUARD_CLASSMEMBERS = "-keepclasseswithmembers class com.airconsole.unityandroidlibrary.** {*;}";
 
-        public int callbackOrder {
-            get => 999;
-        }
-
-        public void OnPostGenerateGradleAndroidProject(string basePath) {
+        internal static void Execute(string basePath) {
             UpdateMainGradleProperties(Path.GetFullPath(Path.Combine(basePath, "..")), "gradle.properties");
             UpdateMainGradleTemplate(Path.GetFullPath(basePath), "build.gradle");
             UpdateProGuard(Path.GetFullPath(basePath), "proguard-unity.txt");
             AirConsoleLogger.LogDevelopment("Updated gradle files for AirConsole Android build");
         }
 
-        private void UpdateProGuard(string basePath, string proguardUnityTxt) {
+        private static void UpdateProGuard(string basePath, string proguardUnityTxt) {
             string filePath = Path.Combine(basePath, proguardUnityTxt);
             string fileText = File.ReadAllText(filePath);
 
