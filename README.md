@@ -11,7 +11,7 @@ You don't need to install any other webserver or services.
 
 Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
-# Upgrade your installation 
+# Upgrade your installation
 
 The upgrade instructions can be found in [Upgrade_Plugin_Version.md](Assets/AirConsole/Upgrade_Plugin_Version.md)
 
@@ -22,7 +22,7 @@ There are more examples on the website: <http://developers.airconsole.com/#/guid
 
 # Platforms
 
-AirConsole supports WebGL and AndroidTV as targets. To make use of this plugin, you  need to make sure to switch your target to either WebGL or Android.
+AirConsole supports WebGL and AndroidTV as targets. To make use of this plugin, you need to make sure to switch your target to either WebGL or Android.
 
 # Support
 
