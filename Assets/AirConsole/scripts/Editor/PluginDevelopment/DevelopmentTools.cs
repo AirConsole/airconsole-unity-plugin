@@ -19,11 +19,6 @@ namespace NDream.AirConsole.Editor {
             PluginVersionTracker.DeleteLastPluginVersionKey();
         }
 
-        [MenuItem("Tools/AirConsole/Development/Update Android Manifest", false, 41)]
-        public static void UpdateAndroidManifestMenuAction() {
-            AndroidManifestProcessor.UpdateAndroidManifest();
-        }
-
         /// <summary>
         /// Handy little tool required when exceptions in 'EditorApplication.LockReloadAssemblies' blocks freeze assembly reloads
         /// until the next Unity restart.
