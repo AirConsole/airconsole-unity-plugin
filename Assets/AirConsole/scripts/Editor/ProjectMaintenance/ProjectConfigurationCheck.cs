@@ -275,24 +275,17 @@ namespace NDream.AirConsole.Editor {
         private static void EnsureAndroidRenderSettings() {
             PlayerSettings.use32BitDisplayBuffer = true;
 
-#if !UNITY_6000_0_OR_NEWER
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)) {
-                Debug.LogError(
-                    "AirConsole Android requires 'Auto Graphics API' to be disabled to enable OpenGL ES2.\n"
-                    + "Updating the Android settings now.");
-                PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
+                return;
             }
-#endif
 
-            GraphicsDeviceType[] graphicsAPIs = { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 };
-#if !UNITY_6000_0_OR_NEWER
-            graphicsAPIs = graphicsAPIs.ToList().Append(GraphicsDeviceType.OpenGLES2).ToArray();
-#endif
+            GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            if (!graphicsAPIs.Contains(GraphicsDeviceType.Vulkan)) {
+                Debug.LogWarning("AirConsole recommends either 'Auto Graphics API' or Vulkan to be present.");
+            }
 
-            if (!PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).SequenceEqual(graphicsAPIs)) {
-                Debug.LogWarning($"AirConsole requires {string.Join(',', graphicsAPIs)} to be enabled in the Android Player Settings.\n"
-                                 + "Updating the Android Graphics APIs now.");
-                PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, graphicsAPIs);
+            if (!graphicsAPIs.Contains(GraphicsDeviceType.OpenGLES3)) {
+                Debug.LogWarning("AirConsole recommends either 'Auto Graphics API' or OpenGLES3 to be present.");
             }
         }
 
