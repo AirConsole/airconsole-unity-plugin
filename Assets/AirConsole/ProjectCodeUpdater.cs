@@ -35,6 +35,7 @@ namespace NDream.Unity {
             }
 
             ImportCodePackage();
+            EditorUtility.DisplayDialog("Success", "The AirConsole Plugin has been successfully imported", "ok");
         }
 
         private static void ImportCodePackage() {
