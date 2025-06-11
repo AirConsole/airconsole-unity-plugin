@@ -1237,8 +1237,9 @@ namespace NDream.AirConsole {
 
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
+            
             AirConsoleLogger.LogDevelopment(
-                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {Camera.main.pixelRect} of {Screen.width}x{Screen.height}");
+                $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {safeArea} of {Screen.width}x{Screen.height}");
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
 
@@ -1956,8 +1957,8 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidRuntime && _pluginManager == null) {
-                    _pluginManager.OnReloadWebview += () => { webViewObject.Reload(); };
+                if (IsAndroidRuntime && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => webViewObject.Reload();
                     _pluginManager.InitializeOfflineCheck();
                 }
 
@@ -2093,8 +2094,8 @@ namespace NDream.AirConsole {
                 _webViewManager.RequestStateTransition(WebViewManager.WebViewState.Hidden);
             }
 
-            if (androidUIResizeMode == AndroidUIResizeMode.ResizeCamera
-                || androidUIResizeMode == AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+            if (Camera.main
+                && androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
         }
@@ -2108,7 +2109,7 @@ namespace NDream.AirConsole {
                 return new Rect(0, 0, Screen.width, Screen.height - GetScaledWebViewHeight());
             }
 
-            return Camera.main.pixelRect;
+            return Camera.main ? Camera.main.pixelRect : new Rect(0, 0, Screen.width, Screen.height);
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
@@ -2117,7 +2118,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnAndroidSceneLoaded(Scene scene, LoadSceneMode sceneMode) {
-            if (instance != this) {
+            if (instance != this || !Camera.main) {
                 return;
             }
 

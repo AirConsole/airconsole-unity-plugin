@@ -203,7 +203,7 @@ namespace NDream.AirConsole.Editor {
 
             UpdateAndroidPlayerSettingsInProperties();
             EnsureAndroidPlatformSettings();
-            DisableUndesirableAndroidFeatures();
+            MaintainChallengingAndroidFeatures();
 
             PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
         }
@@ -239,11 +239,18 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private static void DisableUndesirableAndroidFeatures() {
+        private static void MaintainChallengingAndroidFeatures() {
             PlayerSettings.Android.ARCoreEnabled = false;
             PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
             PlayerSettings.Android.androidIsGame = true;
             PlayerSettings.Android.chromeosInputEmulation = false;
+
+            // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
+            PlayerSettings.Android.resizableWindow = true;
+            PlayerSettings.Android.fullscreenMode = FullScreenMode.Windowed;
+
+            // Hide Navigation Bar - We want this enabled on automotive to avoid the window resizing and its impact on the web.
+            PlayerSettings.Android.startInFullscreen = false;
         }
 
         private static void UpdateAndroidPlayerSettingsInProperties() {
