@@ -22,6 +22,7 @@ As part of this, we have removed support for Unity before 2022 LTS.
 
 ### Added
 
+- The plugin now automatically unescapes `&lt;` to `<` and `&gt;` to `>`` as well as`\\n`to`\n` in translations for rich text usage.
 - Validation that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
 - Validation for platform project settings on WebGL and Android to ensure optimal performance and meeting requirements.
 - Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete _Assets/AirConole/scripts_ directory and _Assets/AirConsole/unity-webview_ directories are replaced with new instances.
