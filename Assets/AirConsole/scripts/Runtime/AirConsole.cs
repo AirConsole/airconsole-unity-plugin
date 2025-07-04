@@ -1435,7 +1435,11 @@ namespace NDream.AirConsole {
 
 
                 foreach (KeyValuePair<string, JToken> keyValue in (JObject)msg["translations"]) {
-                    _translations.Add(keyValue.Key, (string)keyValue.Value);
+                    string value = (string)keyValue.Value;
+                    value = value.Replace("\\n", "\n");
+                    value = value.Replace("&lt;", "<");
+                    value = value.Replace("&gt;", ">");
+                    _translations.Add(keyValue.Key, value);
                 }
             }
 
