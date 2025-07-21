@@ -171,7 +171,7 @@ namespace NDream.AirConsole {
                     case "client_update_content_provider":
                         OnUpdateContentProvider?.Invoke(msg);
                         break;
-                    case "platformReady":
+                    case "platform_ready":
                         OnPlatformReady?.Invoke(msg);
                         break;
                 }
