@@ -1,16 +1,19 @@
 #if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
 
 namespace NDream.AirConsole.Editor {
+    using UnityEngine;
     using UnityEditor;
 
     public abstract class DevelopmentTools {
         [MenuItem("Tools/AirConsole/Development/Validate Android Configuration", false, 1)]
         public static void ValidateAndroidConfigurationMenuAction() {
+            Debug.ClearDeveloperConsole();
             ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
         }
 
         [MenuItem("Tools/AirConsole/Development/Validate Web Configuration", false, 2)]
         public static void ValidateWebConfigurationMenuAction() {
+            Debug.ClearDeveloperConsole();
             ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);
         }
 
@@ -36,6 +39,7 @@ namespace NDream.AirConsole.Editor {
         public static void BuildAndroid() => BuildHelper.BuildAndroid();
 
         [MenuItem("Tools/AirConsole/Build/Android Internal", false, 63)]
-        public static void BuildAndroidInternal() => BuildHelper.BuildAndroidInternal(); }
+        public static void BuildAndroidInternal() => BuildHelper.BuildAndroidInternal();
+    }
 }
 #endif
