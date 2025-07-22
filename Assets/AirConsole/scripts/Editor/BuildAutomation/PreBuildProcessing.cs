@@ -12,11 +12,12 @@ namespace NDream.AirConsole.Editor {
         public int callbackOrder => 1;
 
         public void OnPreprocessBuild(BuildReport report) {
-            CheckWebGLSetup();
+            if (report.summary.platform == BuildTarget.WebGL) {
+                CheckWebGLSetup();
+            }
         }
 
         private static void CheckWebGLSetup() {
-#if UNITY_WEBGL
             if (string.IsNullOrEmpty(PlayerSettings.WebGL.template)) {
                 EditorUtility.DisplayDialog("Error", "No WebGL Template configured", "Cancel");
                 throw new BuildFailedException("WebGL template not configured");
@@ -38,13 +39,10 @@ namespace NDream.AirConsole.Editor {
                     throw new BuildFailedException("Unity template incomplete");
                 }
             }
-#endif
         }
 
-        private static string GetWebGLTemplateDirectory() {
-            return Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
-        }
+        internal static string GetWebGLTemplateDirectory() =>
+            Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
     }
 }
-#endif
 #endif
