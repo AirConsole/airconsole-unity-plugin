@@ -19,7 +19,7 @@ namespace NDream.AirConsole.Editor {
 #if UNITY_WEBGL
             if (string.IsNullOrEmpty(PlayerSettings.WebGL.template)) {
                 EditorUtility.DisplayDialog("Error", "No WebGL Template configured", "Cancel");
-                throw new UnityException("WebGL template not configured");
+                throw new BuildFailedException("WebGL template not configured");
             }
 
             if (Directory.Exists(GetWebGLTemplateDirectory())) {
@@ -27,15 +27,15 @@ namespace NDream.AirConsole.Editor {
                 if (!Directory.GetFiles(templatePath).Any(filename => filename.EndsWith("controller.html"))) {
                     EditorUtility.DisplayDialog("Error",
                         "The controller has not yet been generated. Please execute the game at least once in play mode.",
-                        "Cancel");
-                    throw new UnityException("Controller missing in WebGL template location.");
+                        "OK");
+                    throw new BuildFailedException("Controller missing in WebGL template location.");
                 }
 
                 if (!Directory.GetFiles(templatePath).Any(filename => filename.EndsWith("airconsole-unity-plugin.js"))) {
                     EditorUtility.DisplayDialog("Error",
                         "airconsole-unity-plugin missing. Please set up your airconsole plugin again",
                         "Cancel");
-                    throw new UnityException("Unity template incomplete");
+                    throw new BuildFailedException("Unity template incomplete");
                 }
             }
 #endif

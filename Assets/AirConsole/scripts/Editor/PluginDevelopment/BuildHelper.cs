@@ -183,7 +183,7 @@ namespace NDream.AirConsole.Editor {
                 case BuildResult.Unknown:
                     string msg = $"Unknown build result. Terminating build for {target} now.";
                     AirConsoleLogger.LogError(msg);
-                    throw new UnityException(msg);
+                    throw new BuildFailedException(msg);
             }
 
             return true;

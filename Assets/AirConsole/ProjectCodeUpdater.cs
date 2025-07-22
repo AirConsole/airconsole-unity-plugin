@@ -2,6 +2,7 @@
 namespace NDream.Unity {
     using System.IO;
     using UnityEditor;
+    using UnityEditor.Build;
     using UnityEngine;
 
     /// <summary>
@@ -19,7 +20,7 @@ namespace NDream.Unity {
             if (isInPluginProject) {
                 return;
             }
-            
+
             string pathToAirConsole =
                 Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "scripts", "AirConsole.cs"));
             bool upgradeInstructionsNotFollowed = File.Exists(pathToAirConsole);
@@ -31,7 +32,8 @@ namespace NDream.Unity {
                     "Please follow the upgrade instructions for Unity v2.6.0 and newer before updating the AirConsole plugin",
                     "I understand");
                 Application.OpenURL(upgradeInstructionUrl);
-                throw new UnityException($"Please visit {upgradeInstructionUrl} and follow the upgrade instructions for v2.6.0 and newer");
+                throw new BuildFailedException(
+                    $"Please visit {upgradeInstructionUrl} and follow the upgrade instructions for v2.6.0 and newer");
             }
 
             ImportCodePackage();

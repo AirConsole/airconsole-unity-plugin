@@ -27,7 +27,7 @@ namespace NDream.AirConsole.Editor {
             }
 
             Debug.LogError(message);
-            throw new UnityException(message);
+            throw new BuildFailedException(message);
         }
     }
 
@@ -77,7 +77,7 @@ namespace NDream.AirConsole.Editor {
 
     public abstract class ProjectConfigurationCheck : IPreprocessBuildWithReport {
         public int callbackOrder {
-            get => 0;
+            get => 999;
         }
 
         public void OnPreprocessBuild(BuildReport report) {
@@ -99,7 +99,7 @@ namespace NDream.AirConsole.Editor {
                     break;
 
                 default:
-                    throw new UnityException($"AirConsole Plugin does not support platform {platform}");
+                    throw new BuildFailedException($"AirConsole Plugin does not support platform {platform}");
             }
 
             Debug.Log($"AirConsole Plugin configuration checks for {platform} completed successfully.");
@@ -123,7 +123,7 @@ namespace NDream.AirConsole.Editor {
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
                 string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
                 Debug.LogError(message);
-                throw new UnityException(message);
+                throw new BuildFailedException(message);
             }
 
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
@@ -171,7 +171,7 @@ namespace NDream.AirConsole.Editor {
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new UnityException("Please update the WebGL build and player settings to continue.");
+                throw new BuildFailedException("Please update the WebGL build and player settings to continue.");
             }
         }
 
@@ -209,7 +209,7 @@ namespace NDream.AirConsole.Editor {
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
                 Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new UnityException("Please update the Android Build and Player settings to continue.");
+                throw new BuildFailedException("Please update the Android Build and Player settings to continue.");
             }
 
             UpdateAndroidPlayerSettingsInProperties();
@@ -381,7 +381,7 @@ namespace NDream.AirConsole.Editor {
                 case BuildTargetGroup.WebGL:
                     return BuildTarget.WebGL;
                 default:
-                    throw new UnityException($"Unsupported BuildTargetGroup {group}");
+                    throw new BuildFailedException($"Unsupported BuildTargetGroup {group}");
             }
         }
 
