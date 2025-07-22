@@ -418,12 +418,18 @@ namespace NDream.AirConsole.Editor {
         #endregion Controller Screen Consistency Checks
 
         #region Check Texture format usage
+        /// <summary>
+        /// Checks if WebGL | Android use a texture format suitable for mobile SoC usage.
+        /// </summary>
+        /// <param name="buildTargetGroup">Build target group to check the texture compression for. Supported: WebGL, Android</param>
+        /// <returns>True, if the texture compression format is desirable (hardware supported). False otherwise.</returns>
+        private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
+            TextureCompressionFormat format = GetDefaultTextureCompressionFormat(buildTargetGroup);
 
-        private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup targetGroup) {
-            TextureCompressionFormat format = GetDefaultTextureCompressionFormat(targetGroup);
-            // Either the Texture Default settings in Player Settings are ETC2 | ASTC or the platforms build settings Texture Compression is
+            // Either the Texture Default settings in Player Settings are ETC2 | ASTC or the platforms build settings Texture Compression must be.
+            // We do at this point only support WebGL and Android and only check for these two build targets.
             return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
-                   || (targetGroup == BuildTargetGroup.Android
+                   || (buildTargetGroup == BuildTargetGroup.Android
                        ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
                        : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
         }
