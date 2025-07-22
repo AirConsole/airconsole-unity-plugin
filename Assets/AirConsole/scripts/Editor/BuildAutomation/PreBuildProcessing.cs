@@ -1,15 +1,13 @@
-#if !DISABLE_AIRCONSOLE
-#if UNITY_EDITOR
-using System;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
-using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
+#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 
 namespace NDream.AirConsole.Editor {
+    using System.IO;
+    using System.Linq;
+    using UnityEditor;
+    using UnityEditor.Build;
+    using UnityEditor.Build.Reporting;
+    using UnityEngine;
+
     public class PreBuildProcessing : IPreprocessBuildWithReport {
         public int callbackOrder => 1;
 

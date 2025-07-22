@@ -108,6 +108,8 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
             PlayerSettings.resetResolutionOnWindowResize = true;
+            PlayerSettings.SplashScreen.showUnityLogo = false;
+
             if (BuildHelper.IsInternalBuild) {
                 PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
             } else {
@@ -214,7 +216,12 @@ namespace NDream.AirConsole.Editor {
             EnsureAndroidPlatformSettings();
             MaintainChallengingAndroidFeatures();
 
+#if AIRCONSOLE_DEVELOPMENT
             PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
+            Version version = Version.Parse(PlayerSettings.bundleVersion);
+            PlayerSettings.bundleVersion
+                = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode).ToString();
+#endif
         }
 
         private static void EnsureAndroidPlatformSettings() {
@@ -256,10 +263,7 @@ namespace NDream.AirConsole.Editor {
 
             // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
             PlayerSettings.Android.resizableWindow = true;
-            PlayerSettings.Android.fullscreenMode = FullScreenMode.Windowed;
-
-            // Hide Navigation Bar - We want this enabled on automotive to avoid the window resizing and its impact on the web.
-            PlayerSettings.Android.startInFullscreen = false;
+            PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
         }
 
         private static void UpdateAndroidPlayerSettingsInProperties() {
@@ -291,17 +295,30 @@ namespace NDream.AirConsole.Editor {
         private static void EnsureAndroidRenderSettings() {
             PlayerSettings.use32BitDisplayBuffer = true;
 
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
+            // if (!PlayerSettings.vulkanEnableLateAcquireNextImage) {
+            //     // Debug.LogWarning("Late Acquire has been disabled for Vulkan as this has negative side effects and performance impact.");
+            //     PlayerSettings.vulkanEnableLateAcquireNextImage = true;
+            // }
+
+            if (PlayerSettings.vulkanNumSwapchainBuffers < 3) {
+                Debug.LogWarning("The Vulkan Swapchain must contain at least 3 buffers");
+                PlayerSettings.vulkanNumSwapchainBuffers = 3;
+            }
+
+            // if the profiler shows significant 'semaphore WaitForSignal' blocks, we need to invert this!
+            if (!PlayerSettings.Android.optimizedFramePacing) {
+                Debug.LogWarning("Enabling optimized frame pacing for improved frame consistency and performance on Android.");
+                PlayerSettings.Android.optimizedFramePacing = true;
+            }
+
+            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)) {
                 return;
             }
 
             GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-            if (!graphicsAPIs.Contains(GraphicsDeviceType.Vulkan)) {
-                Debug.LogWarning("AirConsole recommends either 'Auto Graphics API' or Vulkan to be present.");
-            }
 
-            if (!graphicsAPIs.Contains(GraphicsDeviceType.OpenGLES3)) {
-                Debug.LogWarning("AirConsole recommends either 'Auto Graphics API' or OpenGLES3 to be present.");
+            if (graphicsAPIs.First() != GraphicsDeviceType.Vulkan) {
+                Debug.LogWarning("AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
             }
         }
 
@@ -379,7 +396,6 @@ namespace NDream.AirConsole.Editor {
             BPTC,
             DXTC_RGTC
         }
-
         #endregion Check Texture format usage
     }
 }

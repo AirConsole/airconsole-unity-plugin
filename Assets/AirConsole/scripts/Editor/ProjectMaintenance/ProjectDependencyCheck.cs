@@ -58,7 +58,6 @@ namespace NDream.AirConsole.Editor {
             EditorNotificationService.InvokeError(message, false, title);
         }
     }
-    
 
     public abstract class SemVerCheck {
         /// <summary>

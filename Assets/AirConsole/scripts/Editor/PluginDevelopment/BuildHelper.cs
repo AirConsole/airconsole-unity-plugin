@@ -1,18 +1,19 @@
-using UnityEngine;
 #if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
 namespace NDream.AirConsole.Editor {
     using System.Diagnostics;
     using System;
     using System.IO;
     using System.Linq;
+    using UnityEditor.Build;
     using UnityEditor;
     using UnityEditor.Build.Reporting;
 
     public static class BuildHelper {
         private const string BasePath = "TestBuilds";
         private const string KEY_INTERNAL_BUILD = "AIRCONSOLE.IS_INTERNAL_BUILD";
-        
+
         public static bool IsInternalBuild => EditorPrefs.GetBool(KEY_INTERNAL_BUILD, false);
+
         public static void BuildWeb() {
             ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);
             AssetDatabase.SaveAssets();
@@ -50,9 +51,7 @@ namespace NDream.AirConsole.Editor {
 
         public static void BuildAndroidInternal() {
             EditorPrefs.SetBool(KEY_INTERNAL_BUILD, true);
-            
             BuildAndroid();
-            
             EditorPrefs.DeleteKey(KEY_INTERNAL_BUILD);
         }
 
@@ -64,7 +63,7 @@ namespace NDream.AirConsole.Editor {
             }
 
             string bundleId = PlayerSettings.applicationIdentifier;
-            string buildName = $"{timestamp}-{bundleId}-{commitHash}-{(IsInternalBuild ? "internal" : "prod" )}";
+            string buildName = $"{timestamp}-{bundleId}-{commitHash}-{(IsInternalBuild ? "internal" : "prod")}";
             string outputDirectory = Path.Combine(BasePath, "Android");
             if (!Directory.Exists(outputDirectory)) {
                 Directory.CreateDirectory(outputDirectory);
@@ -94,7 +93,7 @@ namespace NDream.AirConsole.Editor {
             if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".git"))) {
                 return false;
             }
-            
+
             try {
                 ProcessStartInfo startInfo = new() {
                     FileName = "git",
@@ -125,7 +124,7 @@ namespace NDream.AirConsole.Editor {
             if (!Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), ".git"))) {
                 return string.Empty;
             }
-            
+
             try {
                 ProcessStartInfo startInfo = new() {
                     FileName = "git",
