@@ -26,6 +26,7 @@ As part of this, we have removed support for Unity before 2022 LTS.
 - Validation that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
 - Validation for platform project settings on WebGL and Android to ensure optimal performance and meeting requirements.
 - Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete _Assets/AirConole/scripts_ directory and _Assets/AirConsole/unity-webview_ directories are replaced with new instances.
+- Validation for the used AirConsole API version in controller and screen html to ensure that the required API version is configured, not outdated versions or latest
 - **Android:** Support for platform driven safe render areas: On platforms that the Safe Area, the new API provides games with a pixelRect based screen area in which the game is allowed to render. Areas outside of this are dedicated to platform specific information overlayed on top. Check [AirConsole:OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) and the [NDream.AirConsole.OnSafeAreaChanged](Assets/AirConsole/scripts/Runtime/AirConsole.cs) delegate.
 - **Android:** Automatically set androidVersionCode to _seconds since 2025-01-01T00:00:00_ to ensure conflict free builds.
 - **Android:** Automatically update the AndroidManifest as necessary for AirConsole to work on Android in TV and Automotive.

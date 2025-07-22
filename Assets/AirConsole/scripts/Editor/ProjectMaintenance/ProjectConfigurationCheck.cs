@@ -1,7 +1,9 @@
 #if !DISABLE_AIRCONSOLE
 using System;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -176,6 +178,8 @@ namespace NDream.AirConsole.Editor {
         }
 
         private static void VerifyWebGLTemplate() {
+            ValidateApiUsage();
+
             string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
             string[] templateUri = PlayerSettings.WebGL.template.Split(':');
             if (templateUri.Length != 2
@@ -219,6 +223,12 @@ namespace NDream.AirConsole.Editor {
 #if AIRCONSOLE_DEVELOPMENT
             PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
             Version version = Version.Parse(PlayerSettings.bundleVersion);
+
+            // Undefined values can come back as -1 which breaks when creating the new version, so we ensure valid value ranges. 
+            version = new Version(
+                Mathf.Clamp(version.Major, 0, version.Major),
+                Mathf.Clamp(version.Minor, 0, version.Minor),
+                Mathf.Clamp(version.Build, 0, version.Build));
             PlayerSettings.bundleVersion
                 = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode).ToString();
 #endif
@@ -328,6 +338,84 @@ namespace NDream.AirConsole.Editor {
 
             return (int)(now - startOfYear).TotalSeconds;
         }
+
+        #region Controller Screen Consistency Checks
+        private static void ValidateApiUsage() {
+            string webGLTemplateDirectory = PreBuildProcessing.GetWebGLTemplateDirectory();
+            AirConsoleLogger.LogDevelopment($"Validating API Usage in {webGLTemplateDirectory}");
+            if (!VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "index.html"), Settings.RequiredMinimumVersion)
+
+                // || !VerifyAPIUsage(pathToBuiltProject + "/screen.html", Settings.RequiredMinimumVersion)
+                || !VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "controller.html"),
+                    Settings.RequiredMinimumVersion)) {
+                AirConsoleLogger.LogError("Outdated AirConsole API detected. Please check the previous logs to address the problem.");
+                throw new BuildFailedException(
+                    "Build failed. Outdated AirConsole API detected. Please see Error Logs for more information.");
+            }
+        }
+
+        private static bool VerifyReferencedAirConsoleApiVersion(string pathToHtml, Version requiredApiVersion) {
+            if (!File.Exists(pathToHtml)) {
+                AirConsoleLogger.LogDevelopment($"File {pathToHtml} does not exist, this should not happen.");
+                return true;
+            }
+
+            // Check if the reference to airconsole-Major.Minor.Patch.js is at least as big as requiredMinimumVersion.
+            //  Ensure that the reference is not 'airconsole-latest.js'.
+            string fileContent = File.ReadAllText(pathToHtml);
+            string apiVersion = $"airconsole-{requiredApiVersion.Major}.{requiredApiVersion.Minor}.{requiredApiVersion.Build}.js";
+
+            // If airconsole-latest usage is detected, we need to inform the game developer to use the specified version.
+            //  We do not want Unity games to use latest due to prior implicit assumptions and requirements that might not be met anymore.
+            Regex regexAirconsoleLatest = new(@"(?<!<!--.*)airconsole-latest\.js", RegexOptions.IgnoreCase);
+            bool foundAirconsoleLatest = regexAirconsoleLatest.IsMatch(fileContent);
+            if (foundAirconsoleLatest) {
+                AirConsoleLogger.LogError(
+                    $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
+
+                return false;
+            }
+
+            Regex regexAirconsoleApiVersion = new(@"(?<!<!--\s*)<script[^>]*src\s*=\s*[""'].*airconsole-(\d+)\.(\d+)\.(\d+)\.js[""'][^>]*>",
+                RegexOptions.IgnoreCase);
+
+            // Regex regexAirconsoleApiVersion = new(@"(?<!<!--\s*)airconsole-(\d+)\.(\d+)\.(\d+)\.js", RegexOptions.IgnoreCase);
+            MatchCollection matches = regexAirconsoleApiVersion.Matches(fileContent);
+
+            switch (matches.Count) {
+                // No references to the airconsole API do not yield working AirConsole builds, so we can safely stop the build and inform
+                //  the developer.
+                case < 1:
+                    AirConsoleLogger.LogError(
+                        $"No reference to airconsole-{apiVersion} found in {pathToHtml}. Please ensure that you correctly reference it.");
+                    return false;
+
+                // Multiple reference to the airconsole API break behavior because they override the AirConsole DOM window setup.
+                //  As such we want to inform the game developer.
+                case > 1:
+                    AirConsoleLogger.LogError(
+                        $"Multiple airconsole-*.js references found in {pathToHtml}. Please ensure only one reference is present.");
+                    return false;
+            }
+
+            // If we detect versioned airconsole-X.Y.Z.js references, check their version and request an update if necessary.
+            Match match = matches[0];
+            int major = int.Parse(match.Groups[1].Value);
+            int minor = int.Parse(match.Groups[2].Value);
+            int revision = int.Parse(match.Groups[3].Value);
+
+            Version referencedVersion = new(major, minor, revision);
+            if (referencedVersion == requiredApiVersion) {
+                AirConsoleLogger.LogDevelopment($"Valid API reference {match.Groups[0]} found.");
+            } else {
+                AirConsoleLogger.LogError(
+                    $"airconsole-{major}.{minor}.{revision}.js found. This does not match the required version, please use {apiVersion} instead.");
+                return false;
+            }
+
+            return true;
+        }
+        #endregion Controller Screen Consistency Checks
 
         #region Check Texture format usage
 
