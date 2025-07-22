@@ -96,7 +96,7 @@ namespace NDream.AirConsole {
 
         [Tooltip("Enable SafeArea support with fullscreen webview overlay for Android.")]
         [SerializeField]
-        private bool nativeGameSizingSupported;
+        private bool nativeGameSizingSupported = true;
 
         [Header("Development Settings")]
         [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
