@@ -1835,6 +1835,7 @@ namespace NDream.AirConsole {
 
             wsListener.ProcessMessage(data);
 #if UNITY_WEBGL && !UNITY_EDITOR
+            // On WebGL we need to process events immediately to ensure pause / resume works correctly.
             ProcessEvents();
 #endif
         }
@@ -1980,6 +1981,11 @@ namespace NDream.AirConsole {
                 webViewObject.SetVisibility(!Application.isEditor);
                 AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
                 webViewObject.LoadURL(url);
+                
+                if (IsAndroidRuntime && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url); 
+                    _pluginManager.InitializeOfflineCheck();
+                }
 
                 bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
                 webViewObject.EnableWebviewDebugging(isWebviewDebuggable);

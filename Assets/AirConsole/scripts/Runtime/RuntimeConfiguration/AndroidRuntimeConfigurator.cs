@@ -12,9 +12,7 @@ namespace NDream.AirConsole {
 
         internal AndroidRuntimeConfigurator(AndroidDataProvider dataProvider) {
             _androidPlugin = dataProvider;
-
             ApplyRequiredSettings();
-
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         }
 
@@ -25,6 +23,7 @@ namespace NDream.AirConsole {
         private void ApplyRequiredSettings() {
             Application.runInBackground = false;
             Screen.fullScreen = !_androidPlugin.IsAutomotiveDevice();
+            // Car OEMs can modify some of the standard android behavior so we want to make sure to be vSync aligned.
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = Mathf.CeilToInt((float)Screen.currentResolution.refreshRateRatio.value);
         }
