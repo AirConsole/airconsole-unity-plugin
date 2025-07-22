@@ -34,7 +34,8 @@ As part of this, we have removed support for Unity before 2022 LTS.
 
 ### Changed
 
-- AirConsole now opens the socket server during playmode and closes it again afterwards. This should address all cases where PlayMode would no longer work.
+- AirConsole now opens the socket server during playmode and closes it again at the end of the play session. This address cases where the Unity PlayMode would no longer work.
+- WebGL: To simplify build automation including Unity Cloud Build, WebGL builds copy `index.html` to `screen.html` instead of renaming it.
 
 ### Deprecated
 
