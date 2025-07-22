@@ -1778,6 +1778,7 @@ namespace NDream.AirConsole {
         private bool _safeAreaWasSet;
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
+        private bool _logPlatformMessages;
 
         private IRuntimeConfigurator _runtimeConfigurator;
 
@@ -1828,6 +1829,10 @@ namespace NDream.AirConsole {
         }
 
         public void ProcessJS(string data) {
+            if (_logPlatformMessages) {
+                AirConsoleLogger.LogError($"PlatformMessage: {data}");
+            }
+
             wsListener.ProcessMessage(data);
 #if UNITY_WEBGL && !UNITY_EDITOR
             ProcessEvents();
@@ -1949,12 +1954,7 @@ namespace NDream.AirConsole {
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
                     httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
-                    url => {
-                        AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
-                        if (IsAndroidRuntime) {
-                            _pluginManager?.ReportPlatformReady();
-                        }
-                    },
+                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
@@ -1981,9 +1981,10 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
                 webViewObject.LoadURL(url);
 
-                // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
-                // TODO(android-native): Replace it with the above line once the implementation is finished
-                webViewObject.EnableWebviewDebugging(true);
+                bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
+                webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
+
+                _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
             }
         }
