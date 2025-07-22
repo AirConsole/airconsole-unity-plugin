@@ -108,6 +108,15 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
             PlayerSettings.resetResolutionOnWindowResize = true;
+            if (BuildHelper.IsInternalBuild) {
+                PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
+            } else {
+                if (PlayerSettings.insecureHttpOption == InsecureHttpOption.AlwaysAllowed) {
+                    Debug.LogError(
+                        "AirConsole does not allow HTTP web requests. Please create a development build if you want to develop with insecure endpoints.");
+                    PlayerSettings.insecureHttpOption = InsecureHttpOption.DevelopmentOnly;
+                }
+            }
 
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
                 string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";

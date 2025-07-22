@@ -34,6 +34,8 @@ namespace NDream.AirConsole.Editor {
 
         [MenuItem("Tools/AirConsole/Build/Android", false, 62)]
         public static void BuildAndroid() => BuildHelper.BuildAndroid();
-    }
+        
+        [MenuItem("Tools/AirConsole/Build/Android Internal", false, 63)]
+        public static void BuildAndroidInternal() => BuildHelper.BuildAndroidInternal(); }
 }
 #endif

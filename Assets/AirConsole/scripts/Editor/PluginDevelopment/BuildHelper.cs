@@ -10,7 +10,9 @@ namespace NDream.AirConsole.Editor {
 
     public static class BuildHelper {
         private const string BasePath = "TestBuilds";
-
+        private const string KEY_INTERNAL_BUILD = "AIRCONSOLE.IS_INTERNAL_BUILD";
+        
+        public static bool IsInternalBuild => EditorPrefs.GetBool(KEY_INTERNAL_BUILD, false);
         public static void BuildWeb() {
             ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);
             AssetDatabase.SaveAssets();
@@ -46,6 +48,14 @@ namespace NDream.AirConsole.Editor {
 #endif
         }
 
+        public static void BuildAndroidInternal() {
+            EditorPrefs.SetBool(KEY_INTERNAL_BUILD, true);
+            
+            BuildAndroid();
+            
+            EditorPrefs.DeleteKey(KEY_INTERNAL_BUILD);
+        }
+
         public static void BuildAndroid() {
             ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
             AssetDatabase.SaveAssets();
@@ -54,7 +64,7 @@ namespace NDream.AirConsole.Editor {
             }
 
             string bundleId = PlayerSettings.applicationIdentifier;
-            string buildName = $"{timestamp}-{bundleId}-{commitHash}";
+            string buildName = $"{timestamp}-{bundleId}-{commitHash}-{(IsInternalBuild ? "internal" : "prod" )}";
             string outputDirectory = Path.Combine(BasePath, "Android");
             if (!Directory.Exists(outputDirectory)) {
                 Directory.CreateDirectory(outputDirectory);
