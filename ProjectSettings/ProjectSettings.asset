@@ -68,7 +68,7 @@ PlayerSettings:
   disableDepthAndStencilBuffers: 0
   androidStartInFullscreen: 0
   androidRenderOutsideSafeArea: 1
-  androidUseSwappy: 0
+  androidUseSwappy: 1
   androidBlitType: 0
   androidResizableWindow: 1
   androidDefaultWindowWidth: 1920
@@ -885,8 +885,8 @@ PlayerSettings:
   webGLMemoryGeometricGrowthCap: 96
   webGLPowerPreference: 2
   scriptingDefineSymbols:
-    Android: AIRCONSOLE_DEVELOPMENT
-    WebGL: AIRCONSOLE_DEVELOPMENT
+    Android: 
+    WebGL: 
   additionalCompilerArguments:
     Android: []
   platformArchitecture:

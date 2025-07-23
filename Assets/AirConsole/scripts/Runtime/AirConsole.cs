@@ -1431,14 +1431,15 @@ namespace NDream.AirConsole {
 
             if (msg["translations"] != null) {
                 _translations = new Dictionary<string, string>();
-
-
-                foreach (KeyValuePair<string, JToken> keyValue in (JObject)msg["translations"]) {
-                    string value = (string)keyValue.Value;
-                    value = value.Replace("\\n", "\n");
-                    value = value.Replace("&lt;", "<");
-                    value = value.Replace("&gt;", ">");
-                    _translations.Add(keyValue.Key, value);
+                JObject translationObject = (JObject)msg["translations"];
+                if (translationObject != null) {
+                    foreach (KeyValuePair<string, JToken> keyValue in translationObject) {
+                        string value = (string)keyValue.Value;
+                        value = value.Replace("\\n", "\n");
+                        value = value.Replace("&lt;", "<");
+                        value = value.Replace("&gt;", ">");
+                        _translations.Add(keyValue.Key, value);
+                    }
                 }
             }
 
