@@ -96,7 +96,7 @@ namespace NDream.AirConsole {
 
         [Tooltip("Enable SafeArea support with fullscreen webview overlay for Android.")]
         [SerializeField]
-        private bool nativeGameSizingSupported;
+        private bool nativeGameSizingSupported = true;
 
         [Header("Development Settings")]
         [Tooltip("Start your game normally, with virtual controllers or in debug mode.")]
@@ -116,7 +116,9 @@ namespace NDream.AirConsole {
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
-
+        
+        // ReSharper disable MemberCanBePrivate.Global UnusedMember.Global
+        
         /// <summary>
         /// Device ID of the screen
         /// </summary>
@@ -126,7 +128,6 @@ namespace NDream.AirConsole {
         /// Gets the Version string to provide it to remote addressable path.
         /// </summary>
         /// <remarks>This is designed to be used with Remote Addressable Configuration as {NDream.AirConsole.AirConsole.Version} path fragment</remarks>
-        // ReSharper disable once UnusedMember.Global
         public static string Version {
             get => IsAndroidOrEditor ? instance.androidGameVersion : string.Empty;
         }
@@ -497,7 +498,6 @@ namespace NDream.AirConsole {
         /// Returns the current IETF language tag of a device e.g. "en" or "en-US"
         /// </summary>
         /// <param name="device_id">The device id for which you want the language. Default is this device.</param>
-        // ReSharper disable once UnusedMember.Global
         public string GetLanguage(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -594,7 +594,6 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
         /// <param name="size">The size of in pixels of the picture. Default is 64.</param>
-        // ReSharper disable once UnusedMember.Global
         public string GetProfilePicture(string uid, int size = 64) => $"{Settings.AIRCONSOLE_PROFILE_PICTURE_URL}{uid}&size={size}";
 
         /// <summary>
@@ -995,7 +994,6 @@ namespace NDream.AirConsole {
         /// Returns true if the device is premium
         /// </summary>
         /// <param name="device_id">The device_id that should be checked. Only controllers can be premium. Default is this device.</param>
-        // ReSharper disable once MemberCanBePrivate.Global
         public bool IsPremium(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -1101,6 +1099,7 @@ namespace NDream.AirConsole {
             wsListener.Message(msg);
         }
 
+        // ReSharper enable MemberCanBePrivate.Global UnusedMember.Global
         #endregion
 
         #region unity functions
@@ -1779,6 +1778,7 @@ namespace NDream.AirConsole {
         private bool _safeAreaWasSet;
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
+        private bool _logPlatformMessages;
 
         private IRuntimeConfigurator _runtimeConfigurator;
 
@@ -1829,8 +1829,13 @@ namespace NDream.AirConsole {
         }
 
         public void ProcessJS(string data) {
+            if (_logPlatformMessages) {
+                AirConsoleLogger.LogError($"PlatformMessage: {data}");
+            }
+
             wsListener.ProcessMessage(data);
 #if UNITY_WEBGL && !UNITY_EDITOR
+            // On WebGL we need to process events immediately to ensure pause / resume works correctly.
             ProcessEvents();
 #endif
         }
@@ -1950,12 +1955,7 @@ namespace NDream.AirConsole {
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
                     httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
-                    url => {
-                        AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}");
-                        if (IsAndroidRuntime) {
-                            _pluginManager?.ReportPlatformReady();
-                        }
-                    },
+                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
                     started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
@@ -1981,10 +1981,16 @@ namespace NDream.AirConsole {
                 webViewObject.SetVisibility(!Application.isEditor);
                 AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
                 webViewObject.LoadURL(url);
+                
+                if (IsAndroidRuntime && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url); 
+                    _pluginManager.InitializeOfflineCheck();
+                }
 
-                // webViewObject.EnableWebviewDebugging(Debug.isDebugBuild);
-                // TODO(android-native): Replace it with the above line once the implementation is finished
-                webViewObject.EnableWebviewDebugging(true);
+                bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
+                webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
+
+                _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
             }
         }

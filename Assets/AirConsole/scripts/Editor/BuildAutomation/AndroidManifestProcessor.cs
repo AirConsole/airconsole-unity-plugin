@@ -175,13 +175,20 @@ namespace NDream.AirConsole.Editor {
 
         private static void UpdateApplicationAttributes(XmlElement applicationElement) {
             RemoveAttributeIfPresent(applicationElement, "tools", "replace");
-            RemoveAttributeIfPresent(applicationElement, "android", "usesCleartextTraffic");
             RemoveAttributeIfPresent(applicationElement, "android", "icon");
             RemoveAttributeIfPresent(applicationElement, "android", "label");
             RemoveAttributeIfPresent(applicationElement, "android", "isGame");
             RemoveAttributeIfPresent(applicationElement, "android", "banner");
             RemoveAttributeIfPresent(applicationElement, "android", "exported");
             RemoveAttributeIfPresent(applicationElement, "xmlns", "tools");
+
+            RemoveInternalAttributesIfNeeded(applicationElement);
+        }
+
+        private static void RemoveInternalAttributesIfNeeded(XmlElement applicationElement) {
+            if (!BuildHelper.IsInternalBuild) {
+                RemoveAttributeIfPresent(applicationElement, "android", "usesCleartextTraffic");
+            }
         }
 
         private static void UpdateActivityAttributes(AndroidManifest manifest, XmlElement activityElement, string themeAttribute) {

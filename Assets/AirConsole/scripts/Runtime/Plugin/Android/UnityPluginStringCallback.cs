@@ -24,7 +24,12 @@ namespace NDream.AirConsole.Android.Plugin {
         // ReSharper disable once InconsistentNaming
         public void onSuccess(string message) {
             if (_successCallback != null) {
-                AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message: {message}");
+                int length = message.Length;
+                for (int i = 0; i < length; i += 500) {
+                    int endValue = Math.Min(i + 500, length);
+                    AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message[{i}]: {message.Substring(i, endValue - i)}");
+                }
+                // AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message[{message.Length}]: {message}");
                 _successCallback.Invoke(message);
             } else {
                 AirConsoleLogger.LogDevelopment("Success callback is not assigned.");

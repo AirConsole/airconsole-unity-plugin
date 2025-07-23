@@ -1,10 +1,11 @@
 #if !DISABLE_AIRCONSOLE
-using System;
-using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace NDream.AirConsole {
-    public class AirConsoleLogger {
+    using System;
+    using UnityEngine;
+    using Object = UnityEngine.Object;
+
+    public static class AirConsoleLogger {
         [System.Diagnostics.Conditional("AIRCONSOLE_DEVELOPMENT")]
         public static void LogDevelopment(string message) => Debug.Log($"AC UNITY DEVELOPMENT: {message}");
 

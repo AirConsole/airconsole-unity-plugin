@@ -1,27 +1,26 @@
-#if !DISABLE_AIRCONSOLE
-#if UNITY_EDITOR
-using System;
-using System.IO;
-using System.Linq;
-using System.Xml.Linq;
-using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
+#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 
 namespace NDream.AirConsole.Editor {
+    using System.IO;
+    using System.Linq;
+    using UnityEditor;
+    using UnityEditor.Build;
+    using UnityEditor.Build.Reporting;
+    using UnityEngine;
+
     public class PreBuildProcessing : IPreprocessBuildWithReport {
         public int callbackOrder => 1;
 
         public void OnPreprocessBuild(BuildReport report) {
-            CheckWebGLSetup();
+            if (report.summary.platform == BuildTarget.WebGL) {
+                CheckWebGLSetup();
+            }
         }
 
         private static void CheckWebGLSetup() {
-#if UNITY_WEBGL
             if (string.IsNullOrEmpty(PlayerSettings.WebGL.template)) {
                 EditorUtility.DisplayDialog("Error", "No WebGL Template configured", "Cancel");
-                throw new UnityException("WebGL template not configured");
+                throw new BuildFailedException("WebGL template not configured");
             }
 
             if (Directory.Exists(GetWebGLTemplateDirectory())) {
@@ -29,24 +28,21 @@ namespace NDream.AirConsole.Editor {
                 if (!Directory.GetFiles(templatePath).Any(filename => filename.EndsWith("controller.html"))) {
                     EditorUtility.DisplayDialog("Error",
                         "The controller has not yet been generated. Please execute the game at least once in play mode.",
-                        "Cancel");
-                    throw new UnityException("Controller missing in WebGL template location.");
+                        "OK");
+                    throw new BuildFailedException("Controller missing in WebGL template location.");
                 }
 
                 if (!Directory.GetFiles(templatePath).Any(filename => filename.EndsWith("airconsole-unity-plugin.js"))) {
                     EditorUtility.DisplayDialog("Error",
                         "airconsole-unity-plugin missing. Please set up your airconsole plugin again",
                         "Cancel");
-                    throw new UnityException("Unity template incomplete");
+                    throw new BuildFailedException("Unity template incomplete");
                 }
             }
-#endif
         }
 
-        private static string GetWebGLTemplateDirectory() {
-            return Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
-        }
+        internal static string GetWebGLTemplateDirectory() =>
+            Path.GetFullPath("Assets/WebGLTemplates/" + PlayerSettings.WebGL.template.Split(':')[1]);
     }
 }
-#endif
 #endif

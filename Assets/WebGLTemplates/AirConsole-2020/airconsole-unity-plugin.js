@@ -416,7 +416,7 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.setImmersiveState(data.state);
     } else if (data.action == "platform_ready") {
         me.postToUnity({
-            "action": "platformReady",
+            "action": "platform_ready",
             "data": data
         });
     } else if (data.action == "sendPlatformMessage") {

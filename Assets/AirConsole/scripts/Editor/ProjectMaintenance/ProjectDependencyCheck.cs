@@ -2,6 +2,7 @@
 namespace NDream.AirConsole.Editor {
     using UnityEditor;
     using UnityEngine;
+    using UnityEditor.Build;
     using System.Text.RegularExpressions;
 
     public abstract class ProjectDependencyCheck {
@@ -58,7 +59,6 @@ namespace NDream.AirConsole.Editor {
             EditorNotificationService.InvokeError(message, false, title);
         }
     }
-    
 
     public abstract class SemVerCheck {
         /// <summary>
@@ -101,7 +101,7 @@ namespace NDream.AirConsole.Editor {
             Regex versionExtractor = new("^(?<Major>\\d{4})\\.(?<Minor>\\d+)\\.(?<Patch>\\d+)f\\d+$");
             Match match = versionExtractor.Match(version);
             if (!match.Success) {
-                throw new UnityException("No valid version found ");
+                throw new BuildFailedException("No valid version found ");
             }
 
             return (int.Parse(match.Groups["Major"].Value), int.Parse(match.Groups["Minor"].Value), int.Parse(match.Groups["Patch"].Value));
