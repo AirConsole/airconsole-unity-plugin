@@ -1,5 +1,6 @@
-#if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
+#if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor {
+    #region Imports
     using System.Diagnostics;
     using System;
     using System.IO;
@@ -7,6 +8,7 @@ namespace NDream.AirConsole.Editor {
     using UnityEditor.Build;
     using UnityEditor;
     using UnityEditor.Build.Reporting;
+    #endregion Imports
 
     public static class BuildHelper {
         private const string BasePath = "TestBuilds";

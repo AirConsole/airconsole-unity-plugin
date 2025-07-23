@@ -1,21 +1,19 @@
 #if !DISABLE_AIRCONSOLE
-#region
 
-using System.Collections.Generic;
-using NDream.AirConsole;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using UnityEditor;
-using UnityEngine;
-using Debug = UnityEngine.Debug;
-#endregion
+namespace NDream.Unity {
+    #region Imports
+    using System.Collections.Generic;
+    using AirConsole;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
+    using System.Text.RegularExpressions;
+    using UnityEditor;
+    using UnityEngine;
+    using Debug = UnityEngine.Debug;
+    #endregion Imports
 
-namespace NDream.Unity
-{
-    public class Packager
-    {
+    public class Packager {
         [MenuItem("Tools/AirConsole/Unlock Assemblies")]
         public static void UnlockAssemblies() {
             EditorApplication.UnlockReloadAssemblies();
@@ -57,7 +55,7 @@ namespace NDream.Unity
 
         private static void RemoveAirConsolePreferences() =>
             File.Delete(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
-        
+
         private static bool VerifyReleaseVersionExists(string version) =>
             File.Exists(Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{version}.unitypackage")));
 
@@ -81,8 +79,7 @@ namespace NDream.Unity
             string webviewPackagePath =
                 Directory.GetDirectories(packageCache).FirstOrDefault(d => d.Contains("com.airconsole.unity-webview"));
 
-            if(!Directory.Exists(webviewPackagePath))
-            {
+            if (!Directory.Exists(webviewPackagePath)) {
                 EditorUtility.DisplayDialog("Error", "Can not find airconsole webview package", "OK");
                 Debug.LogError("Can not find airconsole webview package");
                 return;
@@ -90,10 +87,10 @@ namespace NDream.Unity
 
             string webviewPackagePathAssets = Path.Combine(webviewPackagePath, "Assets");
 
-            string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview")); 
-            DeleteAssetDatabaseDirectory(targetPath); 
+            string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
+            DeleteAssetDatabaseDirectory(targetPath);
             AssetDatabase.Refresh();
-            
+
             EditorApplication.LockReloadAssemblies();
 
             MoveSubDirectories(webviewPackagePathAssets, targetPath);
@@ -116,7 +113,6 @@ namespace NDream.Unity
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
             Debug.ClearDeveloperConsole();
-
         }
 
         private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleDirectories) {
