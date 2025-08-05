@@ -32,9 +32,9 @@ namespace NDream.AirConsole.Editor {
 
             if (File.Exists(manifestPath)) {
                 UpgradeManifest(transformer);
-                Debug.Log("AirConsole: Successfully upgraded AndroidManifest.xml");
+                AirConsoleLogger.Log(() => "AirConsole: Successfully upgraded AndroidManifest.xml");
             } else {
-                Debug.LogWarning(
+                AirConsoleLogger.LogWarning(() =>
                     "AirConsole: AndroidManifest.xml not found at expected path. Make sure custom manifest generation is enabled.");
             }
         }
@@ -58,7 +58,7 @@ namespace NDream.AirConsole.Editor {
 
         private static AndroidManifestTransformer EnsureCustomManifestExists(string manifestPath) {
             if (!GetCustomManifestActive()) {
-                Debug.Log("AirConsole: Enabling custom AndroidManifest.xml generation");
+                AirConsoleLogger.Log(() => "AirConsole: Enabling custom AndroidManifest.xml generation");
                 SetCustomManifestActive(true);
 
                 string manifestDir = Path.Combine(Application.dataPath, "Plugins", "Android");

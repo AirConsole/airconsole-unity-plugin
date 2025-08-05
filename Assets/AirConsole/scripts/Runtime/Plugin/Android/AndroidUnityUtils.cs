@@ -4,7 +4,9 @@ namespace NDream.AirConsole.Android.Plugin {
 
     internal static class AndroidIntentUtils {
         public static string GetIntentExtraString(string key, string defaultValue) {
-#if UNITY_ANDROID && !UNITY_EDITOR 
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return defaultValue;
+#endif
             try {
                 using (AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer")) {
                     AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
@@ -12,16 +14,15 @@ namespace NDream.AirConsole.Android.Plugin {
                     return intent.Call<string>("getStringExtra", key);
                 }
             } catch (System.Exception e) {
-                Debug.LogWarning("Error getting intent extra: " + e);
+                AirConsoleLogger.LogWarning(() => "Error getting intent extra: " + e);
                 return defaultValue;
             }
-#else
-            return defaultValue;
-#endif
         }
 
         public static bool GetIntentExtraBool(string key, bool defaultValue) {
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if !UNITY_ANDROID || UNITY_EDITOR
+            return defaultValue;
+#endif
             try
             {
                 using (AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer"))
@@ -33,12 +34,9 @@ namespace NDream.AirConsole.Android.Plugin {
             }
             catch (System.Exception e)
             {
-                Debug.LogWarning("Error getting intent extra: " + e);
+                AirConsoleLogger.LogWarning(() => "Error getting intent extra: " + e);
                 return defaultValue;
             }
-#else
-            return defaultValue;
-#endif
         }
     }
     // ReSharper enable RedundantUsingDirective

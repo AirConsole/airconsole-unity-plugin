@@ -1,5 +1,6 @@
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole {
+    using System.Runtime.CompilerServices;
     using UnityEngine;
     using System;
 
@@ -31,14 +32,16 @@ namespace NDream.AirConsole {
         }
 
         internal void ActivateSafeArea() {
-            AirConsoleLogger.LogDevelopment("WebViewManager.ActivateSafeArea()");
+            AirConsoleLogger.LogDevelopment(() => "WebViewManager.ActivateSafeArea()");
+
             _isSafeAreaActive = true;
             _currentState = WebViewState.SafeAreaBased;
             UpdateWebView();
         }
 
         internal void RequestStateTransition(WebViewState newState) {
-            AirConsoleLogger.LogDevelopment($"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
+            AirConsoleLogger.LogDevelopment(() => $"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
+
             // When the SafeArea has been activated, we do not allow any other state transitions anymore.
             // The only thing allowed after this is for the safe area itself to change.
             if (_isSafeAreaActive) {
@@ -56,13 +59,16 @@ namespace NDream.AirConsole {
 
             switch (_currentState) {
                 case WebViewState.Hidden:
+                    LogMargins(0, 0, 0, _defaultScreenHeight);
                     _webViewObject.SetMargins(0, 0, 0, _defaultScreenHeight);
                     break;
                 case WebViewState.TopBar:
+                    LogMargins(0, 0, 0, _defaultScreenHeight - _webViewHeight);
                     _webViewObject.SetMargins(0, 0, 0, _defaultScreenHeight - _webViewHeight);
                     break;
                 case WebViewState.FullScreen:
                 case WebViewState.SafeAreaBased:
+                    LogMargins(0, 0, 0, 0);
                     _webViewObject.SetMargins(0, 0, 0, 0);
                     break;
                 default:
@@ -70,6 +76,11 @@ namespace NDream.AirConsole {
             }
 
             _webViewObject.SetVisibility(_currentState != WebViewState.Hidden && !Application.isEditor);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void LogMargins(int left, int top, int right, int bottom) {
+            AirConsoleLogger.LogDevelopment(() => $"WebViewManager SetMargins: ({left}, {top}, {right}, {bottom})");
         }
     }
 }

@@ -15,10 +15,11 @@ namespace NDream.AirConsole.Android.Plugin {
         // ReSharper disable once InconsistentNaming
         public void onExecute() {
             if (_executionCallback != null) {
-                AirConsoleLogger.LogDevelopment($"UnityPluginExecutionCallback executed");
+                AirConsoleLogger.LogDevelopment(() => $"UnityPluginExecutionCallback executed");
+
                 _executionCallback.Invoke();
             } else {
-                AirConsoleLogger.LogDevelopment("Execution callback is not assigned.");
+                AirConsoleLogger.LogDevelopment(() => "UnityPluginExecutionCallback execution callback is not assigned.");
             }
         }
     }

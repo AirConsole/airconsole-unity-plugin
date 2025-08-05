@@ -1,16 +1,16 @@
 #if !DISABLE_AIRCONSOLE
-using System;
-using System.IO;
-using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using UnityEditor;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
-using UnityEngine;
-using UnityEngine.Rendering;
-
 namespace NDream.AirConsole.Editor {
+    using System;
+    using System.IO;
+    using System.Linq;
+    using System.Reflection;
+    using System.Text.RegularExpressions;
+    using UnityEditor;
+    using UnityEditor.Build;
+    using UnityEditor.Build.Reporting;
+    using UnityEngine;
+    using UnityEngine.Rendering;
+    
     internal abstract class EditorNotificationService {
         /// <summary>
         /// Displays an error dialog and logs an error message, optionally providing instructions to disable AirConsole.
@@ -28,7 +28,7 @@ namespace NDream.AirConsole.Editor {
                     "\nTo disable AirConsole for this build, add the scripting define symbol 'DISABLE_AIRCONSOLE' in the Player Settings.";
             }
 
-            Debug.LogError(message);
+            AirConsoleLogger.LogError(() => message);
             throw new BuildFailedException(message);
         }
     }
@@ -104,7 +104,7 @@ namespace NDream.AirConsole.Editor {
                     throw new BuildFailedException($"AirConsole Plugin does not support platform {platform}");
             }
 
-            Debug.Log($"AirConsole Plugin configuration checks for {platform} completed successfully.");
+            AirConsoleLogger.Log(() => $"AirConsole Plugin configuration checks for {platform} completed successfully.");
         }
 
         [InitializeOnLoadMethod]
@@ -116,7 +116,7 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.insecureHttpOption = InsecureHttpOption.AlwaysAllowed;
             } else {
                 if (PlayerSettings.insecureHttpOption == InsecureHttpOption.AlwaysAllowed) {
-                    Debug.LogError(
+                    AirConsoleLogger.LogError(() =>
                         "AirConsole does not allow HTTP web requests. Please create a development build if you want to develop with insecure endpoints.");
                     PlayerSettings.insecureHttpOption = InsecureHttpOption.DevelopmentOnly;
                 }
@@ -124,21 +124,22 @@ namespace NDream.AirConsole.Editor {
 
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
                 string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
-                Debug.LogError(message);
+                AirConsoleLogger.LogError(() => message);
                 throw new BuildFailedException(message);
             }
 
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
             if (PlayerSettings.runInBackground != shouldRunInBackground) {
-                Debug.Log(
+                AirConsoleLogger.Log(() =>
                     $"AirConsole needs 'Run In Background' to be {shouldRunInBackground} in PlayerSettings for {EditorUserBuildSettings.activeBuildTarget}.\n"
                     + $"Updating the settings now.");
                 PlayerSettings.runInBackground = shouldRunInBackground;
             }
 
             if (PlayerSettings.allowUnsafeCode) {
-                Debug.LogError("AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
-                               + "We are updating the Android settings now.");
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
+                    + "We are updating the Android settings now.");
                 PlayerSettings.allowUnsafeCode = false;
             }
         }
@@ -152,13 +153,14 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.WebGL.nameFilesAsHashes = false; // We upload into timestamp based folders. This is not necessary.
 
             if (PlayerSettings.WebGL.dataCaching) {
-                Debug.LogWarning("AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
-                                 + "Updating the WebGL settings now.");
+                AirConsoleLogger.LogWarning(() =>
+                    "AirConsole requires 'Data Caching' to be disabled to avoid interference with automotive requirements.\n"
+                    + "Updating the WebGL settings now.");
                 PlayerSettings.WebGL.dataCaching = false;
             }
 
             if (PlayerSettings.WebGL.memoryGrowthMode != WebGLMemoryGrowthMode.None) {
-                Debug.LogWarning(
+                AirConsoleLogger.LogWarning(() =>
                     "For performance and stability on automotive, AirConsole requires 'Memory Growth Mode' to be set to None in WebGL PlayerSettings with the games maximum memory usage set.\n"
                     + "Updating the WebGL settings now.");
                 PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.None;
@@ -167,13 +169,14 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (PlayerSettings.WebGL.memorySize > 512) {
-                Debug.LogWarning("AirConsole recommends 'Initial Memory Size' stay at or below 512MB for automotive compatibility.\n"
-                                 + "We are updating the WebGL settings now.");
+                AirConsoleLogger.LogWarning(() =>
+                    "AirConsole recommends 'Initial Memory Size' stay at or below 512MB for automotive compatibility.\n"
+                    + "We are updating the WebGL settings now.");
                 PlayerSettings.WebGL.initialMemorySize = 512;
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
-                Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
                 throw new BuildFailedException("Please update the WebGL build and player settings to continue.");
             }
         }
@@ -188,7 +191,7 @@ namespace NDream.AirConsole.Editor {
                 || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
                 string incompatibleTemplateMessage =
                     $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
-                Debug.LogError(incompatibleTemplateMessage);
+                AirConsoleLogger.LogError(() => incompatibleTemplateMessage);
 
                 if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
                         "Cancel")) {
@@ -203,18 +206,19 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             if (PlayerSettings.muteOtherAudioSources) {
-                Debug.Log("AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
+                AirConsoleLogger.Log(() => "AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
                 PlayerSettings.muteOtherAudioSources = false;
             }
 
             if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
-                Debug.LogWarning("To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"
-                                 + "We are updating the Android settings now.");
+                AirConsoleLogger.LogWarning(() =>
+                    "To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"
+                    + "We are updating the Android settings now.");
                 PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
-                Debug.LogError("AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
                 throw new BuildFailedException("Please update the Android Build and Player settings to continue.");
             }
 
@@ -222,7 +226,10 @@ namespace NDream.AirConsole.Editor {
             EnsureAndroidPlatformSettings();
             MaintainChallengingAndroidFeatures();
 
-#if AIRCONSOLE_DEVELOPMENT
+#if !AIRCONSOLE_DEVELOPMENT
+            return;
+#endif
+            
             PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
             Version version = Version.Parse(PlayerSettings.bundleVersion);
 
@@ -233,7 +240,6 @@ namespace NDream.AirConsole.Editor {
                 Mathf.Clamp(version.Build, 0, version.Build));
             PlayerSettings.bundleVersion
                 = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode).ToString();
-#endif
         }
 
         private static void EnsureAndroidPlatformSettings() {
@@ -242,9 +248,8 @@ namespace NDream.AirConsole.Editor {
             // To ensure Google Play compatibility, we require a target SDK of 34 or higher.
             const int requiredAndroidTargetSdk = 34;
             if ((int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
-                Debug.LogError(
-                    $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
-                    + "We are updating the Android settings now.");
+                AirConsoleLogger.LogError(() => $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
+                                                + "We are updating the Android settings now.");
             }
 
             PlayerSettings.Android.renderOutsideSafeArea = true;
@@ -261,8 +266,9 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
 
             if (PlayerSettings.Android.preferredInstallLocation != AndroidPreferredInstallLocation.Auto) {
-                Debug.LogWarning("AirConsole recommends 'Preferred Install Location' to be set to Auto in Android PlayerSettings.\n"
-                                 + "We are updating the Android settings now.");
+                AirConsoleLogger.LogWarning(() =>
+                    "AirConsole recommends 'Preferred Install Location' to be set to Auto in Android PlayerSettings.\n"
+                    + "We are updating the Android settings now.");
                 PlayerSettings.Android.preferredInstallLocation = AndroidPreferredInstallLocation.Auto;
             }
         }
@@ -297,7 +303,8 @@ namespace NDream.AirConsole.Editor {
 
             GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
             if (!graphicsAPIs.Contains(GraphicsDeviceType.OpenGLES3)) {
-                Debug.LogError("AirConsole WebGL requires either 'Auto Graphics API' or WebGL2 to be present\nUpdating the settings now.");
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole WebGL requires either 'Auto Graphics API' or WebGL2 to be present\nUpdating the settings now.");
 
                 graphicsAPIs = graphicsAPIs.ToList().Prepend(GraphicsDeviceType.OpenGLES3).ToArray();
                 PlayerSettings.SetGraphicsAPIs(BuildTarget.WebGL, graphicsAPIs);
@@ -308,18 +315,19 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.use32BitDisplayBuffer = true;
 
             // if (!PlayerSettings.vulkanEnableLateAcquireNextImage) {
-            //     // Debug.LogWarning("Late Acquire has been disabled for Vulkan as this has negative side effects and performance impact.");
+            //     // AirConsoleLogger.LogWarning("Late Acquire has been disabled for Vulkan as this has negative side effects and performance impact.");
             //     PlayerSettings.vulkanEnableLateAcquireNextImage = true;
             // }
 
             if (PlayerSettings.vulkanNumSwapchainBuffers < 3) {
-                Debug.LogWarning("The Vulkan Swapchain must contain at least 3 buffers");
+                AirConsoleLogger.LogWarning(() => "The Vulkan Swapchain must contain at least 3 buffers");
                 PlayerSettings.vulkanNumSwapchainBuffers = 3;
             }
 
             // if the profiler shows significant 'semaphore WaitForSignal' blocks, we need to invert this!
             if (!PlayerSettings.Android.optimizedFramePacing) {
-                Debug.LogWarning("Enabling optimized frame pacing for improved frame consistency and performance on Android.");
+                AirConsoleLogger.LogWarning(() =>
+                    "Enabling optimized frame pacing for improved frame consistency and performance on Android.");
                 PlayerSettings.Android.optimizedFramePacing = true;
             }
 
@@ -330,7 +338,7 @@ namespace NDream.AirConsole.Editor {
             GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
 
             if (graphicsAPIs.First() != GraphicsDeviceType.Vulkan) {
-                Debug.LogWarning("AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
+                AirConsoleLogger.LogWarning(() => "AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
             }
         }
 
@@ -344,13 +352,13 @@ namespace NDream.AirConsole.Editor {
         #region Controller Screen Consistency Checks
         private static void ValidateApiUsage() {
             string webGLTemplateDirectory = PreBuildProcessing.GetWebGLTemplateDirectory();
-            AirConsoleLogger.LogDevelopment($"Validating API Usage in {webGLTemplateDirectory}");
+            AirConsoleLogger.Log(() => $"Validating API Usage in {webGLTemplateDirectory}");
             if (!VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "index.html"), Settings.RequiredMinimumVersion)
 
                 // || !VerifyAPIUsage(pathToBuiltProject + "/screen.html", Settings.RequiredMinimumVersion)
                 || !VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "controller.html"),
                     Settings.RequiredMinimumVersion)) {
-                AirConsoleLogger.LogError("Outdated AirConsole API detected. Please check the previous logs to address the problem.");
+                AirConsoleLogger.LogError(() => "Outdated AirConsole API detected. Please check the previous logs to address the problem.");
                 throw new BuildFailedException(
                     "Build failed. Outdated AirConsole API detected. Please see Error Logs for more information.");
             }
@@ -358,7 +366,7 @@ namespace NDream.AirConsole.Editor {
 
         private static bool VerifyReferencedAirConsoleApiVersion(string pathToHtml, Version requiredApiVersion) {
             if (!File.Exists(pathToHtml)) {
-                AirConsoleLogger.LogDevelopment($"File {pathToHtml} does not exist, this should not happen.");
+                AirConsoleLogger.Log(() => $"File {pathToHtml} does not exist.");
                 return true;
             }
 
@@ -372,8 +380,7 @@ namespace NDream.AirConsole.Editor {
             Regex regexAirconsoleLatest = new(@"(?<!<!--.*)airconsole-latest\.js", RegexOptions.IgnoreCase);
             bool foundAirconsoleLatest = regexAirconsoleLatest.IsMatch(fileContent);
             if (foundAirconsoleLatest) {
-                AirConsoleLogger.LogError(
-                    $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
+                AirConsoleLogger.LogError(() => $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
 
                 return false;
             }
@@ -388,14 +395,14 @@ namespace NDream.AirConsole.Editor {
                 // No references to the airconsole API do not yield working AirConsole builds, so we can safely stop the build and inform
                 //  the developer.
                 case < 1:
-                    AirConsoleLogger.LogError(
+                    AirConsoleLogger.LogError(() =>
                         $"No reference to airconsole-{apiVersion} found in {pathToHtml}. Please ensure that you correctly reference it.");
                     return false;
 
                 // Multiple reference to the airconsole API break behavior because they override the AirConsole DOM window setup.
                 //  As such we want to inform the game developer.
                 case > 1:
-                    AirConsoleLogger.LogError(
+                    AirConsoleLogger.LogError(() =>
                         $"Multiple airconsole-*.js references found in {pathToHtml}. Please ensure only one reference is present.");
                     return false;
             }
@@ -408,9 +415,9 @@ namespace NDream.AirConsole.Editor {
 
             Version referencedVersion = new(major, minor, revision);
             if (referencedVersion == requiredApiVersion) {
-                AirConsoleLogger.LogDevelopment($"Valid API reference {match.Groups[0]} found.");
+                AirConsoleLogger.LogDevelopment(() => $"Valid API reference {match.Groups[0]} found in {pathToHtml}.");
             } else {
-                AirConsoleLogger.LogError(
+                AirConsoleLogger.LogError(() =>
                     $"airconsole-{major}.{minor}.{revision}.js found. This does not match the required version, please use {apiVersion} instead.");
                 return false;
             }
@@ -442,13 +449,16 @@ namespace NDream.AirConsole.Editor {
             MethodInfo methodInfo = playerSettingsType.GetMethod(
                 "GetDefaultTextureCompressionFormat",
                 BindingFlags.NonPublic | BindingFlags.Static);
-
+            
             if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
-                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup) });
+                bool isUnity6 = true;
 #else
-                return (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
+                bool isUnity6 = false;
 #endif
+                return isUnity6
+                    ? (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup) })
+                    : (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
             }
 
             return TextureCompressionFormat.Unknown;
@@ -463,10 +473,15 @@ namespace NDream.AirConsole.Editor {
 
             if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
-                methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup), format });
+                bool isUnity6 = true;
 #else
-                methodInfo.Invoke(null, new object[] { buildTargetGroup, (int)format });
+                bool isUnity6 = false;
 #endif
+                if (isUnity6) {
+                    methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup), format });
+                } else {
+                    methodInfo.Invoke(null, new object[] { buildTargetGroup, (int)format });
+                }
             }
         }
 

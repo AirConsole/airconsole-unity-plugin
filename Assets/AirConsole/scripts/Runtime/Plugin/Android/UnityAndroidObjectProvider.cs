@@ -41,7 +41,9 @@ namespace NDream.AirConsole.Android.Plugin {
                 result = new AndroidJavaObject(className, GetUnityActivity());
             }
 
-            AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");
+            AirConsoleLogger.LogDevelopment(() =>
+                $"UnityAndroidObjectProvider.GetInstanceOfClass({className}) successful: {result != null}");
+
             return result;
         }
 
@@ -54,7 +56,9 @@ namespace NDream.AirConsole.Android.Plugin {
                 result = new AndroidJavaObject(className, parametersList.ToArray());
             }
 
-            AirConsoleLogger.LogDevelopment($"UnityAndroidObjectProvider.GetInstanceOfClass({className}) was successful: {result != null}");
+            AirConsoleLogger.LogDevelopment(() =>
+                $"UnityAndroidObjectProvider.GetInstanceOfClass({className}) successful: {result != null}");
+
             return result;
         }
     }

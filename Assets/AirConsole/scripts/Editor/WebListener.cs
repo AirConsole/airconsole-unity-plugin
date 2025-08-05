@@ -29,7 +29,8 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            AirConsoleLogger.LogDevelopment("Starting WebListener");
+            AirConsoleLogger.LogDevelopment(() => "Starting WebListener");
+
             EditorApplication.playModeStateChanged += HandlePlaymodeStop;
             listener.Start();
 
@@ -63,7 +64,7 @@ namespace NDream.AirConsole.Editor {
                     // ThreadAbortException is thrown when the webserver gets stopped/restarted
                 } catch (Exception e) {
                     if (Settings.debug.error) {
-                        Debug.LogError(e.ToString());
+                        AirConsoleLogger.LogError(() => e.ToString());
                     }
                 }
             }
@@ -106,7 +107,7 @@ namespace NDream.AirConsole.Editor {
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     if (e.Message != "Write failure") {
-                        Debug.LogError(e.Message);
+                        AirConsoleLogger.LogError(() => e.Message);
                     }
                 }
             }
@@ -152,7 +153,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         private void Stop() {
-            AirConsoleLogger.LogDevelopment("Stopping WebListener");
+            AirConsoleLogger.LogDevelopment(() => "Stopping WebListener");
             listenerThread.Abort();
             listener.Stop();
         }

@@ -12,7 +12,7 @@ namespace NDream.AirConsole.Editor {
             UpdateMainGradleProperties(Path.GetFullPath(Path.Combine(basePath, "..")), "gradle.properties");
             UpdateMainGradleTemplate(Path.GetFullPath(basePath), "build.gradle");
             UpdateProGuard(Path.GetFullPath(basePath), "proguard-unity.txt");
-            AirConsoleLogger.LogDevelopment("Updated gradle files for AirConsole Android build");
+            AirConsoleLogger.LogDevelopment(() => "Updated gradle files for AirConsole Android build");
         }
 
         private static void UpdateProGuard(string basePath, string proguardUnityTxt) {
@@ -47,10 +47,10 @@ namespace NDream.AirConsole.Editor {
 
             if (lines.Count > initialLines.Length) {
                 File.WriteAllText(gradleTemplatePath, string.Join("\n", lines) + "\n");
-                AirConsoleLogger.LogDevelopment(
+                AirConsoleLogger.LogDevelopment(() =>
                     $"Gradle templates updated from {string.Join("\n", initialLines)} to {string.Join("\n", lines)} for {gradleTemplatePath}");
             } else {
-                AirConsoleLogger.LogDevelopment(
+                AirConsoleLogger.LogDevelopment(() =>
                     $"Gradle main template was {string.Join("\n", initialLines)}, no update for {gradleTemplatePath}");
             }
         }
@@ -70,9 +70,10 @@ namespace NDream.AirConsole.Editor {
 
             if (lines != initialLines) {
                 File.WriteAllText(gradlePropertiesPath, lines);
-                AirConsoleLogger.LogDevelopment($"Gradle templates updated from {initialLines} to {lines} for {gradlePropertiesPath}");
+                AirConsoleLogger.LogDevelopment(() =>
+                    $"Gradle templates updated from {initialLines} to {lines} for {gradlePropertiesPath}");
             } else {
-                AirConsoleLogger.LogDevelopment($"Gradle properties were {initialLines}, no update for {gradlePropertiesPath}");
+                AirConsoleLogger.LogDevelopment(() => $"Gradle properties were {initialLines}, no update for {gradlePropertiesPath}");
             }
         }
 

@@ -79,7 +79,7 @@ namespace NDream.AirConsole.Editor {
                     changedState = PlayModeState.Paused;
                     break;
                 default:
-                    // Debug.Log("No such state combination defined: " + state);
+                    AirConsoleLogger.LogDevelopment(() => $"No such state combination defined: {state}");
                     break;
             }
 

@@ -38,7 +38,7 @@ namespace NDream.AirConsole.Editor {
                 .ToArray();
 
             if (scenes.Length == 0) {
-                AirConsoleLogger.LogError("No scenes are enabled in Build Settings!");
+                AirConsoleLogger.LogError(() => "No scenes are enabled in Build Settings!");
                 return;
             }
 
@@ -80,7 +80,7 @@ namespace NDream.AirConsole.Editor {
                 .ToArray();
 
             if (scenes.Length == 0) {
-                AirConsoleLogger.LogError("No scenes are enabled in Build Settings!");
+                AirConsoleLogger.LogError(() => "No scenes are enabled in Build Settings!");
                 return;
             }
 
@@ -112,7 +112,7 @@ namespace NDream.AirConsole.Editor {
                     return process.ExitCode != 0;
                 }
             } catch (Exception ex) {
-                AirConsoleLogger.LogError($"Error checking for uncommitted changes: {ex.Message}");
+                AirConsoleLogger.LogError(() => $"Error checking for uncommitted changes: {ex.Message}");
                 return false;
             }
         }
@@ -151,7 +151,7 @@ namespace NDream.AirConsole.Editor {
                     return output;
                 }
             } catch (Exception ex) {
-                AirConsoleLogger.LogError($"Exception when running git command: {ex.Message}");
+                AirConsoleLogger.LogError(() => $"Exception when running git command: {ex.Message}");
                 return string.Empty;
             }
         }
@@ -174,18 +174,16 @@ namespace NDream.AirConsole.Editor {
 
             switch (summary.result) {
                 case BuildResult.Succeeded:
-                    AirConsoleLogger.Log($"Build succeeded: {summary.totalSize} bytes\nBuild Path: {outputPath}");
+                    AirConsoleLogger.Log(() => $"Build succeeded: {summary.totalSize} bytes\nBuild Path: {outputPath}");
                     break;
                 case BuildResult.Failed:
-                    AirConsoleLogger.LogError("Build failed.");
+                    AirConsoleLogger.LogError(() => "Build failed.");
                     break;
                 case BuildResult.Cancelled:
-                    AirConsoleLogger.LogError("Build cancelled.");
+                    AirConsoleLogger.LogError(() => "Build cancelled.");
                     return false;
                 case BuildResult.Unknown:
-                    string msg = $"Unknown build result. Terminating build for {target} now.";
-                    AirConsoleLogger.LogError(msg);
-                    throw new BuildFailedException(msg);
+                    throw new BuildFailedException($"Unknown build result. Terminating build for {target} now.");
             }
 
             return true;
@@ -199,7 +197,7 @@ namespace NDream.AirConsole.Editor {
         /// <returns>True if the zip operation was successful.</returns>
         private static bool ZipFolder(string folderPath) {
             if (!Directory.Exists(folderPath)) {
-                AirConsoleLogger.LogError($"Folder does not exist: {folderPath}");
+                AirConsoleLogger.LogError(() => $"Folder does not exist: {folderPath}");
                 return false;
             }
 
@@ -227,13 +225,13 @@ namespace NDream.AirConsole.Editor {
 
                 if (process.ExitCode != 0) {
                     string errorOutput = process.StandardError.ReadToEnd();
-                    AirConsoleLogger.LogError($"Error zipping folder: {errorOutput}");
+                    AirConsoleLogger.LogError(() => $"Error zipping folder: {errorOutput}");
                     return false;
                 }
 
                 return true;
             } catch (Exception ex) {
-                AirConsoleLogger.LogError($"Exception during zipping: {ex.Message}");
+                AirConsoleLogger.LogError(() => $"Exception during zipping: {ex.Message}");
                 return false;
             }
         }
@@ -248,7 +246,7 @@ namespace NDream.AirConsole.Editor {
 
             if (HasUncommittedChanges()) {
                 string commitResult = RunGitCommand($"commit -am \"build: {timestamp}\"");
-                AirConsoleLogger.Log($"Git commit output: {commitResult}");
+                AirConsoleLogger.Log(() => $"Git commit output: {commitResult}");
             }
 
             commitHash = RunGitCommand("rev-parse --short HEAD").Trim();
@@ -256,7 +254,7 @@ namespace NDream.AirConsole.Editor {
                 return false;
             }
 
-            AirConsoleLogger.LogError("Failed to retrieve git commit hash.");
+            AirConsoleLogger.LogError(() => "Failed to retrieve git commit hash.");
             return true;
         }
     }

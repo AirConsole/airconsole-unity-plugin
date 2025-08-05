@@ -36,7 +36,7 @@ namespace NDream.Unity {
                 EditorUtility.DisplayDialog("Package Error",
                     $"Version {Settings.VERSION} already exists.\nYou can not create a release candidate for it",
                     "OK");
-                AirConsoleLogger.LogError($"Exporting unitypackage for release version {Settings.VERSION} not allowed.");
+                AirConsoleLogger.LogError(() => $"Exporting unitypackage for release version {Settings.VERSION} not allowed.");
                 return;
             }
 
@@ -73,7 +73,7 @@ namespace NDream.Unity {
 
         private static void ExportPackage(string outputPath) {
             Debug.ClearDeveloperConsole();
-            Debug.Log($"Exporting to {outputPath}");
+            AirConsoleLogger.Log(() => $"Exporting to {outputPath}");
 
             string packageCache = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "PackageCache"));
             string webviewPackagePath =
@@ -81,7 +81,7 @@ namespace NDream.Unity {
 
             if (!Directory.Exists(webviewPackagePath)) {
                 EditorUtility.DisplayDialog("Error", "Can not find airconsole webview package", "OK");
-                Debug.LogError("Can not find airconsole webview package");
+                AirConsoleLogger.LogError(() => "Can not find airconsole webview package");
                 return;
             }
 
@@ -159,7 +159,7 @@ namespace NDream.Unity {
             if (proc.Start()) {
                 proc.WaitForExit();
             } else {
-                Debug.LogError("Failed to add package to git");
+                AirConsoleLogger.LogError(() => "Failed to add package to git");
             }
         }
 

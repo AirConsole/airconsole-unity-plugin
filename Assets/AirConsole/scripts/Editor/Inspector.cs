@@ -190,7 +190,7 @@ namespace NDream.AirConsole.Editor {
                     + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
                     + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
             } catch (IOException e) {
-                Debug.LogError($"Failed to write settings file at {path}: {e.Message}");
+                AirConsoleLogger.LogError(() => $"Failed to write settings file at {path}: {e.Message}");
             }
         }
 
@@ -200,11 +200,11 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (!File.Exists(newPath)) {
-                Debug.LogWarning("Update settings file to new version, renaming from translation.js to game-settings.js");
+                AirConsoleLogger.LogWarning(() => "Update settings file to new version, renaming from translation.js to game-settings.js");
                 File.Move(originalPath, newPath);
                 File.AppendAllText(newPath, $"\n{INACTIVE_PLAYERS_SILENCED_INACTIVE}");
             } else {
-                Debug.LogError($"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
+                AirConsoleLogger.LogError(() => $"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
                 File.Delete(originalPath);
             }
         }

@@ -27,12 +27,13 @@ namespace NDream.AirConsole.Android.Plugin {
                 int length = message.Length;
                 for (int i = 0; i < length; i += 500) {
                     int endValue = Math.Min(i + 500, length);
-                    AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message[{i}]: {message.Substring(i, endValue - i)}");
+                    AirConsoleLogger.LogDevelopment(() =>
+                        $"UnityPluginStringCallback received message[{i}]: {message.Substring(i, endValue - i)}");
                 }
                 // AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message[{message.Length}]: {message}");
                 _successCallback.Invoke(message);
             } else {
-                AirConsoleLogger.LogDevelopment("Success callback is not assigned.");
+                AirConsoleLogger.LogDevelopment(() => "UnityPluginStringCallback success callback is not assigned.");
             }
         }
 
@@ -41,12 +42,12 @@ namespace NDream.AirConsole.Android.Plugin {
         public void onFailure(string error) {
             if (_failureCallback != null) {
                 if (Settings.debug.error) {
-                    AirConsoleLogger.LogError($"UnityPluginStringCallback failed with error: {error}");
+                    AirConsoleLogger.LogError(() => $"UnityPluginStringCallback failed with error: {error}");
                 }
 
                 _failureCallback.Invoke(error);
             } else {
-                AirConsoleLogger.LogDevelopment("Failure callback is not assigned.");
+                AirConsoleLogger.LogDevelopment(() => "UnityPluginStringCallback failure callback is not assigned.");
             }
         }
     }

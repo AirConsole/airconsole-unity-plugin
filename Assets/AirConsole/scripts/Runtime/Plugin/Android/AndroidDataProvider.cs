@@ -5,9 +5,10 @@ namespace NDream.AirConsole.Android.Plugin {
     using UnityEngine;
 
     internal class AndroidDataProvider {
-        private const int UI_MODE_TYPE_NORMAL = 1;
-        private const int UI_MODE_TYPE_CAR = 3;
-        private const int UI_MODE_TYPE_TELEVISION = 4;
+        // These match androids UI_MODE_TYPE_* constants
+        private const int UIModeTypeNormal = 1;
+        private const int UIModeTypeCar = 3;
+        private const int UIModeTypeTelevision = 4;
 
         private AndroidJavaObject _dataProviderPlugin;
 
@@ -22,10 +23,11 @@ namespace NDream.AirConsole.Android.Plugin {
         internal event Action<string> OnConnectionUrlReceived;
 
         internal AndroidDataProvider() {
-            AirConsoleLogger.LogDevelopment("DataProviderPlugin created");
+            AirConsoleLogger.LogDevelopment(() => "DataProviderPlugin created");
+
             _dataProviderPlugin = UnityAndroidObjectProvider.GetInstanceOfClass("com.airconsole.unityandroidlibrary.DataProviderService");
             if (_dataProviderPlugin == null) {
-                AirConsoleLogger.LogWarning("AndroidDataProvider native could not be initialized");
+                AirConsoleLogger.LogWarning(() => "AndroidDataProvider native could not be initialized");
                 return;
             }
 
@@ -35,7 +37,7 @@ namespace NDream.AirConsole.Android.Plugin {
                     ConnectionUrl = url;
                     OnConnectionUrlReceived?.Invoke(url);
                 },
-                error => { AirConsoleLogger.Log($"AndroidDataProvider initialization failed with {error}"); }
+                error => { AirConsoleLogger.Log(() => $"AndroidDataProvider initialization failed with {error}"); }
             );
 
             _dataProviderPlugin.Call("init", Settings.AIRCONSOLE_BASE_URL, callback);
@@ -47,23 +49,25 @@ namespace NDream.AirConsole.Android.Plugin {
         /// <param name="connectCode">The screen connectCode to write.</param>
         /// <param name="uid">The screen uid to write.</param>
         internal void WriteClientIdentification(string connectCode, string uid) {
-            AirConsoleLogger.LogDevelopment($"WriteClientIdentification w/ connectCode: {connectCode}, uid: {uid}");
+            AirConsoleLogger.LogDevelopment(() => $"WriteClientIdentification w/ connectCode: {connectCode}, uid: {uid}");
+
             _dataProviderPlugin?.Call("writeClientIdentification", connectCode, uid);
         }
 
         // ReSharper disable once UnusedMember.Global
-        internal bool IsTvDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_TELEVISION;
+        internal bool IsTvDevice() => GetUiModeTypeMask() == UIModeTypeTelevision;
 
         // ReSharper disable once UnusedMember.Global
-        internal bool IsAutomotiveDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_CAR;
+        internal bool IsAutomotiveDevice() => GetUiModeTypeMask() == UIModeTypeCar;
 
         // ReSharper disable once UnusedMember.Global
-        internal bool IsNormalDevice() => GetUiModeTypeMask() == UI_MODE_TYPE_NORMAL;
+        internal bool IsNormalDevice() => GetUiModeTypeMask() == UIModeTypeNormal;
 
         private int GetUiModeTypeMask() {
             if (_dataProviderPlugin == null) {
-                AirConsoleLogger.LogDevelopment("AndroidDataProvider not initialized, return default");
-                return UI_MODE_TYPE_NORMAL;
+                AirConsoleLogger.LogDevelopment(() => "AndroidDataProvider not initialized, return default");
+
+                return UIModeTypeNormal;
             }
 
             return _dataProviderPlugin.Call<int>("getUiModeTypeMask");

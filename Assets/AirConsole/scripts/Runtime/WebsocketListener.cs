@@ -66,7 +66,7 @@ namespace NDream.AirConsole {
             Send(@"{ ""action"": ""debug"", ""data"": ""welcome screen.html!"" }");
 
             if (Settings.debug.info) {
-                Debug.Log("AirConsole: screen.html connected!");
+                AirConsoleLogger.Log(() => "AirConsole: screen.html connected!");
             }
         }
 
@@ -76,7 +76,7 @@ namespace NDream.AirConsole {
             onClose?.Invoke();
 
             if (Settings.debug.info) {
-                Debug.Log("AirConsole: screen.html disconnected");
+                AirConsoleLogger.Log(() => "AirConsole: screen.html disconnected");
             }
 
             base.OnClose(e);
@@ -86,8 +86,8 @@ namespace NDream.AirConsole {
             base.OnError(e);
 
             if (Settings.debug.error) {
-                Debug.LogError("AirConsole: " + e.Message);
-                Debug.LogError("AirConsole: " + e.Exception);
+                AirConsoleLogger.LogError(() => "AirConsole: " + e.Message);
+                AirConsoleLogger.LogError(() => "AirConsole: " + e.Exception);
             }
         }
 
@@ -103,7 +103,7 @@ namespace NDream.AirConsole {
                         onReady?.Invoke(msg);
 
                         if (Settings.debug.info) {
-                            Debug.Log("AirConsole: Connections are ready!");
+                            AirConsoleLogger.Log(() => "AirConsole: Connections are ready!");
                         }
 
                         break;
@@ -177,8 +177,8 @@ namespace NDream.AirConsole {
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
-                    Debug.LogError(e.StackTrace);
+                    AirConsoleLogger.LogError(() => e.Message);
+                    AirConsoleLogger.LogError(() => e.StackTrace);
                 }
             }
         }

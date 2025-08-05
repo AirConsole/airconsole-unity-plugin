@@ -13,7 +13,7 @@ namespace NDream.AirConsole.Editor {
             PluginVersionUpdateState versionUpgradeInformation = PluginVersionTracker.GetPluginVersionUpdateState();
 
             if (versionUpgradeInformation == null || versionUpgradeInformation.RequiresUpdate == false) {
-                Debug.Log("AirConsole plugin upgrade check: No additional plugin upgrades pending.");
+                AirConsoleLogger.Log(() => "AirConsole plugin upgrade check: No additional plugin upgrades pending.");
                 return;
             }
 
@@ -32,12 +32,13 @@ namespace NDream.AirConsole.Editor {
                         HandleVersionUpgrade(additionalUpgradesState);
                     }
 
-                    AirConsoleLogger.Log("AirConsole plugin successfully upgraded to 2.6.x");
+                    AirConsoleLogger.Log(() => "AirConsole plugin successfully upgraded to 2.6.x");
 
                     break;
 
                 default:
-                    AirConsoleLogger.LogDevelopment("Default Plugin Upgrade path hit. If this is expected, ignore this message");
+                    AirConsoleLogger.LogDevelopment(() => "Default Plugin Upgrade path hit. If this is expected, ignore this message");
+
                     break;
             }
         }

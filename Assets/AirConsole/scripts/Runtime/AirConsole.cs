@@ -448,14 +448,14 @@ namespace NDream.AirConsole {
                     return GetDevice(device_id)["custom"];
                 } catch (Exception e) {
                     if (Settings.debug.error) {
-                        Debug.LogError("AirConsole: " + e.Message);
+                        AirConsoleLogger.LogError(() => $"AirConsole: {e.Message}");
                     }
 
                     return null;
                 }
             } else {
                 if (Settings.debug.warning) {
-                    Debug.LogWarning("AirConsole: GetCustomDeviceState: device_id " + device_id + " not found");
+                    AirConsoleLogger.LogWarning(() => $"AirConsole: GetCustomDeviceState: device_id {device_id} not found");
                 }
 
                 return null;
@@ -487,7 +487,7 @@ namespace NDream.AirConsole {
                 }
             } else {
                 if (Settings.debug.warning) {
-                    Debug.LogWarning("AirConsole: GetNickname: device_id " + device_id + " not found");
+                    AirConsoleLogger.LogWarning(() => "AirConsole: GetNickname: device_id " + device_id + " not found");
                 }
 
                 return null;
@@ -511,7 +511,7 @@ namespace NDream.AirConsole {
                 return (string)GetDevice(device_id)["language"];
             } else {
                 if (Settings.debug.warning) {
-                    Debug.LogWarning("AirConsole: GetLanguage: device_id " + device_id);
+                    AirConsoleLogger.LogWarning(() => "AirConsole: GetLanguage: device_id " + device_id);
                 }
 
                 return null;
@@ -578,7 +578,7 @@ namespace NDream.AirConsole {
                 }
 
                 if (translation == null) {
-                    Debug.LogWarning("Translation not found: " + id);
+                    AirConsoleLogger.LogWarning(() => "Translation not found: " + id);
                 } else {
                     if (elements[i].GetType() == typeof(UnityEngine.UI.Text)) {
                         ((UnityEngine.UI.Text)elements[i]).text = translation;
@@ -615,7 +615,8 @@ namespace NDream.AirConsole {
                     return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice(device_id)["uid"] + "&size=" + size;
                 } catch (Exception) {
                     if (Settings.debug.warning) {
-                        Debug.LogWarning("AirConsole: GetProfilePicture: can't find profile picture of device_id:" + device_id);
+                        AirConsoleLogger.LogWarning(() =>
+                            "AirConsole: GetProfilePicture: can't find profile picture of device_id:" + device_id);
                     }
 
                     return null;
@@ -623,7 +624,7 @@ namespace NDream.AirConsole {
             }
 
             if (Settings.debug.warning) {
-                Debug.LogWarning("AirConsole: GetProfilePicture: " + device_id + " not found");
+                AirConsoleLogger.LogWarning(() => "AirConsole: GetProfilePicture: " + device_id + " not found");
             }
 
             return null;
@@ -1016,7 +1017,7 @@ namespace NDream.AirConsole {
             }
 
             if (Settings.debug.warning) {
-                Debug.LogWarning("AirConsole: IsPremium: device_id " + device_id + " not found");
+                AirConsoleLogger.LogWarning(() => "AirConsole: IsPremium: device_id " + device_id + " not found");
             }
 
             return false;
@@ -1114,7 +1115,7 @@ namespace NDream.AirConsole {
             gameObject.name = "AirConsole";
 
             if (IsAndroidRuntime) {
-                Debug.Log($"Launching build {Application.version} in Unity v{Application.unityVersion}");
+                AirConsoleLogger.Log(() => $"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
@@ -1181,7 +1182,7 @@ namespace NDream.AirConsole {
                 wsServer.Start();
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: Dev-Server started!");
+                    AirConsoleLogger.Log(() => "AirConsole: Dev-Server started!");
                 }
             } else {
                 if (Application.platform == RuntimePlatform.WebGLPlayer) {
@@ -1196,7 +1197,8 @@ namespace NDream.AirConsole {
         }
 
         private void HandlePlatformReady(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"HandlePlatformReady: {msg}");
+            AirConsoleLogger.LogDevelopment(() => $"HandlePlatformReady: {msg}");
+
             _pluginManager?.ReportPlatformReady();
         }
 
@@ -1230,14 +1232,15 @@ namespace NDream.AirConsole {
 
             if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution
                 && Camera.main) {
-                AirConsoleLogger.LogDevelopment($"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
+                AirConsoleLogger.LogDevelopment(() => $"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
+
                 Camera.main.pixelRect = safeArea;
             }
 
             _safeAreaWasSet = true;
             _webViewManager.ActivateSafeArea();
-            
-            AirConsoleLogger.LogDevelopment(
+
+            AirConsoleLogger.LogDevelopment(() =>
                 $"Safe Area is {safeArea} from message {safeAreaObj}. Camera pixelRect is {safeArea} of {Screen.width}x{Screen.height}");
             OnSafeAreaChanged?.Invoke(SafeArea);
         }
@@ -1318,11 +1321,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: saved devicestate of " + deviceId);
+                    AirConsoleLogger.Log(() => "AirConsole: saved devicestate of {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1344,11 +1347,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onConnect " + deviceId);
+                    AirConsoleLogger.Log(() => "AirConsole: onConnect {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1370,11 +1373,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onDisconnect " + deviceId);
+                    AirConsoleLogger.Log(() => $"AirConsole: onDisconnect {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1396,11 +1399,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onCustomDeviceStateChange " + deviceId);
+                    AirConsoleLogger.Log(() => $"AirConsole: onCustomDeviceStateChange {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1481,11 +1484,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onDeviceProfileChange " + deviceId);
+                    AirConsoleLogger.Log(() => $"AirConsole: onDeviceProfileChange {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1503,11 +1506,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onAdShow");
+                    AirConsoleLogger.Log(() => "AirConsole: onAdShow");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1527,11 +1530,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onAdComplete");
+                    AirConsoleLogger.Log(() => "AirConsole: onAdComplete");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1549,11 +1552,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onGameEnd");
+                    AirConsoleLogger.Log(() => "AirConsole: onGameEnd");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1571,11 +1574,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onHighScores");
+                    AirConsoleLogger.Log(() => "AirConsole: onHighScores");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1597,11 +1600,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onHighScoreStored");
+                    AirConsoleLogger.Log(() => "AirConsole: onHighScoreStored");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1619,11 +1622,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: OnPersistentDataStored");
+                    AirConsoleLogger.Log(() => "AirConsole: OnPersistentDataStored");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1641,11 +1644,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: OnPersistentDataLoaded");
+                    AirConsoleLogger.Log(() => "AirConsole: OnPersistentDataLoaded");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1663,11 +1666,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onPremium");
+                    AirConsoleLogger.Log(() => "AirConsole: onPremium");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1683,11 +1686,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onPause");
+                    AirConsoleLogger.Log(() => "AirConsole: onPause");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1703,11 +1706,11 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    Debug.Log("AirConsole: onResume");
+                    AirConsoleLogger.Log(() => "AirConsole: onResume");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
-                    Debug.LogError(e.Message);
+                    AirConsoleLogger.LogError(() => e.Message);
                 }
             }
         }
@@ -1831,7 +1834,7 @@ namespace NDream.AirConsole {
 
         public void ProcessJS(string data) {
             if (_logPlatformMessages) {
-                AirConsoleLogger.LogError($"PlatformMessage: {data}");
+                AirConsoleLogger.LogError(() => $"PlatformMessage: {data}");
             }
 
             wsListener.ProcessMessage(data);
@@ -1892,28 +1895,34 @@ namespace NDream.AirConsole {
         }
 
         private void InitWebView() {
-            AirConsoleLogger.LogDevelopment($"InitWebView: {androidGameVersion}");
+            AirConsoleLogger.LogDevelopment(() => $"InitWebView: {androidGameVersion}");
+
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 PrepareWebviewOverlay();
                 if (Application.isEditor) {
                     string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                     CreateAndroidWebview(connectionUrl);
                 } else if (IsAndroidRuntime) {
-                    AirConsoleLogger.LogDevelopment(
+                    AirConsoleLogger.LogDevelopment(() =>
                         $"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
+
                     if (_androidDataProvider.DataProviderInitialized) {
                         string connectionUrl = _androidDataProvider.ConnectionUrl;
-                        AirConsoleLogger.LogDevelopment($"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+                        AirConsoleLogger.LogDevelopment(() => $"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+
                         CreateAndroidWebview(connectionUrl);
                     } else {
-                        AirConsoleLogger.LogDevelopment($"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
+                        AirConsoleLogger.LogDevelopment(() =>
+                            $"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
+
                         _androidDataProvider.OnConnectionUrlReceived += OnConnectUrlReceived;
                     }
                 }
             } else {
-                AirConsoleLogger.LogDevelopment("InitWebView: No androidGameVersion set");
+                AirConsoleLogger.LogDevelopment(() => "InitWebView: No androidGameVersion set");
+
                 if (Settings.debug.error) {
-                    Debug.LogError(
+                    AirConsoleLogger.LogError(() =>
                         "AirConsole: for Android builds you need to provide the Game Version Identifier on the AirConsole object in the scene.");
                 }
             }
@@ -1946,7 +1955,7 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
-            AirConsoleLogger.LogDevelopment($"CreateAndroidWebview with connection url {connectionUrl}");
+            AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                 if (Application.isPlaying) {
@@ -1954,12 +1963,12 @@ namespace NDream.AirConsole {
                 }
 
                 webViewObject.Init(ProcessJS,
-                    err => AirConsoleLogger.LogDevelopment($"AirConsole WebView error: {err}"),
-                    httpError => AirConsoleLogger.LogDevelopment($"AirConsole WebView HttpError: {httpError}"),
-                    url => AirConsoleLogger.LogDevelopment($"AirConsole WebView Loaded URL {url}"),
-                    started => AirConsoleLogger.LogDevelopment($"AirConsole WebView started: {started}"),
-                    hooked => AirConsoleLogger.LogDevelopment($"AirConsole WebView hooked: {hooked}"),
-                    cookies => AirConsoleLogger.LogDevelopment($"AirConsole WebView cookies: {cookies}"),
+                    err => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView error: {err}"),
+                    httpError => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView HttpError: {httpError}"),
+                    url => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView Loaded URL {url}"),
+                    started => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView started: {started}"),
+                    hooked => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView hooked: {hooked}"),
+                    cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
                 if (IsAndroidRuntime && _pluginManager != null) {
@@ -1980,7 +1989,7 @@ namespace NDream.AirConsole {
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
                 webViewObject.SetVisibility(!Application.isEditor);
-                AirConsoleLogger.LogDevelopment($"Initial URL: {url}");
+                AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
                 webViewObject.LoadURL(url);
                 
                 if (IsAndroidRuntime && _pluginManager != null) {
@@ -2007,7 +2016,7 @@ namespace NDream.AirConsole {
         private void OnLaunchApp(JObject msg) {
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
-            AirConsoleLogger.LogDevelopment($"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
+            AirConsoleLogger.LogDevelopment(() => $"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
 
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
@@ -2020,10 +2029,10 @@ namespace NDream.AirConsole {
                 if (!quitAfterLaunchIntent) {
                     Application.Quit();
                     if (_androidDataProvider == null || !_androidDataProvider.IsAutomotiveDevice()) {
-                        AirConsoleLogger.LogDevelopment($"Quit and sleep for 2000ms");
+                        AirConsoleLogger.LogDevelopment(() => $"Quit and sleep for 2000ms");
                         Thread.Sleep(2000);
                     } else {
-                        AirConsoleLogger.LogDevelopment($"Quit immediately");
+                        AirConsoleLogger.LogDevelopment(() => $"Quit immediately");
                     }
                 }
 
@@ -2033,7 +2042,7 @@ namespace NDream.AirConsole {
 
                 // Quitting after launch intent was the pre v2.5 way
                 if (quitAfterLaunchIntent) {
-                    AirConsoleLogger.LogDevelopment($"Quit after launch intent");
+                    AirConsoleLogger.LogDevelopment(() => $"Quit after launch intent");
                     Application.Quit();
                     return;
                 }
@@ -2053,18 +2062,18 @@ namespace NDream.AirConsole {
             try {
                 launchIntent = packageManager.Call<AndroidJavaObject>("getLeanbackLaunchIntentForPackage", gameId);
             } catch (Exception) {
-                Debug.Log("getLeanbackLaunchIntentForPackage for " + gameId + " failed");
+                AirConsoleLogger.Log(() => "getLeanbackLaunchIntentForPackage for " + gameId + " failed");
             }
 
             if (launchIntent == null) {
                 try {
                     launchIntent = packageManager.Call<AndroidJavaObject>("getLaunchIntentForPackage", gameId);
                 } catch (Exception) {
-                    Debug.Log("getLaunchIntentForPackage for " + gameId + " failed");
+                    AirConsoleLogger.Log(() => "getLaunchIntentForPackage for " + gameId + " failed");
                 }
             }
 
-            AirConsoleLogger.LogDevelopment(
+            AirConsoleLogger.LogDevelopment(() =>
                 $"OnLaunchApp for {msg}, launch intent: {launchIntent != null}, gameId: {gameId}, Application.identifier: {Application.identifier} gameVersion: {gameVersion}");
             if (launchIntent != null && gameId != Application.identifier) {
                 ca.Call("startActivity", launchIntent);
@@ -2086,9 +2095,9 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewResize(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"OnUnityWebviewResize w/ msg {msg}");
+            AirConsoleLogger.LogDevelopment(() => $"OnUnityWebviewResize w/ msg {msg}");
             if (_devices.Count > 0) {
-                Debug.Log($"screen device data: {_devices[0]}");
+                AirConsoleLogger.Log(() => $"screen device data: {_devices[0]}");
             }
 
             int h = Screen.height;
@@ -2124,7 +2133,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnUnityWebviewPlatformReady(JObject msg) {
-            AirConsoleLogger.LogDevelopment($"OnUnityWebviewPlatformReady {msg}");
+            AirConsoleLogger.LogDevelopment(() => $"OnUnityWebviewPlatformReady {msg}");
             _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
         }
 
@@ -2187,7 +2196,7 @@ namespace NDream.AirConsole {
             }
 
             if (_androidDataProvider == null) {
-                AirConsoleLogger.LogDevelopment("IsAutomotiveDevice: DataProviderPlugin is null");
+                AirConsoleLogger.LogDevelopment(() => "IsAutomotiveDevice: DataProviderPlugin is null");
                 return false;
             }
             return _androidDataProvider.IsAutomotiveDevice();
@@ -2204,7 +2213,7 @@ namespace NDream.AirConsole {
             }
 
             if (_androidDataProvider == null) {
-                AirConsoleLogger.LogDevelopment("IsTVDevice: DataProviderPlugin is null");
+                AirConsoleLogger.LogDevelopment(() => "IsTVDevice: DataProviderPlugin is null");
                 return false;
             }
             return _androidDataProvider.IsTvDevice();

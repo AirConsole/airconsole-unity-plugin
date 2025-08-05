@@ -52,7 +52,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void InvokeErrorOrLog(string message, string title, bool shallError = false) {
             if (!shallError) {
-                AirConsoleLogger.Log(message);
+                AirConsoleLogger.Log(() => message);
                 return;
             }
 
