@@ -8,10 +8,7 @@ namespace NDream.AirConsole {
     // Used in platform dependant dependency injection.
     // ReSharper disable once UnusedType.Global
     internal class AndroidRuntimeConfigurator : IRuntimeConfigurator {
-        private readonly AndroidDataProvider _androidPlugin;
-
-        internal AndroidRuntimeConfigurator(AndroidDataProvider dataProvider) {
-            _androidPlugin = dataProvider;
+        internal AndroidRuntimeConfigurator() {
             ApplyRequiredSettings();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         }
@@ -25,7 +22,7 @@ namespace NDream.AirConsole {
 
             // To ensure consistent behavior and layout on cars where custom safe areas can be in use,
             //  we ensure to run in fullscreen for it to be treated correctly.
-            // In the optimal case we could use _androidPlugin.IsAutomotiveDevice() to decide more granularly.
+            // In the optimal case we could use _pluginManager.IsAutomotiveDevice() to decide more granularly.
             Screen.fullScreen = true; 
             // Car OEMs can modify some of the standard android behavior so we want to make sure to be vSync aligned.
             QualitySettings.vSyncCount = 0;

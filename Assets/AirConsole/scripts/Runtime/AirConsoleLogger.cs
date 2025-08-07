@@ -1,8 +1,7 @@
-
-using System.Runtime.CompilerServices;
 #if !DISABLE_AIRCONSOLE
 
 namespace NDream.AirConsole {
+    using System.Runtime.CompilerServices;
     using System;
     using UnityEngine;
     using Android.Plugin;

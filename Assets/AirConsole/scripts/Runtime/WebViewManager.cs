@@ -1,8 +1,8 @@
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole {
-    using System.Runtime.CompilerServices;
     using UnityEngine;
     using System;
+    using System.Runtime.CompilerServices;
 
     public class WebViewManager {
         private readonly WebViewObject _webViewObject;
@@ -21,6 +21,7 @@ namespace NDream.AirConsole {
 
         internal WebViewManager(WebViewObject webViewObject, int defaultScreenHeight) {
             _webViewObject = webViewObject;
+            AirConsoleLogger.LogDevelopment(() => "SetMargins(0,0,0,0)");
             _webViewObject.SetMargins(0, 0, 0, 0);
 
             _defaultScreenHeight = defaultScreenHeight;

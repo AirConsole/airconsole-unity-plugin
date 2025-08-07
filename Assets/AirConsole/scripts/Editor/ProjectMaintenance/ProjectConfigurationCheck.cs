@@ -263,7 +263,7 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.allowedAutorotateToPortrait = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.LandscapeLeft;
 
             if (PlayerSettings.Android.preferredInstallLocation != AndroidPreferredInstallLocation.Auto) {
                 AirConsoleLogger.LogWarning(() =>
@@ -282,6 +282,11 @@ namespace NDream.AirConsole.Editor {
             // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
             PlayerSettings.Android.resizableWindow = true;
             PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
+            
+            // If we don't do this, the margin calculations for the webview will be wrong because the initial size when the webview is created are wrong
+            // the layout correctly resizes but the values are not correct in the webview.
+            PlayerSettings.Android.startInFullscreen = true;
+
         }
 
         private static void UpdateAndroidPlayerSettingsInProperties() {

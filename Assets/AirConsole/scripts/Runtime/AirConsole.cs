@@ -1119,8 +1119,6 @@ namespace NDream.AirConsole {
 
                 defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
-                _androidImmersiveService = new AndroidImmersiveService();
-                _androidDataProvider = new AndroidDataProvider();
             }
         }
 
@@ -1128,7 +1126,7 @@ namespace NDream.AirConsole {
             if (Application.isEditor) {
                 _runtimeConfigurator = new EditorRuntimeConfigurator();
             } else if (IsAndroidRuntime) {
-                _runtimeConfigurator = new AndroidRuntimeConfigurator(_androidDataProvider);
+                _runtimeConfigurator = new AndroidRuntimeConfigurator();
             } else {
                 _runtimeConfigurator = new WebGLRuntimeConfigurator();
             }
@@ -1768,8 +1766,6 @@ namespace NDream.AirConsole {
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 
-        private AndroidImmersiveService _androidImmersiveService;
-        private AndroidDataProvider _androidDataProvider;
         private PluginManager _pluginManager;
 
         private List<JToken> _devices = new();
@@ -1881,7 +1877,7 @@ namespace NDream.AirConsole {
         private int GetScaledWebViewHeight() => (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
 
         private void OnConnectUrlReceived (string connectionUrl) {
-            _androidDataProvider.OnConnectionUrlReceived -= OnConnectUrlReceived;
+            _pluginManager.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 CreateAndroidWebview(connectionUrl);
@@ -1904,10 +1900,10 @@ namespace NDream.AirConsole {
                     CreateAndroidWebview(connectionUrl);
                 } else if (IsAndroidRuntime) {
                     AirConsoleLogger.LogDevelopment(() =>
-                        $"IsTvDevice: {_androidDataProvider.IsTvDevice()}, IsAutomotiveDevice: {_androidDataProvider.IsAutomotiveDevice()}, IsNormalDevice: {_androidDataProvider.IsNormalDevice()}");
+                        $"IsTvDevice: {_pluginManager.IsTV()}, IsAutomotiveDevice: {_pluginManager.IsAutomotive()}, IsNormalDevice: {_pluginManager.IsNormalDevice()}");
 
-                    if (_androidDataProvider.DataProviderInitialized) {
-                        string connectionUrl = _androidDataProvider.ConnectionUrl;
+                    if (_pluginManager.IsInitialized) {
+                        string connectionUrl = _pluginManager.ConnectionUrl;
                         AirConsoleLogger.LogDevelopment(() => $"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
 
                         CreateAndroidWebview(connectionUrl);
@@ -1915,7 +1911,7 @@ namespace NDream.AirConsole {
                         AirConsoleLogger.LogDevelopment(() =>
                             $"InitWebView: DataProvider not initialized, register for OnConnectUrlReceived");
 
-                        _androidDataProvider.OnConnectionUrlReceived += OnConnectUrlReceived;
+                        _pluginManager.OnConnectionUrlReceived += OnConnectUrlReceived;
                     }
                 }
             } else {
@@ -1943,7 +1939,7 @@ namespace NDream.AirConsole {
             webViewLoadingImage.transform.SetParent(webViewLoadingCanvas.transform, true);
             webViewLoadingImage.sprite = webViewLoadingSprite;
             webViewLoadingImage.rectTransform.localPosition = new Vector3(0, 0, 0);
-            if (_androidDataProvider != null && _androidDataProvider.IsAutomotiveDevice()) {
+            if (_pluginManager != null && _pluginManager.IsAutomotive()) {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width, Screen.height);
             } else {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
@@ -1975,8 +1971,14 @@ namespace NDream.AirConsole {
                     _pluginManager.OnReloadWebview += () => webViewObject.Reload();
                     _pluginManager.InitializeOfflineCheck();
                 }
-
+#if UNITY_ANDROID
+                string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
+                string url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
+                AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
+#else
                 string url = Settings.AIRCONSOLE_BASE_URL;
+#endif
+
                 url += connectionUrl;
                 if (IsAndroidRuntime) {
                     url += $"&bundle-version={GetAndroidBundleVersionCode()}";
@@ -2028,7 +2030,7 @@ namespace NDream.AirConsole {
                 // Quit the Unity Player first and give it the time to close all the threads (Default)
                 if (!quitAfterLaunchIntent) {
                     Application.Quit();
-                    if (_androidDataProvider == null || !_androidDataProvider.IsAutomotiveDevice()) {
+                    if (_pluginManager == null || !_pluginManager.IsAutomotive()) {
                         AirConsoleLogger.LogDevelopment(() => $"Quit and sleep for 2000ms");
                         Thread.Sleep(2000);
                     } else {
@@ -2047,10 +2049,9 @@ namespace NDream.AirConsole {
                     return;
                 }
 
-                if (_androidDataProvider != null || !_androidDataProvider.IsAutomotiveDevice()) {
-                    Thread.Sleep(2000);
-                    FinishActivity();
-                }
+                int timeout = _pluginManager != null && _pluginManager.IsAutomotive() ? 2000 : 2000;
+                Thread.Sleep(timeout);
+                FinishActivity();
             }
         }
 
@@ -2146,7 +2147,7 @@ namespace NDream.AirConsole {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
 
-            if (!IsAutomotiveDevice()) {
+            if (!IsAutomotive()) {
                 AdaptUGuiLayout();
             }
         }
@@ -2181,7 +2182,7 @@ namespace NDream.AirConsole {
             string uid = (string)messsage["uid"];
 
             if (!string.IsNullOrEmpty(connectCode) && !string.IsNullOrEmpty(uid)) {
-                _androidDataProvider?.WriteClientIdentification(connectCode, uid);
+                _pluginManager?.WriteClientIdentification(connectCode, uid);
             }
         }
 
@@ -2190,34 +2191,14 @@ namespace NDream.AirConsole {
         /// Checks if the current device is an automotive device.
         /// </summary>
         /// <returns>True if the device is an automotive device, otherwise false.</returns>
-        public bool IsAutomotiveDevice() {
-            if (!IsAndroidRuntime) {
-                return false;
-            }
-
-            if (_androidDataProvider == null) {
-                AirConsoleLogger.LogDevelopment(() => "IsAutomotiveDevice: DataProviderPlugin is null");
-                return false;
-            }
-            return _androidDataProvider.IsAutomotiveDevice();
-        }
+        public bool IsAutomotive() => _pluginManager?.IsAutomotive() ?? false;
 
         // ReSharper disable once UnusedMember.Global
         /// <summary>
         /// Checks if the current device is a TV device.
         /// </summary>
         /// <returns>True if the device is a TV device, otherwise false.</returns>
-        public bool IsTVDevice() {
-            if (!IsAndroidRuntime) {
-                return false;
-            }
-
-            if (_androidDataProvider == null) {
-                AirConsoleLogger.LogDevelopment(() => "IsTVDevice: DataProviderPlugin is null");
-                return false;
-            }
-            return _androidDataProvider.IsTvDevice();
-        }
+        public bool IsTV() => _pluginManager?.IsTV() ?? false;
 
         private static float GetFloatFromMessage(JObject msg, string name, int defaultValue) =>
             !string.IsNullOrEmpty((string)msg[name])
