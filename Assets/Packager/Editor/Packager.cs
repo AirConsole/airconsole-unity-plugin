@@ -1,4 +1,3 @@
-using System;
 #if !DISABLE_AIRCONSOLE
 
 namespace NDream.Unity {
@@ -104,8 +103,6 @@ namespace NDream.Unity {
             string packagePath = PackageCode();
             AssetDatabase.Refresh();
             CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
-            AirConsoleLogger.LogError(() =>
-                $"Collected paths:\n- {string.Join("\n- ", packageInclusionPaths.OrderBy(path => path).ToArray())}");
             AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
 
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
@@ -118,6 +115,14 @@ namespace NDream.Unity {
             Debug.ClearDeveloperConsole();
         }
 
+        /// <summary>
+        /// Collects the file and directory paths to be included in the AirConsole Unity package.
+        /// Excludes certain subdirectories and files from the package.
+        /// </summary>
+        /// <param name="packagePath">The main package directory to include.</param>
+        /// <param name="airconsoleInclusions">
+        /// Output: An enumerable of asset paths to include in the unity package.
+        /// </param>
         private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleInclusions) {
             airconsoleInclusions = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
                 .Where(it => !it.ToLower().Contains("scripts")
@@ -126,11 +131,19 @@ namespace NDream.Unity {
                 .Select(it => it.Replace(Application.dataPath, "Assets"));
             airconsoleInclusions = airconsoleInclusions.Append(packagePath);
             airconsoleInclusions = airconsoleInclusions.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-            CollectTemplateFiles("Assets/WebGLTemplates/AirConsole-2020", ref airconsoleInclusions);
-            CollectTemplateFiles("Assets/WebGLTemplates/AirConsole-U6", ref airconsoleInclusions);
+            CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-2020", ref airconsoleInclusions);
+            CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-U6", ref airconsoleInclusions);
         }
 
-        private static void CollectTemplateFiles(string path, ref IEnumerable<string> airconsoleInclusions) {
+        /// <summary>
+        /// Recursively collects all files for a given WebGL template, excluding files that need to be ignored and appends them to the
+        /// provided <paramref name="airconsoleInclusions"/> collection.
+        /// </summary>
+        /// <param name="path">The root directory path to search for files.</param>
+        /// <param name="airconsoleInclusions">
+        /// A reference to an <see cref="IEnumerable{string}"/> collection to which found file paths will be appended.
+        /// </param>
+        private static void CollectWebGlTemplateFiles(string path, ref IEnumerable<string> airconsoleInclusions) {
             string[] files = Directory.GetFiles(path);
             foreach (string file in files) {
                 if (!file.Contains("airconsole-settings.js") && !file.Contains(".DS_Store")) {
@@ -139,7 +152,7 @@ namespace NDream.Unity {
             }
 
             foreach (string directory in Directory.GetDirectories(path)) {
-                CollectTemplateFiles(directory, ref airconsoleInclusions);
+                CollectWebGlTemplateFiles(directory, ref airconsoleInclusions);
             }
         }
         
