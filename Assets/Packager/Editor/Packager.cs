@@ -1,3 +1,4 @@
+using System;
 #if !DISABLE_AIRCONSOLE
 
 namespace NDream.Unity {
@@ -103,6 +104,8 @@ namespace NDream.Unity {
             string packagePath = PackageCode();
             AssetDatabase.Refresh();
             CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
+            AirConsoleLogger.LogError(() =>
+                $"Collected paths:\n- {string.Join("\n- ", packageInclusionPaths.OrderBy(path => path).ToArray())}");
             AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
 
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
@@ -115,16 +118,31 @@ namespace NDream.Unity {
             Debug.ClearDeveloperConsole();
         }
 
-        private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleDirectories) {
-            airconsoleDirectories = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
+        private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleInclusions) {
+            airconsoleInclusions = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
                 .Where(it => !it.ToLower().Contains("scripts")
                              && !it.ToLower().Contains("unity-webview")
                              && !it.ToLower().Contains("examples"))
                 .Select(it => it.Replace(Application.dataPath, "Assets"));
-            airconsoleDirectories = airconsoleDirectories.Append(packagePath);
-            airconsoleDirectories = airconsoleDirectories.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-            airconsoleDirectories = airconsoleDirectories.Append("Assets/WebGLTemplates");
+            airconsoleInclusions = airconsoleInclusions.Append(packagePath);
+            airconsoleInclusions = airconsoleInclusions.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
+            CollectTemplateFiles("Assets/WebGLTemplates/AirConsole-2020", ref airconsoleInclusions);
+            CollectTemplateFiles("Assets/WebGLTemplates/AirConsole-U6", ref airconsoleInclusions);
         }
+
+        private static void CollectTemplateFiles(string path, ref IEnumerable<string> airconsoleInclusions) {
+            string[] files = Directory.GetFiles(path);
+            foreach (string file in files) {
+                if (!file.Contains("airconsole-settings.js") && !file.Contains(".DS_Store")) {
+                    airconsoleInclusions = airconsoleInclusions.Append(file);
+                }
+            }
+
+            foreach (string directory in Directory.GetDirectories(path)) {
+                CollectTemplateFiles(directory, ref airconsoleInclusions);
+            }
+        }
+        
 
         private static string PackageCode() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
