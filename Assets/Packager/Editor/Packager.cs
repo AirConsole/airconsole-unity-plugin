@@ -115,16 +115,47 @@ namespace NDream.Unity {
             Debug.ClearDeveloperConsole();
         }
 
-        private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleDirectories) {
-            airconsoleDirectories = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
+        /// <summary>
+        /// Collects the file and directory paths to be included in the AirConsole Unity package.
+        /// Excludes certain subdirectories and files from the package.
+        /// </summary>
+        /// <param name="packagePath">The main package directory to include.</param>
+        /// <param name="airconsoleInclusions">
+        /// Output: An enumerable of asset paths to include in the unity package.
+        /// </param>
+        private static void CollectPackageInclusionPaths(string packagePath, out IEnumerable<string> airconsoleInclusions) {
+            airconsoleInclusions = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole"))
                 .Where(it => !it.ToLower().Contains("scripts")
                              && !it.ToLower().Contains("unity-webview")
                              && !it.ToLower().Contains("examples"))
                 .Select(it => it.Replace(Application.dataPath, "Assets"));
-            airconsoleDirectories = airconsoleDirectories.Append(packagePath);
-            airconsoleDirectories = airconsoleDirectories.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-            airconsoleDirectories = airconsoleDirectories.Append("Assets/WebGLTemplates");
+            airconsoleInclusions = airconsoleInclusions.Append(packagePath);
+            airconsoleInclusions = airconsoleInclusions.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
+            CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-2020", ref airconsoleInclusions);
+            CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-U6", ref airconsoleInclusions);
         }
+
+        /// <summary>
+        /// Recursively collects all files for a given WebGL template, excluding files that need to be ignored and appends them to the
+        /// provided <paramref name="airconsoleInclusions"/> collection.
+        /// </summary>
+        /// <param name="path">The root directory path to search for files.</param>
+        /// <param name="airconsoleInclusions">
+        /// A reference to an <see cref="IEnumerable{string}"/> collection to which found file paths will be appended.
+        /// </param>
+        private static void CollectWebGlTemplateFiles(string path, ref IEnumerable<string> airconsoleInclusions) {
+            string[] files = Directory.GetFiles(path);
+            foreach (string file in files) {
+                if (!file.Contains("airconsole-settings.js") && !file.Contains(".DS_Store")) {
+                    airconsoleInclusions = airconsoleInclusions.Append(file);
+                }
+            }
+
+            foreach (string directory in Directory.GetDirectories(path)) {
+                CollectWebGlTemplateFiles(directory, ref airconsoleInclusions);
+            }
+        }
+        
 
         private static string PackageCode() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
