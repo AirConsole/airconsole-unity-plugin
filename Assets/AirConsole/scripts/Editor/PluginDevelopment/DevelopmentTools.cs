@@ -21,8 +21,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void UpdateAirConsoleConstructorSettings() {
             Inspector instance = Editor.CreateInstance<Inspector>();
-            instance.ReadConstructorSettings();
-            instance.WriteConstructorSettings();
+            instance.UpdateAirConsoleConstructorSettings();
         }
 
         [MenuItem("Tools/AirConsole/Development/Reset last plugin version", false, 21)]

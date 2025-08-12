@@ -1,3 +1,4 @@
+using NDream.AirConsole;
 #if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 namespace NDream.Unity {
     using System.IO;
@@ -45,7 +46,9 @@ namespace NDream.Unity {
             if (File.Exists(packagePath)) {
                 AssetDatabase.ImportPackage(packagePath, false);
                 AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-                AssetDatabase.DeleteAsset(packagePath.Replace(Application.dataPath, "Assets"));
+                packagePath = packagePath.Replace(Application.dataPath, "Assets");
+                AirConsoleLogger.LogError(() => $"Delete code package {packagePath}");
+                AssetDatabase.DeleteAsset(packagePath);
             } else {
                 AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
             }

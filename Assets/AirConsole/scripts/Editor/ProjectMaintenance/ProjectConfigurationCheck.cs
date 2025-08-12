@@ -109,6 +109,9 @@ namespace NDream.AirConsole.Editor {
 
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
+            Inspector airconsoleInspector = Editor.CreateInstance<Inspector>();
+            airconsoleInspector.UpdateAirConsoleConstructorSettings();
+            
             PlayerSettings.resetResolutionOnWindowResize = true;
             PlayerSettings.SplashScreen.showUnityLogo = false;
 

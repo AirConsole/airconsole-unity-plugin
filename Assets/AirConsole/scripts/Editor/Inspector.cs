@@ -174,7 +174,12 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.EndHorizontal();
         }
 
-        internal void ReadConstructorSettings() {
+        internal void UpdateAirConsoleConstructorSettings() {
+            ReadConstructorSettings();
+            WriteConstructorSettings();
+        }
+
+        private void ReadConstructorSettings() {
             if (!File.Exists(SettingsPath)) {
                 return;
             }
@@ -185,7 +190,7 @@ namespace NDream.AirConsole.Editor {
             nativeGameSizingSupportedValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
         }
 
-        internal void WriteConstructorSettings() {
+        private void WriteConstructorSettings() {
             try {
                 File.WriteAllText(SettingsPath,
                     $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
