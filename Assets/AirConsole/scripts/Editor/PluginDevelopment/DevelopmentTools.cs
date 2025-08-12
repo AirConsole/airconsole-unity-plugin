@@ -1,4 +1,4 @@
-#if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
+#if !DISABLE_AIRCONSOLE // && AIRCONSOLE_DEVELOPMENT
 
 namespace NDream.AirConsole.Editor {
     using UnityEngine;
@@ -9,12 +9,20 @@ namespace NDream.AirConsole.Editor {
         public static void ValidateAndroidConfigurationMenuAction() {
             Debug.ClearDeveloperConsole();
             ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
+            UpdateAirConsoleConstructorSettings();
         }
 
         [MenuItem("Tools/AirConsole/Development/Validate Web Configuration", false, 2)]
         public static void ValidateWebConfigurationMenuAction() {
             Debug.ClearDeveloperConsole();
             ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);
+            UpdateAirConsoleConstructorSettings();
+        }
+
+        private static void UpdateAirConsoleConstructorSettings() {
+            Inspector instance = Editor.CreateInstance<Inspector>();
+            instance.ReadConstructorSettings();
+            instance.WriteConstructorSettings();
         }
 
         [MenuItem("Tools/AirConsole/Development/Reset last plugin version", false, 21)]
