@@ -232,7 +232,9 @@ namespace NDream.AirConsole.Editor {
 #if !AIRCONSOLE_DEVELOPMENT
             return;
 #endif
-            
+
+            // We don't want to create a warning for this but we also don't want it to be in use under normal circumstances
+#pragma warning disable 0162 // Unreachable code detected
             PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
             Version version = Version.Parse(PlayerSettings.bundleVersion);
 
@@ -243,6 +245,7 @@ namespace NDream.AirConsole.Editor {
                 Mathf.Clamp(version.Build, 0, version.Build));
             PlayerSettings.bundleVersion
                 = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode).ToString();
+#pragma warning restore 0162 //  Unreachable code detected
         }
 
         private static void EnsureAndroidPlatformSettings() {
