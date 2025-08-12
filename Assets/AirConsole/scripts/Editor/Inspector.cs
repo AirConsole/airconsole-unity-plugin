@@ -33,14 +33,7 @@ namespace NDream.AirConsole.Editor {
         }
 
         public void Awake() {
-            if (!File.Exists(SettingsPath)) {
-                return;
-            }
-
-            string persistedSettings = File.ReadAllText(SettingsPath);
-            translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
-            inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
-            nativeGameSizingSupportedValue = serializedObject.FindProperty("nativeGameSizingSupported").boolValue;
+            ReadConstructorSettings();
         }
 
         public void OnEnable() {
@@ -109,15 +102,13 @@ namespace NDream.AirConsole.Editor {
                                    + "event handler provided by the AirConsole instance, enabling you to only render your game content"
                                    + " in relevant area", MessageType.Warning);
             }
-
-            serializedObject.FindProperty("nativeGameSizingSupported").boolValue = nativeGameSizingSupportedValue;
         }
 
         private void DrawToggle(string label, ref bool value) {
             bool oldValue = value;
             value = EditorGUILayout.Toggle(label, value);
             if (oldValue != value) {
-                WriteConstructorSettings(SettingsPath);
+                WriteConstructorSettings();
             }
         }
 
@@ -125,7 +116,7 @@ namespace NDream.AirConsole.Editor {
             bool oldValue = value;
             value = EditorGUILayout.Toggle(content, value);
             if (oldValue != value) {
-                WriteConstructorSettings(SettingsPath);
+                WriteConstructorSettings();
             }
         }
 
@@ -183,16 +174,32 @@ namespace NDream.AirConsole.Editor {
             EditorGUILayout.EndHorizontal();
         }
 
-        private void WriteConstructorSettings(string path) {
+        internal void ReadConstructorSettings() {
+            if (!File.Exists(SettingsPath)) {
+                return;
+            }
+
+            string persistedSettings = File.ReadAllText(SettingsPath);
+            translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
+            inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+            nativeGameSizingSupportedValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
+        }
+
+        internal void WriteConstructorSettings() {
             try {
-                File.WriteAllText(path,
+                File.WriteAllText(SettingsPath,
                     $"{(translationValue ? TRANSLATION_ACTIVE : TRANSLATION_INACTIVE)}\n"
                     + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
-                    + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}");
+                    + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}\n"
+                    + GenerateGameInformation());
             } catch (IOException e) {
-                AirConsoleLogger.LogError(() => $"Failed to write settings file at {path}: {e.Message}");
+                AirConsoleLogger.LogError(() => $"Failed to write settings file at {SettingsPath}: {e.Message}");
             }
         }
+
+        private static string GenerateGameInformation() =>
+            $"window.UNITY_VERSION = '{Application.unityVersion}';\n"
+            + $"window.AIRCONSOLE_VERSION = '{Settings.VERSION}';";
 
         private static void MigrateVersion250(string originalPath, string newPath) {
             if (!File.Exists(originalPath)) {
