@@ -13,15 +13,16 @@ namespace NDream.AirConsole.Editor {
 
         /// <summary>
         /// To meet automotive requirements, we need to have certain minimum versions of Unity that have updated dependencies.
+        /// To make the game developer experience consistent, we always check for this.
         /// </summary>
         private static void ValidateUnityVersion(bool invokeErrorOnFail = false) {
             string[] versions = Application.unityVersion.Split(".");
             switch (versions[0]) {
                 case "2022": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 57, Application.unityVersion);
+                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 65, Application.unityVersion);
                     if (versionCheck && !patchCheck) {
                         if (invokeErrorOnFail) {
-                            InvokeErrorOrLog("For Android automotive usage, AirConsole requires at least 2022.3.57f1",
+                            InvokeErrorOrLog("For Android usage, AirConsole requires at least 2022.3.57f1",
                                 "Unity 2022 version too old", invokeErrorOnFail);
                         }
                     }
@@ -32,7 +33,7 @@ namespace NDream.AirConsole.Editor {
                 case "6000": {
                     (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(6000, 0, 36, Application.unityVersion);
                     if (versionCheck && !patchCheck) {
-                        InvokeErrorOrLog("For Android automotive usage, AirConsole requires at least 6000.0.36f1",
+                        InvokeErrorOrLog("For Android usage, AirConsole requires at least 6000.0.36f1",
                             "Unity 6 version too old", invokeErrorOnFail);
                     }
 
@@ -42,8 +43,8 @@ namespace NDream.AirConsole.Editor {
                 default:
                     if (!SemVerCheck.IsAtLeast(6000, 0, 36, Application.unityVersion)) {
                         InvokeErrorOrLog(
-                            "For Android automotive usage, AirConsole requires at least Unity 6000.0.36f1",
-                            "Unity 6 or newer version too old", invokeErrorOnFail);
+                            "For Android usage, AirConsole requires at least Unity 6000.0.36f1",
+                            "Unity 6 version too old", invokeErrorOnFail);
                     }
 
                     break;
@@ -52,7 +53,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void InvokeErrorOrLog(string message, string title, bool shallError = false) {
             if (!shallError) {
-                AirConsoleLogger.Log(() => message);
+                AirConsoleLogger.LogWarning(() => message);
                 return;
             }
 
