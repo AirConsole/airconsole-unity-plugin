@@ -1319,7 +1319,7 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    AirConsoleLogger.Log(() => "AirConsole: saved devicestate of {deviceId}");
+                    AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
@@ -1345,7 +1345,7 @@ namespace NDream.AirConsole {
                 }
 
                 if (Settings.debug.info) {
-                    AirConsoleLogger.Log(() => "AirConsole: onConnect {deviceId}");
+                    AirConsoleLogger.Log(() => $"AirConsole: onConnect {deviceId}");
                 }
             } catch (Exception e) {
                 if (Settings.debug.error) {
