@@ -1,4 +1,3 @@
-using NDream.AirConsole;
 #if !DISABLE_AIRCONSOLE && UNITY_EDITOR
 namespace NDream.Unity {
     using System.IO;
@@ -44,11 +43,11 @@ namespace NDream.Unity {
         private static void ImportCodePackage() {
             string packagePath = CodePackagePath;
             if (File.Exists(packagePath)) {
+                // In 2.6.0, this was moved to Assets/AirConsole/scripts/Editor/Assets/AirConsoleIcon.png with editor icon focused import settings.
+                AssetDatabase.DeleteAsset("Assets/AirConsole/resources/AirConsoleLogo.png");
                 AssetDatabase.ImportPackage(packagePath, false);
                 AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-                packagePath = packagePath.Replace(Application.dataPath, "Assets");
-                AirConsoleLogger.LogError(() => $"Delete code package {packagePath}");
-                AssetDatabase.DeleteAsset(packagePath);
+                AssetDatabase.DeleteAsset(packagePath.Replace(Application.dataPath, "Assets"));
             } else {
                 AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
             }
