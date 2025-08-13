@@ -1,4 +1,4 @@
-#if !DISABLE_AIRCONSOLE && UNITY_EDITOR
+#if !DISABLE_AIRCONSOLE && UNITY_EDITOR && UNITY_2022_3_OR_NEWER
 namespace NDream.Unity {
     using System.IO;
     using UnityEditor;
