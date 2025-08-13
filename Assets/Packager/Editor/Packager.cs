@@ -62,13 +62,18 @@ namespace NDream.Unity {
         private static int GetNextReleaseCandidateVersion(string version) {
             string[] files = Directory.GetFiles(Path.GetFullPath("Builds"),
                 $"airconsole-unity-plugin-v{version}-rc*.unitypackage");
-            Regex extractVersion = new($"airconsole-unity-plugin-v.*-rc([0-9]+).unitypackage");
-            string fileName = files.LastOrDefault();
-            if (File.Exists(fileName)) {
-                return int.Parse(extractVersion.Match(fileName).Groups[1].Value) + 1;
+            Regex extractVersion = new(@"airconsole-unity-plugin-v.*-rc([0-9]+)\.unitypackage");
+            int maxVersion = 0;
+            foreach (string file in files) {
+                Match match = extractVersion.Match(Path.GetFileName(file));
+                if (match.Success) {
+                    int v = int.Parse(match.Groups[1].Value);
+                    if (v > maxVersion) {
+                        maxVersion = v;
+                    }
+                }
             }
-
-            return 1;
+            return maxVersion + 1;
         }
 
         private static void ExportPackage(string outputPath) {
@@ -131,6 +136,7 @@ namespace NDream.Unity {
                 .Select(it => it.Replace(Application.dataPath, "Assets"));
             airconsoleInclusions = airconsoleInclusions.Append(packagePath);
             airconsoleInclusions = airconsoleInclusions.Append($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
+            airconsoleInclusions = airconsoleInclusions.Append($"Assets/AirConsole/scripts/SupportCheck");
             CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-2020", ref airconsoleInclusions);
             CollectWebGlTemplateFiles("Assets/WebGLTemplates/AirConsole-U6", ref airconsoleInclusions);
         }
