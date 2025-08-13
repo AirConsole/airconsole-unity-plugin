@@ -186,6 +186,7 @@ namespace NDream.AirConsole.Editor {
 
         private static void VerifyWebGLTemplate() {
             ValidateApiUsage();
+            EnsureRequiredDependenciesInHtml();
 
             string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
             string[] templateUri = PlayerSettings.WebGL.template.Split(':');
@@ -407,7 +408,7 @@ namespace NDream.AirConsole.Editor {
                 //  the developer.
                 case < 1:
                     AirConsoleLogger.LogError(() =>
-                        $"No reference to airconsole-{apiVersion} found in {pathToHtml}. Please ensure that you correctly reference it.");
+                        $"No reference to {apiVersion} found in {pathToHtml}. Please ensure that you correctly reference it.");
                     return false;
 
                 // Multiple reference to the airconsole API break behavior because they override the AirConsole DOM window setup.
@@ -434,6 +435,43 @@ namespace NDream.AirConsole.Editor {
             }
 
             return true;
+        }
+
+        private static void EnsureRequiredDependenciesInHtml() {
+            string webGLTemplateDirectory = PreBuildProcessing.GetWebGLTemplateDirectory();
+            string indexPath = Path.Combine(webGLTemplateDirectory, "index.html");
+
+            if (!File.Exists(indexPath)) {
+                return;
+            }
+
+            string[] dependencies = { "airconsole-settings.js", "airconsole-unity-plugin.js" };
+
+            string fileContent = File.ReadAllText(indexPath);
+            Regex regex = new(@"<script\s+src\s*=\s*[""'].*airconsole-[\d\.]+\.js[""']\s*><\/script>");
+
+            foreach (string dependency in dependencies) {
+                if (fileContent.Contains(dependency)) {
+                    AirConsoleLogger.LogDevelopment(() => $"{dependency} already included in index.html.");
+                    continue;
+                }
+
+                Match match = regex.Match(fileContent);
+                if (match.Success) {
+                    string matchedLine = match.Value;
+                    string replacement = matchedLine + $"\n    <script src=\"{dependency}\"></script>";
+                    fileContent = fileContent.Replace(matchedLine, replacement);
+
+                    AirConsoleLogger.Log(() => $"Automatically added {dependency} to index.html.");
+                } else {
+                    string apiVersion
+                        = $"airconsole-{Settings.RequiredMinimumVersion.Major}.{Settings.RequiredMinimumVersion.Minor}.{Settings.RequiredMinimumVersion.Build}.js";
+                    AirConsoleLogger.LogWarning(() =>
+                        $"Could not find {apiVersion} script tag in index.html to inject {dependency}.");
+                }
+            }
+
+            File.WriteAllText(indexPath, fileContent);
         }
         #endregion Controller Screen Consistency Checks
 
