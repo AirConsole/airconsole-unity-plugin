@@ -21,36 +21,34 @@ namespace NDream.Unity {
                 return;
             }
 
-            string pathToAirConsole =
-                Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "scripts", "AirConsole.cs"));
-            bool upgradeInstructionsNotFollowed = File.Exists(pathToAirConsole);
-
-            if (upgradeInstructionsNotFollowed) {
-                string upgradeInstructionUrl =
-                    "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version";
-                EditorUtility.DisplayDialog("Upgrade Error",
-                    "Please follow the upgrade instructions for Unity v2.6.0 and newer before updating the AirConsole plugin",
-                    "I understand");
-                Application.OpenURL(upgradeInstructionUrl);
-                throw new BuildFailedException(
-                    $"Please visit {upgradeInstructionUrl} and follow the upgrade instructions for v2.6.0 and newer");
-            }
-
             ImportCodePackage();
             EditorUtility.DisplayDialog("Success", "The AirConsole Plugin has been successfully imported", "ok");
         }
 
         private static void ImportCodePackage() {
-            string packagePath = CodePackagePath;
-            if (File.Exists(packagePath)) {
+            if (File.Exists(CodePackagePath)) {
                 // In 2.6.0, this was moved to Assets/AirConsole/scripts/Editor/Assets/AirConsoleIcon.png with editor icon focused import settings.
                 AssetDatabase.DeleteAsset("Assets/AirConsole/resources/AirConsoleLogo.png");
-                AssetDatabase.ImportPackage(packagePath, false);
-                AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
-                AssetDatabase.DeleteAsset(packagePath.Replace(Application.dataPath, "Assets"));
+
+                AssetDatabase.DeleteAsset("Assets/AirConsole/examples");
+                AssetDatabase.DeleteAsset("Assets/AirConsole/scripts");
+                AssetDatabase.DeleteAsset("Assets/AirConsole/unity-webview");
+                AssetDatabase.Refresh();
+
+                // Because the AssetDatabase refresh happens asynchronously at the end of the editor loop, we must use delayedCall to
+                // execute the package import. Otherwise, files like AirConsole.cs that must be imported in the 'scripts/Runtime' directory
+                // would be located outside and break compilation.
+                // Without this, AirConsole.cs would be imported in Assets/AirConsole/scripts instead of Assets/AirConsole/scripts/Runtime.
+                EditorApplication.delayCall += () => ExecuteCodePackageImport();
             } else {
                 AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
             }
+        }
+
+        private static void ExecuteCodePackageImport() {
+            AssetDatabase.ImportPackage(CodePackagePath, false);
+            AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
+            AssetDatabase.DeleteAsset(CodePackagePath.Replace(Application.dataPath, "Assets"));
         }
     }
 }
