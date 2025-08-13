@@ -19,7 +19,7 @@ namespace NDream.AirConsole.Editor {
             string[] versions = Application.unityVersion.Split(".");
             switch (versions[0]) {
                 case "2022": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 65, Application.unityVersion);
+                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 57, Application.unityVersion);
                     if (versionCheck && !patchCheck) {
                         if (invokeErrorOnFail) {
                             InvokeErrorOrLog("For Android usage, AirConsole requires at least 2022.3.57f1",
