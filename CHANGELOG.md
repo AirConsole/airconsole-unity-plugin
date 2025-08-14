@@ -8,7 +8,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
-## [2.6.0]
+## [2.6.0] - 2025-08-14
 
 Version 2.6.0 is a major release, adding many features for game developers to create better performance experiences by default.
 As part of this, we have removed support for Unity before 2022 LTS.
