@@ -45,7 +45,6 @@ Thumbs.db
 # Visual Studio Code generated #
 # ============ #
 /.vs
-TestBuilds/
 .utmp
-TestBuilds
+TestBuilds/
 Assets/AirConsole/airconsole.prefs*
