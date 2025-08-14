@@ -6,6 +6,48 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+## [2.6.0]
+
+Version 2.6.0 is a major release, adding many features for game developers to create better performance experiences by default.
+As part of this, we have removed support for Unity before 2022 LTS.
+
+### Breaking Changes
+
+- **Project Structure**: The plugin's internal folder structure has been significantly refactored. All runtime scripts are now located in `Assets/AirConsole/scripts/Runtime` and all editor scripts in `Assets/AirConsole/scripts/Editor`. The code has been organized into Assembly Definitions (`.asmdef` files), which may require updates to custom build scripts or direct script references.
+- **Unity Version Support**: Unity versions older than Unity 2022 LTS are **no longer supported**.
+- **Android Plugin Location**: The plugin no longer ships with a global `Assets/Plugins/Android` directory. The plugin updates the `AndroidManifest.xml` and Gradle files automatically during the build process.
+- **Removed Obsolete APIs**: The obsoleted AirConsole properties `server_time_offset`, `device_id`, and `devices` have been removed. Please use `GetServerTime()`, `GetDeviceId()`, and `.Devices` instead.
+
+### Removed
+
+- Python SDK handling has been removed. This feature was only required for WebGL builds with Unity 2019 on MacOS 12+.
+
+### Fixed
+
+- When upgrading the plugin in Unity 2022 or Unity 6, the user should no longer be impacted by dependency differences on `com.unity.ugui` that previously caused package cache problems on Unity 2022 and Unity 6.
+
+### Added
+
+- `Translation Capabilities`: We now automatically unescape `&lt;` to `<` and `&gt;` to `>` as well as`\\n` to `\n` in translations to support TextMesh Pro RichText scenarios automatically.
+- Validation that at least one of the required Unity Platform modules (WebGL or Android) is installed when projects are opened on other platforms without the DISABLE_AIRCONSOLE script predefine being set.
+- Validation for platform project settings on WebGL and Android to ensure optimal performance and meeting requirements.
+- Plugin upgrade capabilities: The plugin now attempts to auto update itself after installation. As part of that, the complete `Assets/AirConole/scripts` directory and `Assets/AirConsole/unity-webview` directories are replaced with new instances.
+- Validation for the used AirConsole API version in controller and screen html to ensure that the required API version is configured, not outdated versions or `latest`.
+- **Android:** Support for platform driven safe render areas: On platforms that the Safe Area, the new API provides games with a `Rect` based screen area in which the game is allowed to render. Areas outside of this are dedicated to platform specific information overlayed on top. Check `AirConsole.OnSafeAreaChanged` and the `NDream.AirConsole.OnSafeAreaChanged` delegate.
+- **Safe Area Example**: Added a new example scene (`Assets/AirConsole/examples/safe-area`) to demonstrate the usage of the new Safe Area API on Android.
+
+### Changed
+
+- AirConsole now opens the socket server during playmode and closes it again at the end of the play session. This addresses cases where the Unity PlayMode would no longer work.
+- **WebGL**: To simplify build automation including Unity Cloud Build, WebGL builds now copy `index.html` to `screen.html` instead of renaming it.
+
+### Deprecated
+
+- `GetActivePlayerDeviceIds` has been deprecated. Please use `ActivePlayerDeviceIds` instead.
+- **WebGL**: The `rate-limiter.js` script is no longer included in the WebGL templates to simplify the build output.
+
 ## [2.5.7] - 2025-03-12
 
 This release fixes an issue where AirConsole callbacks got delayed by at least one frame, incorrect Android Manifest outputs during builds
@@ -87,16 +129,16 @@ For completeness as this is a 2.5.0 rerelease, the 2.5.0 release notes are repea
 - Added :gift_heart:: Developers can now set the language to test with when running games in the editor. (Kudos to @bbeinder contributing
   #71)
 - Added :gift_heart:: Partner specific highscore
-    - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+  - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
+    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
-    - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-      partner environment (e.g. car brand).
+  - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
+    partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
-    - Support for Player Silencing in the AirConsole component. For more information visit
-      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+  - Support for Player Silencing in the AirConsole component. For more information visit
+    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.
@@ -128,16 +170,16 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 ### Added
 
 - Added :gift_heart:: Partner specific highscore
-    - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+  - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
+    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
-    - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-      partner environment (e.g. car brand).
+  - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
+    partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
-    - Support for Player Silencing in the AirConsole component. For more information visit
-      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+  - Support for Player Silencing in the AirConsole component. For more information visit
+    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.

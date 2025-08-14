@@ -1,15 +1,16 @@
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using UnityEngine;
-using UnityEngine.UI;
+﻿namespace NDream.AirConsole.Examples {
+    using System.Collections.Generic;
+    using Newtonsoft.Json.Linq;
+    using UnityEngine;
+    using UnityEngine.UI;
 
-namespace NDream.AirConsole.Examples {
     public class ExamplePongLogic : MonoBehaviour {
         public Rigidbody2D racketLeft;
         public Rigidbody2D racketRight;
         public Rigidbody2D ball;
         public float ballSpeed = 10f;
         public Text uiText;
+
 #if !DISABLE_AIRCONSOLE
         private int scoreRacketLeft;
         private int scoreRacketRight;
@@ -45,11 +46,13 @@ namespace NDream.AirConsole.Examples {
         /// </summary>
         /// <param name="device_id">The device_id that has left.</param>
         private void OnDisconnect(int device_id) {
-            var player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+            int player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
             if (player >= 0)
                 // Player that was in the game left the game.
                 // Setting active players to length 0
+            {
                 AirConsole.instance.SetActivePlayers(0);
+            }
 
             CheckTwoPlayers();
         }
@@ -65,11 +68,15 @@ namespace NDream.AirConsole.Examples {
                 return;
             }
 
-            var active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
+            int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
             if (active_player != -1) {
-                if (active_player == 0) racketLeft.velocity = Vector3.up * (float)data["move"];
+                if (active_player == 0) {
+                    racketLeft.velocity = Vector3.up * (float)data["move"];
+                }
 
-                if (active_player == 1) racketRight.velocity = Vector3.up * (float)data["move"];
+                if (active_player == 1) {
+                    racketRight.velocity = Vector3.up * (float)data["move"];
+                }
             }
         }
 
@@ -110,15 +117,16 @@ namespace NDream.AirConsole.Examples {
             List<int> connectedControllers = AirConsole.instance.GetControllerDeviceIds();
 
             // Only update if the game didn't have active players.
-            if (AirConsole.instance.GetActivePlayerDeviceIds.Count == 0) {
-                if (connectedControllers.Count > 2)
+            if (AirConsole.instance.ActivePlayerDeviceIds.Count == 0) {
+                if (connectedControllers.Count > 2) {
                     uiText.text = "Only 2 players can play, sorry";
-                else if (connectedControllers.Count == 2)
+                } else if (connectedControllers.Count == 2) {
                     uiText.text = "Ready to start";
-                else if (connectedControllers.Count == 1)
+                } else if (connectedControllers.Count == 1) {
                     uiText.text = "Need 1 more player!";
-                else
+                } else {
                     uiText.text = "Need 2 more players!";
+                }
 
                 AirConsole.instance.SetCustomDeviceStateProperty("enough_players", connectedControllers.Count == 2);
             }
@@ -167,7 +175,7 @@ namespace NDream.AirConsole.Examples {
 
             // push the ball in a random direction
             if (move) {
-                Vector3 startDir = new Vector3(Random.Range(-1, 1f), Random.Range(-0.1f, 0.1f), 0);
+                Vector3 startDir = new(Random.Range(-1, 1f), Random.Range(-0.1f, 0.1f), 0);
                 ball.velocity = startDir.normalized * ballSpeed;
             } else {
                 ball.velocity = Vector3.zero;
@@ -186,7 +194,9 @@ namespace NDream.AirConsole.Examples {
                 ResetBall(true);
                 Vibrate(0);
 
-                if (scoreRacketRight > 3) BackToLobby();
+                if (scoreRacketRight > 3) {
+                    BackToLobby();
+                }
             }
 
             // check if ball reached the other one of the ends
@@ -196,7 +206,9 @@ namespace NDream.AirConsole.Examples {
                 ResetBall(true);
                 Vibrate(1);
 
-                if (scoreRacketLeft > 3) BackToLobby();
+                if (scoreRacketLeft > 3) {
+                    BackToLobby();
+                }
             }
         }
 

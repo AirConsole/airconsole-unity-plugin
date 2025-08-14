@@ -1,0 +1,23 @@
+{
+    "name": "AirConsole.PlayMode.Tests",
+    "rootNamespace": "NDream.AirConsole.PlayMode.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "AirConsole.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_2022_3_OR_NEWER",
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

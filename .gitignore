@@ -46,3 +46,5 @@ Thumbs.db
 # ============ #
 /.vs
 .utmp
+TestBuilds/
+Assets/AirConsole/airconsole.prefs*
