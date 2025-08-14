@@ -12,8 +12,8 @@ jobs:
       max-parallel: 1
       matrix:
         unityVersion:
-          - 2022.3.61f1
-          - 6000.0.36f1
+          - 2022.3.62f1
+          # - 6000.0.50f1
         platform:
           - WebGL
           # - Android
