@@ -8,6 +8,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+### Changed
+
+- Unity's WebGL Memory Growth mode is handled more consistently and provides clearer instructions to game developers.
+
 ## [2.6.0] - 2025-08-14
 
 Version 2.6.0 is a major release, adding many features for game developers to create better performance experiences by default.
@@ -227,3 +231,4 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 
 - Support for i386 OSX bundle
 - The webview no longer supports rendering on OSX.
+
