@@ -1,0 +1,48 @@
+name: CHANGELOG.md updated
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for changelog skip intention
+        id: asset_check
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          SKIP=0
+          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=%B)
+          echo "Commit messages: $COMMITS"
+          if echo "$COMMITS" | grep -q '#skip-changelog'; then
+            SKIP=1
+          fi
+          MATCHED=0
+          if [ "$SKIP" -ne 1 ]; then
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+            echo "Changed files: $CHANGED_FILES"
+            for f in $CHANGED_FILES; do
+              if [[ "$f" == Assets/AirConsole/* ]] || [[ "$f" == Assets/WebGLTemplates/* ]]; then
+                MATCHED=1
+                break
+              fi
+            done
+          fi
+          echo "matched=$MATCHED" >> $GITHUB_OUTPUT
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Check if CHANGELOG.md was updated
+        if: steps.asset_check.outputs.matched == '1' && steps.asset_check.outputs.skip != '1'
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD)
+          if ! echo "$CHANGED_FILES" | grep -q '^CHANGELOG.md$'; then
+            echo "ERROR: CHANGELOG.md was not updated in this PR. Please update it to reflect your changes."
+            exit 1
+          fi
+        shell: bash
