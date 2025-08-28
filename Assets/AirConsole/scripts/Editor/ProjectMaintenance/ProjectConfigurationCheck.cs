@@ -1,5 +1,7 @@
+
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor {
+    using System.Text;
     using System;
     using System.IO;
     using System.Linq;
@@ -162,25 +164,33 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.WebGL.dataCaching = false;
             }
 
+            const int maximumInitialMemorySize = 1024;
             if (PlayerSettings.WebGL.memoryGrowthMode != WebGLMemoryGrowthMode.None) {
-                AirConsoleLogger.LogWarning(() =>
-                    "For performance and stability on automotive, AirConsole requires 'Memory Growth Mode' to be set to None in WebGL PlayerSettings with the games maximum memory usage set.\n"
-                    + "Updating the WebGL settings now.");
-                PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.None;
-                PlayerSettings.WebGL.initialMemorySize = Mathf.Min(512,
+                int computedSize = Mathf.Min(maximumInitialMemorySize,
                     Mathf.Max(PlayerSettings.WebGL.initialMemorySize, PlayerSettings.WebGL.maximumMemorySize));
+                StringBuilder sb = new();
+                sb.AppendLine(
+                    "For performance and stability on automotive, AirConsole requires 'Memory Growth Mode' to be set to None in WebGL PlayerSettings.");
+                sb.AppendLine(
+                    "Use 'Initial Memory Size (MB)' in Player Settings > Publishing Settings of WebGL to define the amount of memory your game actually needs.");
+                sb.AppendLine("We recommend to measure the maximum used memory and add 10% more for safety.");
+                sb.AppendLine(
+                    $"Updating the WebGL settings to Memory Growth Mode 'None' and an initial memory size of {computedSize}mb based on configured values and limits.");
+
+                AirConsoleLogger.LogWarning(() => sb.ToString());
+                PlayerSettings.WebGL.memoryGrowthMode = WebGLMemoryGrowthMode.None;
+                PlayerSettings.WebGL.initialMemorySize = computedSize;
             }
 
-            if (PlayerSettings.WebGL.memorySize > 512) {
+            if (PlayerSettings.WebGL.initialMemorySize > maximumInitialMemorySize) {
+                PlayerSettings.WebGL.initialMemorySize = maximumInitialMemorySize;
                 AirConsoleLogger.LogWarning(() =>
-                    "AirConsole recommends 'Initial Memory Size' stay at or below 512MB for automotive compatibility.\n"
-                    + "We are updating the WebGL settings now.");
-                PlayerSettings.WebGL.initialMemorySize = 512;
+                    $"Reducing WebGL initialMemorySize to the reliably supported maximum of {maximumInitialMemorySize}.\nPlease ensure the game doesn't need more RAM.");
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
                 AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException("Please update the WebGL build and player settings to continue.");
+                throw new BuildFailedException("Please update the WebGL build or player settings to build for AirConsole WebGL.");
             }
         }
 
@@ -223,7 +233,7 @@ namespace NDream.AirConsole.Editor {
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
                 AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException("Please update the Android Build and Player settings to continue.");
+                throw new BuildFailedException("Please update the Android Build or Player settings to build for AirConsole WebGL");
             }
 
             UpdateAndroidPlayerSettingsInProperties();
