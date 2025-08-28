@@ -19,10 +19,10 @@ namespace NDream.AirConsole.Editor {
             string[] versions = Application.unityVersion.Split(".");
             switch (versions[0]) {
                 case "2022": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 57, Application.unityVersion);
+                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 62, Application.unityVersion);
                     if (versionCheck && !patchCheck) {
                         if (invokeErrorOnFail) {
-                            InvokeErrorOrLog("For Android usage, AirConsole requires at least 2022.3.57f1",
+                            InvokeErrorOrLog("For Android usage, AirConsole requires at least 2022.3.62f1 for Android support",
                                 "Unity 2022 version too old", invokeErrorOnFail);
                         }
                     }
@@ -31,9 +31,10 @@ namespace NDream.AirConsole.Editor {
                 }
 
                 case "6000": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(6000, 0, 36, Application.unityVersion);
+                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(6000, 0, 43, Application.unityVersion);
                     if (versionCheck && !patchCheck) {
-                        InvokeErrorOrLog("For Android usage, AirConsole requires at least 6000.0.36f1",
+                        InvokeErrorOrLog(
+                            "For Android usage, AirConsole requires at least 6000.0.43f1, 6000.1.0f1 or 6000.2.0f1 for Android support",
                             "Unity 6 version too old", invokeErrorOnFail);
                     }
 
@@ -41,9 +42,9 @@ namespace NDream.AirConsole.Editor {
                 }
 
                 default:
-                    if (!SemVerCheck.IsAtLeast(6000, 0, 36, Application.unityVersion)) {
+                    if (!SemVerCheck.IsAtLeast(6000, 0, 43, Application.unityVersion)) {
                         InvokeErrorOrLog(
-                            "For Android usage, AirConsole requires at least Unity 6000.0.36f1",
+                            "For Android usage, AirConsole requires at least Unity 6000.0.43f1",
                             "Unity 6 version too old", invokeErrorOnFail);
                     }
 
