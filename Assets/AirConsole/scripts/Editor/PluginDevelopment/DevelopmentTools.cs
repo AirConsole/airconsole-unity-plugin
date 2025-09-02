@@ -45,6 +45,36 @@ namespace NDream.AirConsole.Editor {
         [MenuItem("Tools/AirConsole/Build/Android", false, 62)]
         public static void BuildAndroid() => BuildHelper.BuildAndroid();
 
+        [MenuItem("Tools/AirConsole/Build/Android Test Permutations", false, 69)]
+        public static void BuildAndroidTestPermutations() {
+            string productName = PlayerSettings.productName;
+            PlayerSettings.productName = "AC Test";
+            EditorPrefs.SetBool("customBuild", true);
+
+            for (int safeArea = 0; safeArea < 2; safeArea++) {
+                for (int resizable = 0; resizable < 2; resizable++) {
+                    for (int fullscreen = 0; fullscreen < 2; fullscreen++) {
+                        for (int startFullscreen = 0; startFullscreen < 2; startFullscreen++) {
+                            EditorPrefs.SetBool("renderOutsideSafeArea", safeArea == 1);
+                            EditorPrefs.SetBool("resizableWindow", resizable == 1);
+                            EditorPrefs.SetInt("fullscreenMode",
+                                fullscreen == 1 ? (int)FullScreenMode.FullScreenWindow : (int)FullScreenMode.Windowed);
+                            EditorPrefs.SetBool("startInFullscreen", startFullscreen == 1);
+                            BuildHelper.BuildAndroid(
+                                $"airconsoletest-{safeArea}{resizable}{fullscreen}{startFullscreen}");
+                        }
+                    }
+                }
+            }
+
+            EditorPrefs.DeleteKey("customBuild");
+            EditorPrefs.DeleteKey("renderOutsideSafeArea");
+            EditorPrefs.DeleteKey("resizableWindow");
+            EditorPrefs.DeleteKey("fullscreenMode");
+            EditorPrefs.DeleteKey("startInFullscreen");
+            PlayerSettings.productName = productName;
+        }
+
         [MenuItem("Tools/AirConsole/Build/Android Internal", false, 63)]
         public static void BuildAndroidInternal() => BuildHelper.BuildAndroidInternal();
     }

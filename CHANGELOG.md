@@ -12,6 +12,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 - Unity's WebGL Memory Growth mode is handled more consistently and provides clearer instructions to game developers.
 - Increased minimum Unity versions to 2022.3.62f1 and 6000.0.43f1 to meet Google Play Store (16kb page file) and Automotive (WebRequest security) requirements.
+- Android: Improved project configuration for correct fullscreen behavior on automotive.
 
 ## [2.6.0] - 2025-08-14
 
