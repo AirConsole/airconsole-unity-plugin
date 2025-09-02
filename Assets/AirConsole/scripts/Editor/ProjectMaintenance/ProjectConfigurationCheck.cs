@@ -269,8 +269,6 @@ namespace NDream.AirConsole.Editor {
                                                 + "We are updating the Android settings now.");
             }
 
-            PlayerSettings.Android.renderOutsideSafeArea = true;
-
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel26) {
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
@@ -296,13 +294,27 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.androidIsGame = true;
             PlayerSettings.Android.chromeosInputEmulation = false;
 
-            // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
-            PlayerSettings.Android.resizableWindow = true;
-            PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
-            
-            // If we don't do this, the margin calculations for the webview will be wrong because the initial size when the webview is created are wrong
-            // the layout correctly resizes but the values are not correct in the webview.
-            PlayerSettings.Android.startInFullscreen = true;
+
+            if (EditorPrefs.GetBool("customBuild", false) == true) {
+                PlayerSettings.Android.renderOutsideSafeArea = EditorPrefs.GetBool("renderOutsideSafeArea", false);
+                PlayerSettings.Android.resizableWindow = EditorPrefs.GetBool("resizableWindow", true);
+                PlayerSettings.Android.fullscreenMode = (FullScreenMode)EditorPrefs.GetInt("fullscreenMode", 1);
+                PlayerSettings.Android.startInFullscreen = EditorPrefs.GetBool("startInFullscreen", true);
+            } else {
+                // This setting must be false. Otherwise the game will go full screen beyond the boundaries of the 3rd party safe area manager of BMW.
+                PlayerSettings.Android.renderOutsideSafeArea = false;
+
+                // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
+                PlayerSettings.Android.resizableWindow = true;
+
+                // Set fullscreenMode to FullScreenMode.FullScreenWindow
+                PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
+
+                // If we don't do this, the margin calculations for the webview will be wrong. The initial size when the webview is negatively
+                // impacted by the bottom bar that impacts the layout but is not visible.
+                // When the layout corrects, the webview does not resize.
+                PlayerSettings.Android.startInFullscreen = true;
+            }
 
         }
 
