@@ -48,3 +48,5 @@ Thumbs.db
 .utmp
 TestBuilds/
 Assets/AirConsole/airconsole.prefs*
+
+Assets/WebGLTemplates/**/airconsole-settings.js

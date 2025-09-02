@@ -6,8 +6,6 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-### Added
-
 ### Changed
 
 - Unity's WebGL Memory Growth mode is handled more consistently and provides clearer instructions to game developers.
