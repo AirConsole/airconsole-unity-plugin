@@ -6,7 +6,9 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-### Fixed
+### Removed
+
+- **Android**: The android library no longer manages AudioFocus or overriding the usage from USAGE_GAME.
 
 ## [2.6.1] - 2025-09-02
 
