@@ -11,6 +11,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Check for changelog skip intention
@@ -34,8 +35,8 @@ jobs:
               fi
             done
           fi
-          echo "matched=$MATCHED"
-          echo "skip=$SKIP"
+          echo "matched=$MATCHED" >> $GITHUB_OUTPUT
+          echo "skip=$SKIP" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Check if CHANGELOG.md was updated
