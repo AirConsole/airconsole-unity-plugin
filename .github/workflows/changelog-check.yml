@@ -10,15 +10,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for changelog skip intention
         id: asset_check
         run: |
           git fetch origin ${{ github.base_ref }}
           SKIP=0
-          COMMITS=$(git log origin/${{ github.base_ref }}..HEAD --pretty=%B)
-          echo "Commit messages: $COMMITS"
-          if echo "$COMMITS" | grep -q '#skip-changelog'; then
+          LAST_COMMIT_MESSAGE=$(git log -1 --format=%B HEAD)
+          echo "Last commit message: $LAST_COMMIT_MESSAGE"
+          if printf '%s\n' "$LAST_COMMIT_MESSAGE" | grep -qi '#skip-changelog'; then
             SKIP=1
           fi
           MATCHED=0
@@ -32,8 +34,8 @@ jobs:
               fi
             done
           fi
-          echo "matched=$MATCHED" >> $GITHUB_OUTPUT
-          echo "skip=$SKIP" >> $GITHUB_OUTPUT
+          echo "matched=$MATCHED"
+          echo "skip=$SKIP"
         shell: bash
 
       - name: Check if CHANGELOG.md was updated
