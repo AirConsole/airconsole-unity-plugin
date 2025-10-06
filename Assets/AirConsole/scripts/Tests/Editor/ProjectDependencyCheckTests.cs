@@ -32,9 +32,13 @@ namespace NDream.AirConsole.Editor.Tests {
             Assert.That(handlerInvoked, Is.False);
         }
 
-        [TestCase("6000.1.12f1")]
-        public void ValidateUnityVersion_WhenBelowMinimum_LogsWarning(string unityVersion) {
-            const string expectedRequired = "6000.1.17f1";
+        [TestCase("2022.3.61f1", "2022.3.62f2")]
+        [TestCase("2022.3.62f1", "2022.3.62f2")]
+        [TestCase("6000.0.57f1", "6000.0.58f2")]
+        [TestCase("6000.0.58f1", "6000.0.58f2")]
+        [TestCase("6000.1.16f1", "6000.1.17f1")]
+        [TestCase("6000.2.5f1", "6000.2.6f2")]
+        public void ValidateUnityVersion_WhenBelowMinimum_LogsWarning(string unityVersion, string expectedRequired) {
             string expectedMessage = $"For security (CVE-2025-59489), AirConsole requires at least Unity {expectedRequired}";
 
             ProjectDependencyCheck.UnityVersionProvider = () => unityVersion;
