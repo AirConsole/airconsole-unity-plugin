@@ -2,8 +2,7 @@
 namespace NDream.AirConsole.Editor {
     using UnityEditor;
     using UnityEngine;
-    using UnityEditor.Build;
-    using System.Text.RegularExpressions;
+    using System;
 
     public abstract class ProjectDependencyCheck {
         [InitializeOnLoadMethod]
@@ -15,44 +14,43 @@ namespace NDream.AirConsole.Editor {
         /// To meet automotive requirements, we need to have certain minimum versions of Unity that have updated dependencies.
         /// To make the game developer experience consistent, we always check for this.
         /// </summary>
-        private static void ValidateUnityVersion(bool invokeErrorOnFail = false) {
-            string[] versions = Application.unityVersion.Split(".");
-            switch (versions[0]) {
-                case "2022": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(2022, 3, 62, Application.unityVersion);
-                    if (versionCheck && !patchCheck) {
-                        if (invokeErrorOnFail) {
-                            InvokeErrorOrLog("For Android usage, AirConsole requires at least 2022.3.62f1 for Android support",
-                                "Unity 2022 version too old", invokeErrorOnFail);
-                        }
-                    }
+        internal static void ValidateUnityVersion(bool invokeErrorOnFail = false) {
+            string unityVersion = GetUnityVersion();
+            string[] versions = unityVersion.Split(".");
 
-                    break;
-                }
+            Version requiredVersion = versions[0] switch {
+                // 2022.3.?? -> 2022.3.62f2 first with CVE-2025-59489 fix
+                "2022" => new Version(2022, 3, 62, 2),
+                "6000" => versions[1] switch {
+                    // 6000.0.?? -> 6000.0.58f2 first with CVE-2025-59489 fix
+                    "0" => new Version(6000, 0, 58, 2),
 
-                case "6000": {
-                    (bool versionCheck, bool patchCheck) = SemVerCheck.IfMajorMinorPatchAtLeast(6000, 0, 43, Application.unityVersion);
-                    if (versionCheck && !patchCheck) {
-                        InvokeErrorOrLog(
-                            "For Android usage, AirConsole requires at least 6000.0.43f1, 6000.1.0f1 or 6000.2.0f1 for Android support",
-                            "Unity 6 version too old", invokeErrorOnFail);
-                    }
+                    // 6000.1.?? -> 6000.1.17f1 first with CVE-2025-59489 fix
+                    "1" => new Version(6000, 1, 17, 1),
 
-                    break;
-                }
+                    // 6000.2.?? -> 6000.2.6f2 first with CVE-2025-59489 fix
+                    "2" => new Version(6000, 2, 6, 2),
 
-                default:
-                    if (!SemVerCheck.IsAtLeast(6000, 0, 43, Application.unityVersion)) {
-                        InvokeErrorOrLog(
-                            "For Android usage, AirConsole requires at least Unity 6000.0.43f1",
-                            "Unity 6 version too old", invokeErrorOnFail);
-                    }
+                    // 6000.3.?? -> 6000.3.0b4 first with CVE-2025-59489 fix but we require official releases
+                    _ => new Version(6000, 3, 0, 1)
+                },
+                _ => new Version(6000, 0, 58, 2)
+            };
 
-                    break;
+            if (!SemVerCheck.ValidateUnityVersionMinimum(requiredVersion, unityVersion)) {
+                InvokeErrorOrLog(
+                    $"For security (CVE-2025-59489), AirConsole requires at least Unity {StringFromVersion(requiredVersion)}",
+                    $"Insecure version {unityVersion}", invokeErrorOnFail);
             }
         }
 
         private static void InvokeErrorOrLog(string message, string title, bool shallError = false) {
+#if UNITY_INCLUDE_TESTS
+            if (InvokeErrorOrLogOverride != null) {
+                InvokeErrorOrLogOverride(message, title, shallError);
+                return;
+            }
+#endif
             if (!shallError) {
                 AirConsoleLogger.LogWarning(() => message);
                 return;
@@ -60,54 +58,21 @@ namespace NDream.AirConsole.Editor {
 
             EditorNotificationService.InvokeError(message, false, title);
         }
-    }
 
-    public abstract class SemVerCheck {
-        /// <summary>
-        /// Determines if the specified version is at least the given major, minor, and patch version.
-        /// </summary>
-        /// <param name="major">The minimum required major version.</param>
-        /// <param name="minor">The minimum required minor version.</param>
-        /// <param name="patch">The minimum required patch version.</param>
-        /// <param name="version">The version string to compare, expected in the format "major.minor.patch".</param>
-        /// <returns>
-        /// True if the version is at least the specified major, minor, and patch version; otherwise, false.
-        /// </returns>
-        internal static bool IsAtLeast(int major, int minor, int patch, string version) {
-            (int foundMajor, int foundMinor, int foundPatch) = GetMajorMinorPatchFromVersion(version);
-            return major >= foundMajor && minor >= foundMinor && patch >= foundPatch;
+        private static string StringFromVersion(Version version) => $"{version.Major}.{version.Minor}.{version.Build}f{version.Revision}";
+
+        private static string GetUnityVersion() {
+#if UNITY_INCLUDE_TESTS
+            return UnityVersionProvider?.Invoke() ?? Application.unityVersion;
+#else
+            return Application.unityVersion;
+#endif
         }
 
-        /// <summary>
-        /// Checks if the given version is at least the specified major, minor, and patch version.
-        /// </summary>
-        /// <param name="major">The required major version.</param>
-        /// <param name="minor">The required minor version.</param>
-        /// <param name="patch">The required patch version.</param>
-        /// <param name="version">The version string to check, expected in the format "major.minor.patch".</param>
-        /// <returns>
-        /// A tuple where the first value indicates if the major and minor versions match,
-        /// and the second value indicates if the patch version is at least the required value.
-        /// </returns>
-        internal static (bool, bool) IfMajorMinorPatchAtLeast(int major, int minor, int patch, string version) {
-            (int foundMajor, int foundMinor, int foundPatch) = GetMajorMinorPatchFromVersion(version);
-
-            if (foundMajor != major || foundMinor != minor) {
-                return (false, false);
-            }
-
-            return (true, foundPatch >= patch);
-        }
-
-        private static (int, int, int) GetMajorMinorPatchFromVersion(string version) {
-            Regex versionExtractor = new("^(?<Major>\\d{4})\\.(?<Minor>\\d+)\\.(?<Patch>\\d+)f\\d+$");
-            Match match = versionExtractor.Match(version);
-            if (!match.Success) {
-                throw new BuildFailedException("No valid version found ");
-            }
-
-            return (int.Parse(match.Groups["Major"].Value), int.Parse(match.Groups["Minor"].Value), int.Parse(match.Groups["Patch"].Value));
-        }
+#if UNITY_INCLUDE_TESTS
+        internal static Func<string>? UnityVersionProvider;
+        internal static Action<string, string, bool>? InvokeErrorOrLogOverride;
+#endif
     }
 }
 #endif
