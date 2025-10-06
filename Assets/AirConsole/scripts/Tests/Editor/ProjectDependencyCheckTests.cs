@@ -1,11 +1,10 @@
 #if !DISABLE_AIRCONSOLE
-using System;
-using NUnit.Framework;
-using UnityEditor.Build;
-using UnityEngine;
-using UnityEngine.TestTools;
-
 namespace NDream.AirConsole.Editor.Tests {
+    using NUnit.Framework;
+    using UnityEditor.Build;
+    using UnityEngine;
+    using UnityEngine.TestTools;
+    
     public class ProjectDependencyCheckTests {
         [TearDown]
         public void TearDown() {

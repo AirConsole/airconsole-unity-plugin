@@ -1,8 +1,8 @@
-using System;
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor {
     using UnityEditor;
     using UnityEngine;
+    using System;
 
     public abstract class ProjectDependencyCheck {
         [InitializeOnLoadMethod]
