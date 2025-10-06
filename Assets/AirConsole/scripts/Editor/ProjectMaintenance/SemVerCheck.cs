@@ -5,9 +5,6 @@ using UnityEditor.Build;
 
 namespace NDream.AirConsole.Editor {
     internal abstract class SemVerCheck {
-#if UNITY_INCLUDE_TESTS
-        internal static Func<Version, string, bool>? ValidateUnityVersionMinimumOverride;
-#endif
         /// <summary>
         /// Validates that Unity matches a required minimum version.
         /// </summary>
@@ -15,11 +12,6 @@ namespace NDream.AirConsole.Editor {
         /// <param name="detectedVersion">The version string to check, expected in the format "major.minor.patch".</param>
         /// <returns> True, if the detected version is greater than or equal to the required version.</returns>
         internal static bool ValidateUnityVersionMinimum(Version requiredVersion, string detectedVersion) {
-#if UNITY_INCLUDE_TESTS
-            if (ValidateUnityVersionMinimumOverride != null) {
-                return ValidateUnityVersionMinimumOverride(requiredVersion, detectedVersion);
-            }
-#endif
             Version foundVersion = GetMajorMinorPatchFromVersion(detectedVersion);
             return foundVersion.CompareTo(requiredVersion) >= 0;
         }

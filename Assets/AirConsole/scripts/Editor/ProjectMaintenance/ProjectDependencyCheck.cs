@@ -22,15 +22,17 @@ namespace NDream.AirConsole.Editor {
                 // 2022.3.?? -> 2022.3.62f2 first with CVE-2025-59489 fix
                 "2022" => new Version(2022, 3, 62, 2),
                 "6000" => versions[1] switch {
-                    "0" =>
+                    // 6000.0.?? -> 6000.0.58f2 first with CVE-2025-59489 fix
+                    "0" => new Version(6000, 0, 58, 2),
 
-                        // 6000.0.?? -> 6000.0.58f2 first with CVE-2025-59489 fix
-                        new Version(6000, 0, 58, 2),
-                    "1" =>
+                    // 6000.1.?? -> 6000.1.17f1 first with CVE-2025-59489 fix
+                    "1" => new Version(6000, 1, 17, 1),
 
-                        // 6000.1.?? -> 6000.1.17f1 first with CVE-2025-59489 fix
-                        new Version(6000, 1, 17, 1),
-                    _ => new Version(6000, 2, 6, 2)
+                    // 6000.2.?? -> 6000.2.6f2 first with CVE-2025-59489 fix
+                    "2" => new Version(6000, 2, 6, 2),
+
+                    // 6000.3.?? -> 6000.3.0b4 first with CVE-2025-59489 fix but we require official releases
+                    _ => new Version(6000, 3, 0, 1)
                 },
                 _ => new Version(6000, 0, 58, 2)
             };
