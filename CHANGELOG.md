@@ -6,6 +6,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- Minimum Versions: The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
+
 ### Removed
 
 - **Android**: The android library no longer manages AudioFocus or overriding the usage from USAGE_GAME.
