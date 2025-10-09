@@ -1302,25 +1302,25 @@ namespace NDream.AirConsole {
 
             try {
                 int deviceId = (int)msg["device_id"];
-                AllocateDeviceSlots(deviceId);
                 JToken deviceData = msg["device_data"];
-                if (deviceData != null && deviceData.HasValues) {
-                    _devices[deviceId] = deviceData;
-                } else {
-                    _devices[deviceId] = null;
-                }
+                
+                // Queue all _devices modifications to run on the Unity main thread to avoid race conditions
+                eventQueue.Enqueue(delegate() {
+                    AllocateDeviceSlots(deviceId);
+                    if (deviceData != null && deviceData.HasValues) {
+                        _devices[deviceId] = deviceData;
+                    } else {
+                        _devices[deviceId] = null;
+                    }
 
-                if (onDeviceStateChange != null) {
-                    eventQueue.Enqueue(delegate() {
-                        if (onDeviceStateChange != null) {
-                            onDeviceStateChange(deviceId, GetDevice(_device_id));
-                        }
-                    });
-                }
+                    if (onDeviceStateChange != null) {
+                        onDeviceStateChange(deviceId, GetDevice(_device_id));
+                    }
 
-                if (Settings.debug.info) {
-                    AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
-                }
+                    if (Settings.debug.info) {
+                        AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
+                    }
+                });
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);
@@ -1417,52 +1417,51 @@ namespace NDream.AirConsole {
         }
 
         private void OnReady(JObject msg) {
-            if (webViewLoadingCanvas) {
-                Destroy(webViewLoadingCanvas.gameObject);
-            }
-
-            // parse server_time_offset
-            _server_time_offset = (int)msg["server_time_offset"];
-
-            // parse device_id
-            _device_id = (int)msg["device_id"];
-
-            // parse location
-            _location = (string)msg["location"];
-
-            if (msg["translations"] != null) {
-                _translations = new Dictionary<string, string>();
-                JObject translationObject = (JObject)msg["translations"];
-                if (translationObject != null) {
-                    foreach (KeyValuePair<string, JToken> keyValue in translationObject) {
-                        string value = (string)keyValue.Value;
-                        value = value.Replace("\\n", "\n");
-                        value = value.Replace("&lt;", "<");
-                        value = value.Replace("&gt;", ">");
-                        _translations.Add(keyValue.Key, value);
-                    }
-                }
-            }
-
-
-            // load devices
-            _devices.Clear();
-            foreach (JToken data in (JToken)msg["devices"]) {
-                JToken assign = data;
-                if (data != null && !data.HasValues) {
-                    assign = null;
+            // Queue all state modifications to run on the Unity main thread to avoid race conditions
+            eventQueue.Enqueue(delegate() {
+                if (webViewLoadingCanvas) {
+                    Destroy(webViewLoadingCanvas.gameObject);
                 }
 
-                _devices.Add(assign);
-            }
+                // parse server_time_offset
+                _server_time_offset = (int)msg["server_time_offset"];
 
-            if (onReady != null) {
-                eventQueue.Enqueue(delegate() {
-                    if (onReady != null) {
-                        onReady((string)msg["code"]);
+                // parse device_id
+                _device_id = (int)msg["device_id"];
+
+                // parse location
+                _location = (string)msg["location"];
+
+                if (msg["translations"] != null) {
+                    _translations = new Dictionary<string, string>();
+                    JObject translationObject = (JObject)msg["translations"];
+                    if (translationObject != null) {
+                        foreach (KeyValuePair<string, JToken> keyValue in translationObject) {
+                            string value = (string)keyValue.Value;
+                            value = value.Replace("\\n", "\n");
+                            value = value.Replace("&lt;", "<");
+                            value = value.Replace("&gt;", ">");
+                            _translations.Add(keyValue.Key, value);
+                        }
                     }
-                });
-            }
+                }
+
+
+                // load devices
+                _devices.Clear();
+                foreach (JToken data in (JToken)msg["devices"]) {
+                    JToken assign = data;
+                    if (data != null && !data.HasValues) {
+                        assign = null;
+                    }
+
+                    _devices.Add(assign);
+                }
+
+                if (onReady != null) {
+                    onReady((string)msg["code"]);
+                }
+            });
         }
 
         private void OnDeviceProfileChange(JObject msg) {
@@ -1537,6 +1536,98 @@ namespace NDream.AirConsole {
             }
         }
 
+        private void ResetCaches() {
+            AirConsoleLogger.LogDevelopment(() => "Resetting AirConsole caches");
+            
+            // Clear device and player data
+            _devices.Clear();
+            _players.Clear();
+            
+            // Reset state variables
+            _device_id = 0;
+            _server_time_offset = 0;
+            _location = null;
+            _translations = null;
+            
+            // Reset safe area
+            _safeAreaWasSet = false;
+            _lastSafeAreaParameters = null;
+            SafeArea = new Rect(0, 0, Screen.width, Screen.height);
+            
+            // Clear event queue
+            eventQueue.Clear();
+            
+            AirConsoleLogger.LogDevelopment(() => "AirConsole caches reset complete");
+        }
+
+        private void CleanupWebSocketListener() {
+            if (wsListener == null) {
+                return;
+            }
+            
+            AirConsoleLogger.LogDevelopment(() => "Cleaning up WebSocket listener");
+            
+            // Unsubscribe all event handlers to prevent stale events
+            if (IsAndroidOrEditor) {
+                wsListener.onLaunchApp -= OnLaunchApp;
+                wsListener.onUnityWebviewResize -= OnUnityWebviewResize;
+                wsListener.onUnityWebviewPlatformReady -= OnUnityWebviewPlatformReady;
+                wsListener.OnUpdateContentProvider -= OnUpdateContentProvider;
+                wsListener.OnPlatformReady -= HandlePlatformReady;
+            }
+            
+            wsListener.OnSetSafeArea -= OnSetSafeArea;
+            wsListener.onReady -= OnReady;
+            wsListener.onClose -= OnClose;
+            wsListener.onMessage -= OnMessage;
+            wsListener.onDeviceStateChange -= OnDeviceStateChange;
+            wsListener.onConnect -= OnConnect;
+            wsListener.onDisconnect -= OnDisconnect;
+            wsListener.onCustomDeviceStateChange -= OnCustomDeviceStateChange;
+            wsListener.onDeviceProfileChange -= OnDeviceProfileChange;
+            wsListener.onAdShow -= OnAdShow;
+            wsListener.onAdComplete -= OnAdComplete;
+            wsListener.onGameEnd -= OnGameEnd;
+            wsListener.onHighScores -= OnHighScores;
+            wsListener.onHighScoreStored -= OnHighScoreStored;
+            wsListener.onPersistentDataStored -= OnPersistentDataStored;
+            wsListener.onPersistentDataLoaded -= OnPersistentDataLoaded;
+            wsListener.onPremium -= OnPremium;
+            wsListener.onPause -= OnPause;
+            wsListener.onResume -= OnResume;
+            
+            // Stop websocket server if in editor
+            StopWebsocketServer();
+            
+            wsListener = null;
+            
+            AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
+        }
+
+        private void RecreateWebView() {
+            if (string.IsNullOrEmpty(_webViewOriginalUrl) || string.IsNullOrEmpty(_webViewConnectionUrl)) {
+                AirConsoleLogger.LogDevelopment(() => "Cannot recreate webview - no URL stored");
+                return;
+            }
+            
+            AirConsoleLogger.LogDevelopment(() => $"Recreating webview with URL: {_webViewOriginalUrl}");
+            
+            // Cleanup websocket listener first to prevent stale events
+            CleanupWebSocketListener();
+            
+            // Destroy the old webview
+            if (webViewObject != null) {
+                Destroy(webViewObject.gameObject);
+                webViewObject = null;
+            }
+            
+            // Reset webview manager
+            _webViewManager = null;
+            
+            // Recreate the webview with stored connection URL
+            CreateAndroidWebview(_webViewConnectionUrl);
+        }
+
         private void OnGameEnd(JObject msg) {
             _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
 
@@ -1552,6 +1643,12 @@ namespace NDream.AirConsole {
                 if (Settings.debug.info) {
                     AirConsoleLogger.Log(() => "AirConsole: onGameEnd");
                 }
+                
+                // Reset all caches
+                ResetCaches();
+                
+                // Recreate webview with original URL
+                RecreateWebView();
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);
@@ -1779,6 +1876,8 @@ namespace NDream.AirConsole {
         private JObject _lastSafeAreaParameters;
         private WebViewManager _webViewManager;
         private bool _logPlatformMessages;
+        private string _webViewConnectionUrl;
+        private string _webViewOriginalUrl;
 
         private IRuntimeConfigurator _runtimeConfigurator;
 
@@ -1789,12 +1888,46 @@ namespace NDream.AirConsole {
                 return;
             }
 
+            // Unregister event handlers before stopping to prevent race conditions
+            if (wsListener != null) {
+                wsListener.OnSetSafeArea -= OnSetSafeArea;
+                wsListener.onReady -= OnReady;
+                wsListener.onClose -= OnClose;
+                wsListener.onMessage -= OnMessage;
+                wsListener.onDeviceStateChange -= OnDeviceStateChange;
+                wsListener.onConnect -= OnConnect;
+                wsListener.onDisconnect -= OnDisconnect;
+                wsListener.onCustomDeviceStateChange -= OnCustomDeviceStateChange;
+                wsListener.onDeviceProfileChange -= OnDeviceProfileChange;
+                wsListener.onAdShow -= OnAdShow;
+                wsListener.onAdComplete -= OnAdComplete;
+                wsListener.onGameEnd -= OnGameEnd;
+                wsListener.onHighScores -= OnHighScores;
+                wsListener.onHighScoreStored -= OnHighScoreStored;
+                wsListener.onPersistentDataStored -= OnPersistentDataStored;
+                wsListener.onPersistentDataLoaded -= OnPersistentDataLoaded;
+                wsListener.onPremium -= OnPremium;
+                wsListener.onPause -= OnPause;
+                wsListener.onResume -= OnResume;
+                
+                if (IsAndroidOrEditor) {
+                    wsListener.onLaunchApp -= OnLaunchApp;
+                    wsListener.onUnityWebviewResize -= OnUnityWebviewResize;
+                    wsListener.onUnityWebviewPlatformReady -= OnUnityWebviewPlatformReady;
+                    wsListener.OnUpdateContentProvider -= OnUpdateContentProvider;
+                    wsListener.OnPlatformReady -= HandlePlatformReady;
+                }
+            }
+
             wsServer.Stop();
             wsServer = null;
         }
 
         private void OnClose() {
-            _devices.Clear();
+            // Queue the clear operation to run on the Unity main thread to avoid race conditions
+            eventQueue.Enqueue(delegate() {
+                _devices.Clear();
+            });
         }
 
         public static string GetUrl(StartMode mode) {
@@ -1953,6 +2086,8 @@ namespace NDream.AirConsole {
         private void CreateAndroidWebview(string connectionUrl) {
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
+                _webViewConnectionUrl = connectionUrl;
+                
                 webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                 if (Application.isPlaying) {
                     DontDestroyOnLoad(webViewObject.gameObject);
@@ -1961,16 +2096,12 @@ namespace NDream.AirConsole {
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView error: {err}"),
                     httpError => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView HttpError: {httpError}"),
-                    url => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView Loaded URL {url}"),
+                    loadedUrl => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView Loaded URL {loadedUrl}"),
                     started => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView started: {started}"),
                     hooked => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView hooked: {hooked}"),
                     cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-                if (IsAndroidRuntime && _pluginManager != null) {
-                    _pluginManager.OnReloadWebview += () => webViewObject.Reload();
-                    _pluginManager.InitializeOfflineCheck();
-                }
 #if UNITY_ANDROID
                 string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
                 string url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
@@ -1988,12 +2119,13 @@ namespace NDream.AirConsole {
                 url += "&game-version=" + androidGameVersion;
                 url += "&unity-version=" + Application.unityVersion;
 
+                _webViewOriginalUrl = url;
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
                 webViewObject.SetVisibility(!Application.isEditor);
                 AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
                 webViewObject.LoadURL(url);
-                
+
                 if (IsAndroidRuntime && _pluginManager != null) {
                     _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url); 
                     _pluginManager.InitializeOfflineCheck();
@@ -2021,38 +2153,45 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment(() => $"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
 
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
-                bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
-
-                if (msg["quit_after_launch_intent"] != null) {
-                    quitAfterLaunchIntent = msg.SelectToken("quit_after_launch_intent").Value<bool>();
-                }
-
-                // Quit the Unity Player first and give it the time to close all the threads (Default)
-                if (!quitAfterLaunchIntent) {
-                    Application.Quit();
-                    if (_pluginManager == null || !_pluginManager.IsAutomotive()) {
-                        AirConsoleLogger.LogDevelopment(() => $"Quit and sleep for 2000ms");
-                        Thread.Sleep(2000);
-                    } else {
-                        AirConsoleLogger.LogDevelopment(() => $"Quit immediately");
-                    }
-                }
-
-                if (IsAndroidRuntime) {
-                    LaunchNativeAirConsoleStore(msg, gameId, gameVersion);
-                }
-
-                // Quitting after launch intent was the pre v2.5 way
-                if (quitAfterLaunchIntent) {
-                    AirConsoleLogger.LogDevelopment(() => $"Quit after launch intent");
-                    Application.Quit();
-                    return;
-                }
-
-                int timeout = _pluginManager != null && _pluginManager.IsAutomotive() ? 2000 : 2000;
-                Thread.Sleep(timeout);
-                FinishActivity();
+                // Marshal to main thread since this is called from WebSocket background thread
+                eventQueue.Enqueue(() => {
+                    StartCoroutine(HandleLaunchAppTransition(msg, gameId, gameVersion));
+                });
             }
+        }
+
+        private System.Collections.IEnumerator HandleLaunchAppTransition(JObject msg, string gameId, string gameVersion) {
+            bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
+
+            if (msg["quit_after_launch_intent"] != null) {
+                quitAfterLaunchIntent = msg.SelectToken("quit_after_launch_intent").Value<bool>();
+            }
+
+            // Quit the Unity Player first and give it the time to close all the threads (Default)
+            if (!quitAfterLaunchIntent) {
+                Application.Quit();
+                if (_pluginManager == null || !_pluginManager.IsAutomotive()) {
+                    AirConsoleLogger.LogDevelopment(() => $"Quit and wait for 2 seconds");
+                    yield return new WaitForSecondsRealtime(2.0f);
+                } else {
+                    AirConsoleLogger.LogDevelopment(() => $"Quit immediately");
+                }
+            }
+
+            if (IsAndroidRuntime) {
+                LaunchNativeAirConsoleStore(msg, gameId, gameVersion);
+            }
+
+            // Quitting after launch intent was the pre v2.5 way
+            if (quitAfterLaunchIntent) {
+                AirConsoleLogger.LogDevelopment(() => $"Quit after launch intent");
+                Application.Quit();
+                yield break;
+            }
+
+            float timeout = 2.0f;
+            yield return new WaitForSecondsRealtime(timeout);
+            FinishActivity();
         }
 
         private static void LaunchNativeAirConsoleStore(JObject msg, string gameId, string gameVersion) {

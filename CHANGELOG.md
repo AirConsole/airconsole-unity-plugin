@@ -15,6 +15,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 - Android Target SDK: Increased to 35 to meet Google Play requirements per Nov 1, 2025.
 - Minimum Versions: The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
+- Android: After the last device disconnects, the webview is reset along the game state.
+
+### Added
+
+- **Webview Reset**: Added functionality to reset the webview, allowing users to clear its state and reload content as needed.
 
 ### Removed
 
