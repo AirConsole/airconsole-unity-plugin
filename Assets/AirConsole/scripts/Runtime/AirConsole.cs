@@ -10,7 +10,6 @@ using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.Serialization;
-using Debug = UnityEngine.Debug;
 using UnityEngine.SceneManagement;
 
 namespace NDream.AirConsole {
@@ -61,6 +60,18 @@ namespace NDream.AirConsole {
     public delegate void OnPause();
 
     public delegate void OnResume();
+
+    /// <summary>
+    /// Signals the new maximum volume to adopt in the game.
+    /// The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
+    /// </summary>
+    public delegate void OnMaximumVolumeChanged(float maximumVolume);
+
+    /// <summary>
+    /// Called with the new volume to adopt in the game.
+    /// The volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
+    /// </summary>
+    public delegate void OnChangeFloat(float volume);
 
     /// <summary>
     /// Gets called when the safe area of the screen changes.
@@ -115,9 +126,9 @@ namespace NDream.AirConsole {
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
-
+        
         // ReSharper disable MemberCanBePrivate.Global UnusedMember.Global
-
+        
         /// <summary>
         /// Device ID of the screen
         /// </summary>
@@ -261,6 +272,18 @@ namespace NDream.AirConsole {
         /// </summary>
         public event OnResume onResume;
 
+        /// <summary>
+        /// Invoked when the game needs to change it's maximum master volume.
+        /// This must be implemented for Android based games and must be registered before OnReady is invoked.
+        /// The volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
+        /// At volume 0.0, you can stop the audio playback.
+        /// </summary>
+        public event OnMaximumVolumeChanged OnMaximumVolumeChanged;
+
+        private bool _canHaveAudioFocus;
+        private bool _hasAudioFocus;
+        private bool _ignoreAudioFocusLoss = true;
+
         internal event Action UnityDestroy;
         internal event Action UnityResume;
         internal event Action UnityPause;
@@ -358,7 +381,7 @@ namespace NDream.AirConsole {
         /// are active players by calling getActivePlayerDeviceIds().
         /// The screen can call this function every time a game round starts.
         /// </summary>
-        /// <param name="data">The maximum number of controllers that should
+        /// <param name="max_players">The maximum number of controllers that should
         /// get a player number assigned.</param>
         public void SetActivePlayers(int max_players = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
@@ -1116,7 +1139,10 @@ namespace NDream.AirConsole {
             if (IsAndroidRuntime) {
                 AirConsoleLogger.Log(() => $"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
+                defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
+                _pluginManager.OnUpdateVolume += HandleOnMaxVolumeChanged;
+                _pluginManager.OnAudioFocusChange += HandleAudioFocusChanged;
             }
         }
 
@@ -1253,7 +1279,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
-
+        
         private void ProcessEvents() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
@@ -1300,25 +1326,25 @@ namespace NDream.AirConsole {
 
             try {
                 int deviceId = (int)msg["device_id"];
+                AllocateDeviceSlots(deviceId);
                 JToken deviceData = msg["device_data"];
+                if (deviceData != null && deviceData.HasValues) {
+                    _devices[deviceId] = deviceData;
+                } else {
+                    _devices[deviceId] = null;
+                }
 
-                // Queue all _devices modifications to run on the Unity main thread to avoid race conditions
-                eventQueue.Enqueue(delegate() {
-                    AllocateDeviceSlots(deviceId);
-                    if (deviceData != null && deviceData.HasValues) {
-                        _devices[deviceId] = deviceData;
-                    } else {
-                        _devices[deviceId] = null;
-                    }
+                if (onDeviceStateChange != null) {
+                    eventQueue.Enqueue(delegate() {
+                        if (onDeviceStateChange != null) {
+                            onDeviceStateChange(deviceId, GetDevice(_device_id));
+                        }
+                    });
+                }
 
-                    if (onDeviceStateChange != null) {
-                        onDeviceStateChange(deviceId, GetDevice(_device_id));
-                    }
-
-                    if (Settings.debug.info) {
-                        AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
-                    }
-                });
+                if (Settings.debug.info) {
+                    AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
+                }
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);
@@ -1405,6 +1431,10 @@ namespace NDream.AirConsole {
         }
 
         private void OnMessage(JObject msg) {
+            if (!_hasAudioFocus) {
+                RequestAudioFocus();
+            }
+            
             if (onMessage != null) {
                 eventQueue.Enqueue(delegate() {
                     if (onMessage != null) {
@@ -1414,7 +1444,43 @@ namespace NDream.AirConsole {
             }
         }
 
+        private void RequestAudioFocus() {
+            if (!_canHaveAudioFocus) {
+                AirConsoleLogger.Log(() => "AirConsole: Not requesting audio focus because the app is not allowed.");
+                return;
+            }
+
+            _hasAudioFocus = _pluginManager.RequestAudioFocus();
+            if (!_hasAudioFocus) {
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole: Failed to obtain audio focus. Audio may not work as expected. Should pause platform");
+            }
+        }
+
+        private void AbandonAudioFocus() {
+            _hasAudioFocus = false;
+            _pluginManager.AbandonAudioFocus();
+        }
+        
         private void OnReady(JObject msg) {
+            _ignoreAudioFocusLoss = false;
+            if (Application.platform == RuntimePlatform.Android) {
+                // Android based games must respect the volume change requests so we can correctly handle Android AudioFocus behavior as
+                //  demanded by Automotive on one side and Android 33+ on the other side.
+                if (OnMaximumVolumeChanged == null || OnMaximumVolumeChanged.GetInvocationList().Length == 0) {
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    throw new Exception("No listeners registered to OnChangeVolume. Editor playback stopped.");
+#else
+                    throw new System.Exception("No listeners registered to OnChangeVolume.");
+#endif
+                }
+
+                if (!Application.isEditor) {
+                    RequestAudioFocus();
+                }
+            }
+   
             // Queue all state modifications to run on the Unity main thread to avoid race conditions
             eventQueue.Enqueue(delegate() {
                 if (webViewLoadingCanvas) {
@@ -1458,7 +1524,7 @@ namespace NDream.AirConsole {
 
                 if (onReady != null) {
                     onReady((string)msg["code"]);
-                }
+                } 
             });
         }
 
@@ -1653,6 +1719,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnGameEnd(JObject msg) {
+            _ignoreAudioFocusLoss = true;
+            AbandonAudioFocus();
             _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
 
             try {
@@ -1796,6 +1864,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnPause(JObject msg) {
+            AbandonAudioFocus();
+            
             try {
                 if (onPause != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1816,6 +1886,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnResume(JObject msg) {
+            RequestAudioFocus();
             try {
                 if (onResume != null) {
                     eventQueue.Enqueue(delegate() {
@@ -2059,7 +2130,7 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
+            
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingBG.color = Color.black;
             webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
@@ -2082,6 +2153,7 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
+            // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 _webViewConnectionUrl = connectionUrl;
@@ -2100,13 +2172,18 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
+                if (IsAndroidRuntime && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => webViewObject.Reload();
+                    _pluginManager.InitializeOfflineCheck();
+                }
+                
                 string url;
                 if (IsAndroidRuntime) {
-                  string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
-                  url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
-                  AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
+                    string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
+                    url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
+                    AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
                 } else {
-                  url = Settings.AIRCONSOLE_BASE_URL;
+                    url = Settings.AIRCONSOLE_BASE_URL;
                 }
 
                 url += connectionUrl;
@@ -2127,6 +2204,7 @@ namespace NDream.AirConsole {
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
                 webViewObject.SetVisibility(!Application.isEditor);
+                // url += "&kiosk=1";
                 AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
                 webViewObject.LoadURL(url);
 
@@ -2164,7 +2242,6 @@ namespace NDream.AirConsole {
             string gameId = (string)msg["game_id"];
             string gameVersion = (string)msg["game_version"];
             AirConsoleLogger.LogDevelopment(() => $"OnLaunchApp for {msg} -> {gameId} -> {gameVersion}");
-
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 // Marshal to main thread since this is called from WebSocket background thread
                 eventQueue.Enqueue(() => {
@@ -2172,7 +2249,7 @@ namespace NDream.AirConsole {
                 });
             }
         }
-
+        
         private System.Collections.IEnumerator HandleLaunchAppTransition(JObject msg, string gameId, string gameVersion) {
             bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
@@ -2322,6 +2399,25 @@ namespace NDream.AirConsole {
                         / (allCanvasScalers[i].referenceResolution.y - GetScaledWebViewHeight())
                         * allCanvasScalers[i].referenceResolution.y);
                 fixedCanvasScalers.Add(allCanvasScalers[i]);
+            }
+        }
+
+        private void HandleOnMaxVolumeChanged(float maximumVolume) {
+            AirConsoleLogger.LogDevelopment(() => $"OnMaxVolumeChanged {maximumVolume}");
+            eventQueue.Enqueue(() => OnMaximumVolumeChanged?.Invoke(maximumVolume));
+        }
+
+        private void HandleAudioFocusChanged(bool canHaveAudioFocus) {
+            AirConsoleLogger.LogDevelopment(() => $"OnAudioFocusChanged {canHaveAudioFocus}");
+
+            if (!canHaveAudioFocus && _ignoreAudioFocusLoss) {
+                AirConsoleLogger.LogDevelopment(() => "Ignoring audio focus loss until the game is ready.");
+                return;
+            }
+
+            _canHaveAudioFocus = canHaveAudioFocus;
+            if (!_canHaveAudioFocus) {
+                HandleOnMaxVolumeChanged(0f);
             }
         }
 
