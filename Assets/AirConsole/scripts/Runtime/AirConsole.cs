@@ -1596,10 +1596,6 @@ namespace NDream.AirConsole {
         }
 
         private void CleanupWebSocketListener() {
-            if (wsListener == null) {
-                return;
-            }
-
             AirConsoleLogger.LogDevelopment(() => "Cleaning up WebSocket listener");
 
             // Unsubscribe all event handlers to prevent stale events
@@ -1608,14 +1604,24 @@ namespace NDream.AirConsole {
             // Stop websocket server if in editor
             StopWebsocketServer();
 
-            wsListener = null;
+            if (wsListener != null) {
+                wsListener = null;
+            }
 
             AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
         }
 
         private void RecreateWebView() {
             if (string.IsNullOrEmpty(_webViewOriginalUrl) || string.IsNullOrEmpty(_webViewConnectionUrl)) {
-                AirConsoleLogger.LogDevelopment(() => "Cannot recreate webview - no URL stored");
+                string missing = "";
+                if (string.IsNullOrEmpty(_webViewOriginalUrl) && string.IsNullOrEmpty(_webViewConnectionUrl)) {
+                    missing = "both original and connection URLs";
+                } else if (string.IsNullOrEmpty(_webViewOriginalUrl)) {
+                    missing = "original URL";
+                } else {
+                    missing = "connection URL";
+                }
+                AirConsoleLogger.LogDevelopment(() => $"Cannot recreate webview - missing {missing}");
                 return;
             }
 
@@ -2083,13 +2089,14 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
-#if UNITY_ANDROID
-                string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
-                string url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
-                AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
-#else
-                string url = Settings.AIRCONSOLE_BASE_URL;
-#endif
+                string url;
+                if (IsAndroidRuntime) {
+                  string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
+                  url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
+                  AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
+                } else {
+                  url = Settings.AIRCONSOLE_BASE_URL;
+                }
 
                 url += connectionUrl;
                 if (IsAndroidRuntime) {
