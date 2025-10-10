@@ -6,6 +6,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+
+- Android: Platform overlay resizes correctly on Android TV
+
 ### Changed
 
 - Minimum Versions: The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
