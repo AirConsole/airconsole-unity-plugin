@@ -116,9 +116,9 @@ namespace NDream.AirConsole {
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
-        
+
         // ReSharper disable MemberCanBePrivate.Global UnusedMember.Global
-        
+
         /// <summary>
         /// Device ID of the screen
         /// </summary>
@@ -1255,7 +1255,7 @@ namespace NDream.AirConsole {
                 }
             }
         }
-        
+
         private void ProcessEvents() {
             // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
@@ -1303,7 +1303,7 @@ namespace NDream.AirConsole {
             try {
                 int deviceId = (int)msg["device_id"];
                 JToken deviceData = msg["device_data"];
-                
+
                 // Queue all _devices modifications to run on the Unity main thread to avoid race conditions
                 eventQueue.Enqueue(delegate() {
                     AllocateDeviceSlots(deviceId);
@@ -1538,44 +1538,34 @@ namespace NDream.AirConsole {
 
         private void ResetCaches() {
             AirConsoleLogger.LogDevelopment(() => "Resetting AirConsole caches");
-            
+
             // Clear device and player data
             _devices.Clear();
             _players.Clear();
-            
+
             // Reset state variables
             _device_id = 0;
             _server_time_offset = 0;
             _location = null;
             _translations = null;
-            
+
             // Reset safe area
             _safeAreaWasSet = false;
             _lastSafeAreaParameters = null;
             SafeArea = new Rect(0, 0, Screen.width, Screen.height);
-            
+
             // Clear event queue
             eventQueue.Clear();
-            
+
             AirConsoleLogger.LogDevelopment(() => "AirConsole caches reset complete");
         }
 
-        private void CleanupWebSocketListener() {
+        private void UnsubscribeWebSocketEvents() {
             if (wsListener == null) {
                 return;
             }
-            
-            AirConsoleLogger.LogDevelopment(() => "Cleaning up WebSocket listener");
-            
+
             // Unsubscribe all event handlers to prevent stale events
-            if (IsAndroidOrEditor) {
-                wsListener.onLaunchApp -= OnLaunchApp;
-                wsListener.onUnityWebviewResize -= OnUnityWebviewResize;
-                wsListener.onUnityWebviewPlatformReady -= OnUnityWebviewPlatformReady;
-                wsListener.OnUpdateContentProvider -= OnUpdateContentProvider;
-                wsListener.OnPlatformReady -= HandlePlatformReady;
-            }
-            
             wsListener.OnSetSafeArea -= OnSetSafeArea;
             wsListener.onReady -= OnReady;
             wsListener.onClose -= OnClose;
@@ -1595,12 +1585,31 @@ namespace NDream.AirConsole {
             wsListener.onPremium -= OnPremium;
             wsListener.onPause -= OnPause;
             wsListener.onResume -= OnResume;
-            
+
+            if (IsAndroidOrEditor) {
+                wsListener.onLaunchApp -= OnLaunchApp;
+                wsListener.onUnityWebviewResize -= OnUnityWebviewResize;
+                wsListener.onUnityWebviewPlatformReady -= OnUnityWebviewPlatformReady;
+                wsListener.OnUpdateContentProvider -= OnUpdateContentProvider;
+                wsListener.OnPlatformReady -= HandlePlatformReady;
+            }
+        }
+
+        private void CleanupWebSocketListener() {
+            if (wsListener == null) {
+                return;
+            }
+
+            AirConsoleLogger.LogDevelopment(() => "Cleaning up WebSocket listener");
+
+            // Unsubscribe all event handlers to prevent stale events
+            UnsubscribeWebSocketEvents();
+
             // Stop websocket server if in editor
             StopWebsocketServer();
-            
+
             wsListener = null;
-            
+
             AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
         }
 
@@ -1609,21 +1618,21 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogDevelopment(() => "Cannot recreate webview - no URL stored");
                 return;
             }
-            
+
             AirConsoleLogger.LogDevelopment(() => $"Recreating webview with URL: {_webViewOriginalUrl}");
-            
+
             // Cleanup websocket listener first to prevent stale events
             CleanupWebSocketListener();
-            
+
             // Destroy the old webview
             if (webViewObject != null) {
                 Destroy(webViewObject.gameObject);
                 webViewObject = null;
             }
-            
+
             // Reset webview manager
             _webViewManager = null;
-            
+
             // Recreate the webview with stored connection URL
             CreateAndroidWebview(_webViewConnectionUrl);
         }
@@ -1643,10 +1652,10 @@ namespace NDream.AirConsole {
                 if (Settings.debug.info) {
                     AirConsoleLogger.Log(() => "AirConsole: onGameEnd");
                 }
-                
+
                 // Reset all caches
                 ResetCaches();
-                
+
                 // Recreate webview with original URL
                 RecreateWebView();
             } catch (Exception e) {
@@ -1889,35 +1898,7 @@ namespace NDream.AirConsole {
             }
 
             // Unregister event handlers before stopping to prevent race conditions
-            if (wsListener != null) {
-                wsListener.OnSetSafeArea -= OnSetSafeArea;
-                wsListener.onReady -= OnReady;
-                wsListener.onClose -= OnClose;
-                wsListener.onMessage -= OnMessage;
-                wsListener.onDeviceStateChange -= OnDeviceStateChange;
-                wsListener.onConnect -= OnConnect;
-                wsListener.onDisconnect -= OnDisconnect;
-                wsListener.onCustomDeviceStateChange -= OnCustomDeviceStateChange;
-                wsListener.onDeviceProfileChange -= OnDeviceProfileChange;
-                wsListener.onAdShow -= OnAdShow;
-                wsListener.onAdComplete -= OnAdComplete;
-                wsListener.onGameEnd -= OnGameEnd;
-                wsListener.onHighScores -= OnHighScores;
-                wsListener.onHighScoreStored -= OnHighScoreStored;
-                wsListener.onPersistentDataStored -= OnPersistentDataStored;
-                wsListener.onPersistentDataLoaded -= OnPersistentDataLoaded;
-                wsListener.onPremium -= OnPremium;
-                wsListener.onPause -= OnPause;
-                wsListener.onResume -= OnResume;
-                
-                if (IsAndroidOrEditor) {
-                    wsListener.onLaunchApp -= OnLaunchApp;
-                    wsListener.onUnityWebviewResize -= OnUnityWebviewResize;
-                    wsListener.onUnityWebviewPlatformReady -= OnUnityWebviewPlatformReady;
-                    wsListener.OnUpdateContentProvider -= OnUpdateContentProvider;
-                    wsListener.OnPlatformReady -= HandlePlatformReady;
-                }
-            }
+            UnsubscribeWebSocketEvents();
 
             wsServer.Stop();
             wsServer = null;
@@ -2061,7 +2042,7 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            
+
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingBG.color = Color.black;
             webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
@@ -2087,7 +2068,7 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 _webViewConnectionUrl = connectionUrl;
-                
+
                 webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
                 if (Application.isPlaying) {
                     DontDestroyOnLoad(webViewObject.gameObject);
@@ -2127,7 +2108,7 @@ namespace NDream.AirConsole {
                 webViewObject.LoadURL(url);
 
                 if (IsAndroidRuntime && _pluginManager != null) {
-                    _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url); 
+                    _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url);
                     _pluginManager.InitializeOfflineCheck();
                 }
 
@@ -2138,7 +2119,7 @@ namespace NDream.AirConsole {
                 InitWebSockets();
             }
         }
-        
+
         private static int GetAndroidBundleVersionCode() {
             AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
             AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
