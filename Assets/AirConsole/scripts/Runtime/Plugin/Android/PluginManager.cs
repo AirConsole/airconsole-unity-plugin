@@ -18,9 +18,11 @@ namespace NDream.AirConsole.Android.Plugin {
         /// <remarks>Currently only supports UNITY_ANDROID && !UNITY_EDITOR scenarios.</remarks>
         // ReSharper disable once EventNeverSubscribedTo.Global
         internal event Action<string> OnConnectionUrlReceived;
+
+        internal event Action<float> OnUpdateVolume;
+        internal event Action<string> OnAudioFocusChange;
         
         internal PluginManager(AirConsole airConsole) {
-            AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
 
             GenericUnityPluginCallback<bool> pauseCallback = new(HandlePlatformPauseEvent);
             
@@ -32,6 +34,21 @@ namespace NDream.AirConsole.Android.Plugin {
                 },
                 error => { AirConsoleLogger.Log(() => $"AndroidDataProvider initialization failed with {error}"); }
             );
+
+            GenericUnityPluginCallback<float> onVolumeChangeCallback = new(volume => {
+                AirConsoleLogger.LogDevelopment(() => $"Volume changed to {volume}");
+                OnUpdateVolume?.Invoke(volume);
+
+                // AudioListener.volume = volume;
+            });
+
+            GenericUnityPluginCallback<string> onAudioFocusChangeCallback = new(focusEvent => {
+                AirConsoleLogger.LogDevelopment(() => $"Audio focus event received: {focusEvent}");
+
+                OnAudioFocusChange?.Invoke(focusEvent);
+
+                // Handle audio focus change if needed
+            });
             
             UnityPluginExecutionCallback reloadCallback = new(() => { OnReloadWebview?.Invoke(); });
             _service =
@@ -39,18 +56,32 @@ namespace NDream.AirConsole.Android.Plugin {
                     pauseCallback,
                     reloadCallback,
                     Settings.AIRCONSOLE_BASE_URL,
-                    callback);
+                    callback,
+                    onVolumeChangeCallback,
+                    onAudioFocusChangeCallback);
 
             _airConsole = airConsole;
-            _airConsole.UnityPause += OnPause;
-            _airConsole.UnityResume += OnResume;
+
+            // _airConsole.UnityPause += OnPause;
+            // _airConsole.UnityResume += OnResume;
             _airConsole.UnityDestroy += OnDestroy;
+            AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
         }
 
         internal void ReportPlatformReady() {
             AirConsoleLogger.LogDevelopment(() => "ReportPlatformReady called.");
 
             _service.Call("reportPlatformReady");
+        }
+
+        internal bool RequestAudioFocus() {
+            AirConsoleLogger.LogDevelopment(() => "RequestAudioFocus called.");
+            return _service.Call<bool>("requestAudioFocus");
+        }
+
+        internal void AbandonAudioFocus() {
+            AirConsoleLogger.LogDevelopment(() => "AbandonAudioFocus called.");
+            _service.Call("abandonAudioFocus");
         }
         
 //         /// <summary>

@@ -10,7 +10,6 @@ using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
 using UnityEngine.Serialization;
-using Debug = UnityEngine.Debug;
 using UnityEngine.SceneManagement;
 
 namespace NDream.AirConsole {
@@ -61,6 +60,13 @@ namespace NDream.AirConsole {
     public delegate void OnPause();
 
     public delegate void OnResume();
+
+    /// <summary>
+    /// Used to notify the game about changes to audio focus and maximum allowed volume.
+    /// </summary>
+    /// <param name="hasAudioFocus">True, if the application has AudioFocus. Otherwise the application should stop all audio playback e.g. AudioListener.pause = !hasAudioFocus</param>
+    /// <param name="newMaximumVolume">The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).</param>
+    public delegate void OnGameAudioFocusChanged(bool hasAudioFocus, float newMaximumVolume);
 
     /// <summary>
     /// Gets called when the safe area of the screen changes.
@@ -261,6 +267,17 @@ namespace NDream.AirConsole {
         /// </summary>
         public event OnResume onResume;
 
+        /// <summary>
+        /// Used to notify the game about changes to audio focus and maximum allowed volume.
+        /// This must be implemented for Android based games and must be registered before OnReady is invoked.
+        /// </summary>
+        /// <param name="hasAudioFocus">True, if the application has AudioFocus. Otherwise the application should stop all audio playback e.g. AudioListener.pause = !hasAudioFocus</param>
+        /// <param name="newMaximumVolume">The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).</param>
+        public event OnGameAudioFocusChanged OnGameAudioFocusChanged;
+
+        private bool _canHaveAudioFocus = true;
+        private bool _ignoreAudioFocusLoss = true;
+
         internal event Action UnityDestroy;
         internal event Action UnityResume;
         internal event Action UnityPause;
@@ -358,7 +375,7 @@ namespace NDream.AirConsole {
         /// are active players by calling getActivePlayerDeviceIds().
         /// The screen can call this function every time a game round starts.
         /// </summary>
-        /// <param name="data">The maximum number of controllers that should
+        /// <param name="max_players">The maximum number of controllers that should
         /// get a player number assigned.</param>
         public void SetActivePlayers(int max_players = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
@@ -1116,7 +1133,10 @@ namespace NDream.AirConsole {
             if (IsAndroidRuntime) {
                 AirConsoleLogger.Log(() => $"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
+                defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
+                _pluginManager.OnUpdateVolume += HandleOnMaxVolumeChanged;
+                _pluginManager.OnAudioFocusChange += HandleNativeAudioFocusChanged;
             }
         }
 
@@ -1300,25 +1320,25 @@ namespace NDream.AirConsole {
 
             try {
                 int deviceId = (int)msg["device_id"];
+                AllocateDeviceSlots(deviceId);
                 JToken deviceData = msg["device_data"];
+                if (deviceData != null && deviceData.HasValues) {
+                    _devices[deviceId] = deviceData;
+                } else {
+                    _devices[deviceId] = null;
+                }
 
-                // Queue all _devices modifications to run on the Unity main thread to avoid race conditions
-                eventQueue.Enqueue(delegate() {
-                    AllocateDeviceSlots(deviceId);
-                    if (deviceData != null && deviceData.HasValues) {
-                        _devices[deviceId] = deviceData;
-                    } else {
-                        _devices[deviceId] = null;
-                    }
+                if (onDeviceStateChange != null) {
+                    eventQueue.Enqueue(delegate() {
+                        if (onDeviceStateChange != null) {
+                            onDeviceStateChange(deviceId, GetDevice(_device_id));
+                        }
+                    });
+                }
 
-                    if (onDeviceStateChange != null) {
-                        onDeviceStateChange(deviceId, GetDevice(_device_id));
-                    }
-
-                    if (Settings.debug.info) {
-                        AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
-                    }
-                });
+                if (Settings.debug.info) {
+                    AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
+                }
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);
@@ -1414,7 +1434,62 @@ namespace NDream.AirConsole {
             }
         }
 
+        private void RequestAudioFocus() {
+            if (!_canHaveAudioFocus) {
+                AirConsoleLogger.Log(() => "AirConsole: Not requesting audio focus because the app is not allowed.");
+                return;
+            }
+
+            if (IsAndroidRuntime) {
+                HasAudioFocus = _pluginManager.RequestAudioFocus();
+            } else {
+                HasAudioFocus = true;
+            }
+
+            if (!HasAudioFocus) {
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole: Failed to obtain audio focus. Audio may not work as expected. Should pause platform");
+            }
+        }
+
+        private void AbandonAudioFocus() {
+            HasAudioFocus = false;
+            if (IsAndroidRuntime) {
+                _pluginManager.AbandonAudioFocus();
+            }
+        }
+
+        // TODO(QAB-14400, QAB-14401): This does not yet work correctly - when going to web, we lose audio focus and due to that
+        //  we do not regain it when coming back from web in OnReady. We need to distinguish between the two paths
         private void OnReady(JObject msg) {
+            _ignoreAudioFocusLoss = false;
+            RequestAudioFocus();
+            if (Application.platform == RuntimePlatform.Android) {
+                // Android based games must respect the volume change requests so we can correctly handle Android AudioFocus behavior as
+                //  demanded by Automotive on one side and Android 33+ on the other side.
+                if (OnGameAudioFocusChanged == null || OnGameAudioFocusChanged.GetInvocationList().Length == 0) {
+#if UNITY_EDITOR
+                    UnityEditor.EditorApplication.isPlaying = false;
+                    throw new Exception("No listeners registered to OnChangeVolume. Editor playback stopped.");
+#else
+                    throw new System.Exception("No listeners registered to OnChangeVolume.");
+#endif
+                }
+
+                if (!Application.isEditor) {
+                    webViewObject.AbandonUnityAudioFocus();
+
+                    // TODO(PRO-1637): What needs to be done here to correctly maintain the state machine?
+                    // Technically we also want to request the audio focus but we do that in the WEBVIEW_AUDIOFOCUS_ABANDONED callback from the webview.
+                    // RequestAudioFocus();
+                }
+            } else {
+                if (OnGameAudioFocusChanged != null && OnGameAudioFocusChanged.GetInvocationList().Length > 0) {
+                    AirConsoleLogger.Log(() =>
+                        "Registration to event OnGameAudioFocusChanged identified. This will only be called when running on Android devices.");
+                }
+            }
+
             // Queue all state modifications to run on the Unity main thread to avoid race conditions
             eventQueue.Enqueue(delegate() {
                 if (webViewLoadingCanvas) {
@@ -1650,9 +1725,14 @@ namespace NDream.AirConsole {
 
             // Recreate the webview with stored connection URL
             CreateAndroidWebview(_webViewConnectionUrl);
+
+            // Reapply audio focus based muting state
+            ConfigureWebviewAudioMute();
         }
 
         private void OnGameEnd(JObject msg) {
+            _ignoreAudioFocusLoss = true;
+            AbandonAudioFocus();
             _webViewManager.RequestStateTransition(WebViewManager.WebViewState.FullScreen);
 
             try {
@@ -1796,6 +1876,8 @@ namespace NDream.AirConsole {
         }
 
         private void OnPause(JObject msg) {
+            AbandonAudioFocus();
+            
             try {
                 if (onPause != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1816,6 +1898,9 @@ namespace NDream.AirConsole {
         }
 
         private void OnResume(JObject msg) {
+            // When we resume, we can have audio focus again.
+            _canHaveAudioFocus = true;
+            RequestAudioFocus();
             try {
                 if (onResume != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1857,6 +1942,18 @@ namespace NDream.AirConsole {
             get => _players.AsReadOnly();
         }
 
+        /// <summary>
+        /// Maximum Audio Volume allowed at this time.<br />
+        /// A value of 0 indicates, that the game should be muted right now and all audio output should be paused.<br />
+        /// A value of 1 indicates, that the game can play audio at full volume.<br />
+        /// Values in between should be used to set the volume of the audio output.<br />
+        /// This value can change at any time and you are expected to listen to OnMaximumVolumeChanged and adjust accordingly immediately.
+        /// </summary>
+        /// <value>1</value>
+        public float MaximumAudioVolume { get; private set; } = 1;
+
+        public bool HasAudioFocus { get; private set; } = true;
+        
         /// <summary>
         /// True, if this is the Android platform running on the device, not the editor.
         /// </summary>
@@ -2059,7 +2156,7 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-
+            
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingBG.color = Color.black;
             webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
@@ -2082,6 +2179,7 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
+            // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 _webViewConnectionUrl = connectionUrl;
@@ -2090,6 +2188,9 @@ namespace NDream.AirConsole {
                 if (Application.isPlaying) {
                     DontDestroyOnLoad(webViewObject.gameObject);
                 }
+
+                // TODO(QAB-14400, QAB-14401, QAB-14403): Handle Audio Focus change to update internal
+                webViewObject.SetOnAudioFocusChanged(HandleWebViewAudioFocusChanged);
 
                 webViewObject.Init(ProcessJS,
                     err => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView error: {err}"),
@@ -2100,13 +2201,18 @@ namespace NDream.AirConsole {
                     cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
                     true, false);
 
+                if (IsAndroidRuntime && _pluginManager != null) {
+                    _pluginManager.OnReloadWebview += () => webViewObject.Reload();
+                    _pluginManager.InitializeOfflineCheck();
+                }
+
                 string url;
                 if (IsAndroidRuntime) {
-                  string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
-                  url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
-                  AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
+                    string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
+                    url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
+                    AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
                 } else {
-                  url = Settings.AIRCONSOLE_BASE_URL;
+                    url = Settings.AIRCONSOLE_BASE_URL;
                 }
 
                 url += connectionUrl;
@@ -2127,6 +2233,7 @@ namespace NDream.AirConsole {
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
                 webViewObject.SetVisibility(!Application.isEditor);
+                // url += "&kiosk=1";
                 AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
                 webViewObject.LoadURL(url);
 
@@ -2325,6 +2432,186 @@ namespace NDream.AirConsole {
             }
         }
 
+        #region Audio Focus and Volume
+        private void HandleOnMaxVolumeChanged(float newMaximumVolume) {
+            MaximumAudioVolume = Mathf.Clamp01(_canHaveAudioFocus ? newMaximumVolume : 0f);
+            AirConsoleLogger.LogDevelopment(() =>
+                $"HandleOnMaxVolumeChanged({newMaximumVolume}) -> {MaximumAudioVolume}. No action taken.");
+
+            // eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(!Mathf.Approximately(MaximumAudioVolume, 0), MaximumAudioVolume));
+        }
+
+        private bool _muteWebView = false;
+        // TODO(QAB-14400, QAB-14401, QAB-14403): Handle Audio Focus change not yet fully implemented.
+        // Needs testing on various devices and scenarios and requires a more complete state machine.
+        // TODO(QAB-14400, QAB-14401, QAB-14403): Is this actually correct regarding _ignoreAudioFocusLoss which is true from onGameEnd -> onReady?
+        // Plugin Manager Audio Focus change handler
+        private void HandleAudioFocusChange(bool canHaveAudioFocus, bool shallMuteWebview) {
+            AirConsoleLogger.LogDevelopment(() => $"HandleAudioFocusChanged({canHaveAudioFocus})");
+
+            if (!canHaveAudioFocus && _ignoreAudioFocusLoss) {
+                AirConsoleLogger.LogDevelopment(() => "Ignoring audio focus loss until the game is ready.");
+                return;
+            }
+
+            _muteWebView = shallMuteWebview;
+            // TODO(PRO-1637): Implement a more complete state machine to handle audio focus changes correctly.
+            _canHaveAudioFocus = canHaveAudioFocus;
+            if (!canHaveAudioFocus) {
+                AirConsoleLogger.LogError(() => "Can have audio focus lost.");
+            }
+
+            // if (!_canHaveAudioFocus) {
+            //     HandleOnMaxVolumeChanged(0f);
+            // } else {
+            //     HandleOnMaxVolumeChanged(1f);
+            // }
+
+            ConfigureWebviewAudioMute();
+
+            // ConfigureWebviewAudioMute();
+            MaximumAudioVolume = canHaveAudioFocus ? 1f : 0f;
+            eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(canHaveAudioFocus, MaximumAudioVolume));
+        }
+
+        private void ConfigureWebviewAudioMute() {
+            webViewObject.MuteAudio(_muteWebView);
+        }
+
+        // Webview Audio Focus change handler
+        private void HandleWebViewAudioFocusChanged(string command) {
+            HandlePlatformAudioFocusChanged(command);
+        }
+
+        private void HandleNativeAudioFocusChanged(string command) {
+            HandlePlatformAudioFocusChanged(command);
+        }
+
+        private void HandlePlatformAudioFocusChanged(string command) {
+            AirConsoleLogger.LogDevelopment(() => $"HandlePlatformAudioFocusChanged('{command}')");
+            if (string.IsNullOrEmpty(command)) {
+                AirConsoleLogger.LogError(() => "Audio focus command was null or empty.");
+                return;
+            }
+
+            if (command.StartsWith("WEBVIEW_AUDIOFOCUS_", StringComparison.Ordinal)) {
+                HandleWebViewAudioFocusEvent(command);
+                return;
+            }
+
+            if (command.StartsWith("NATIVE_AUDIOFOCUS_", StringComparison.Ordinal)) {
+                HandleNativeAudioFocusEvent(command);
+                return;
+            }
+
+            AirConsoleLogger.LogError(() => $"Unknown audio focus command: {command}");
+        }
+
+        private void HandleWebViewAudioFocusEvent(string command) {
+            switch (command) {
+                case "WEBVIEW_AUDIOFOCUS_START":
+                    break;
+                case "WEBVIEW_AUDIOFOCUS_STOP":
+                    break;
+                case "WEBVIEW_AUDIOFOCUS_GAIN":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRAINSIENT_MAY_DUCK":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT":
+                    HasAudioFocus = true;
+                    _ignoreAudioFocusLoss = true;
+                    _muteWebView = !_canHaveAudioFocus;
+                    ConfigureWebviewAudioMute();
+                    // TODO(PRO-1637): Update statemachine to ensure that we await abandon to re-request audio focus.
+                    // HandleAudioFocusChange(false);
+                    break;
+                case "WEBVIEW_AUDIOFOCUS_LOSS":
+                    if (_nativeGainedAudioFocus) {
+                        return;
+                    }
+
+                    _ignoreAudioFocusLoss = false;
+                    AirConsoleLogger.LogError(() => "HandleAudioFocusChange false WEBVIEW_AUDIOFOCUS_LOSS");
+                    HandleAudioFocusChange(false, true);
+                    break;
+                    
+                case "WEBVIEW_AUDIOFOCUS_LOSS_TRANSIENT":
+                case "WEBVIEW_AUDIOFOCUS_LOSS_CAN_DUCK":
+                    // TODO(PRO-1637): Update statemachine to ensure that we do not re-request audio focus until onResume.
+                    // _ignoreAudioFocusLoss = false;
+                    // HandleAudioFocusChange(false, true);
+                    break;
+
+                // This is fired when we ask the webview to abandon audio focus.
+                case "WEBVIEW_AUDIOFOCUS_ABANDON":
+                    // if (_canHaveAudioFocus) {
+                    //     _muteWebView = true;
+                    //     ConfigureWebviewAudioMute();
+                    //
+                    //     // _ignoreAudioFocusLoss = false;
+                    //     // HandleAudioFocusChange(true, true);
+                    //
+                    //     // RequestAudioFocus();
+                    // }
+
+                    break;
+
+                default:
+                    AirConsoleLogger.LogError(() => $"Unknown audio focus command from webview: {command}");
+                    break;
+            }
+        }
+
+        private bool _nativeGainedAudioFocus = false;
+
+        // This is allowed to be triggered once to ignore the startup audio loss
+        private bool _canIgnoreNativeAudioLoss = true;
+        private void HandleNativeAudioFocusEvent(string command) {
+            switch (command) {
+                case "NATIVE_AUDIOFOCUS_GAIN":
+                case "NATIVE_AUDIOFOCUS_GAIN_TRANSIENT":
+                case "NATIVE_AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE":
+                case "NATIVE_AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK":
+                    // HasAudioFocus = true;
+                    _ignoreAudioFocusLoss = false;
+                    _nativeGainedAudioFocus = true;
+
+                    // _muteWebView = true;
+                    // ConfigureWebviewAudioMute();
+                    HandleAudioFocusChange(true, true);
+
+                    // HandleAudioFocusChange(true, true);
+                    break;
+
+                case "NATIVE_AUDIOFOCUS_LOSS":
+                    AirConsoleLogger.LogError(() =>
+                        $"HandleAudioFocusChange false NATIVE_AUDIOFOCUS_LOSS. Can ignore loss? {_canIgnoreNativeAudioLoss}");
+                    if (_canIgnoreNativeAudioLoss) {
+                        _canIgnoreNativeAudioLoss = false;
+                        return;
+                    }
+
+                    _nativeGainedAudioFocus = false;
+                    _ignoreAudioFocusLoss = false;
+                    HandleAudioFocusChange(false, true);
+                    break;
+                case "NATIVE_AUDIOFOCUS_LOSS_TRANSIENT":
+                case "NATIVE_AUDIOFOCUS_LOSS_CAN_DUCK":
+                    break;
+                case "NATIVE_AUDIOFOCUS_ABANDON":
+                    _nativeGainedAudioFocus = false;
+                    _ignoreAudioFocusLoss = false;
+                    HandleAudioFocusChange(true, false);
+                    break;
+
+                case "NATIVE_AUDIOFOCUS_NONE":
+                    break;
+                default:
+                    AirConsoleLogger.LogError(() => $"Unknown audio focus command from native plugin: {command}");
+                    break;
+            }
+        }
+        #endregion Audio Focus and Volume
+
         /// <summary>
         /// Called when there is an update for the content provider.
         /// </summary>
@@ -2360,13 +2647,6 @@ namespace NDream.AirConsole {
         #endregion
 
         #region AirConsole Internal
-
-        internal event Action<bool> OnApplicationFocusChanged;
-
-        private void OnApplicationFocus(bool hasFocus) {
-            OnApplicationFocusChanged?.Invoke(hasFocus);
-        }
-
         /// <summary>
         /// Sends a message to the platform.
         /// </summary>
