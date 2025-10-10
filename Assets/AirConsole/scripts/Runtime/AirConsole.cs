@@ -1603,24 +1603,23 @@ namespace NDream.AirConsole {
 
             // Stop websocket server if in editor
             StopWebsocketServer();
-
-            if (wsListener != null) {
-                wsListener = null;
-            }
+            wsListener = null;
 
             AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
         }
 
         private void RecreateWebView() {
             if (string.IsNullOrEmpty(_webViewOriginalUrl) || string.IsNullOrEmpty(_webViewConnectionUrl)) {
-                string missing = "";
-                if (string.IsNullOrEmpty(_webViewOriginalUrl) && string.IsNullOrEmpty(_webViewConnectionUrl)) {
-                    missing = "both original and connection URLs";
-                } else if (string.IsNullOrEmpty(_webViewOriginalUrl)) {
-                    missing = "original URL";
-                } else {
-                    missing = "connection URL";
+                List<string> missingComponents = new();
+                if (string.IsNullOrEmpty(_webViewOriginalUrl)) {
+                    missingComponents.Add("original URL");
                 }
+
+                if (string.IsNullOrEmpty(_webViewConnectionUrl)) {
+                    missingComponents.Add("connection URL");
+                }
+
+                string missing = string.Join(" and ", missingComponents);
                 AirConsoleLogger.LogDevelopment(() => $"Cannot recreate webview - missing {missing}");
                 return;
             }
@@ -1659,11 +1658,11 @@ namespace NDream.AirConsole {
                     AirConsoleLogger.Log(() => "AirConsole: onGameEnd");
                 }
 
-                // Reset all caches
-                ResetCaches();
-
-                // Recreate webview with original URL
-                RecreateWebView();
+                // Reset all caches and recreate webview on the main thread
+                eventQueue.Enqueue(delegate() {
+                    ResetCaches();
+                    RecreateWebView();
+                });
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);

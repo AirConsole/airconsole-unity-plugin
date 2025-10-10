@@ -19,6 +19,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+- Unity Editor: Update to minimum versions to match `CVE-2025-59489` fix versions.
 - **Webview Reset**: Added functionality to reset the webview, allowing users to clear its state and reload content as needed.
 
 ### Removed
