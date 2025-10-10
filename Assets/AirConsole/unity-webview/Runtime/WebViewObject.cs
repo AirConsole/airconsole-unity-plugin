@@ -680,8 +680,7 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false,
-        Callback audioFocusChanged = null)
+        bool separated = false)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
@@ -695,7 +694,6 @@ public class WebViewObject : MonoBehaviour
         onLoaded = ld;
         onHooked = hooked;
         onCookies = cookies;
-        onAudioFocusChanged = audioFocusChanged;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
@@ -1046,7 +1044,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="enabled">Whether debugging should be enabled.</param>
     public void EnableWebviewDebugging(bool enabled) {
-#if UNITY_ANDROID && !(UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX)
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null) {
             return;
         }
@@ -1182,7 +1180,7 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
-        webView.Call("RequestUnityAudioFocus");
+        webView.Call("requestUnityAudioFocus");
 #endif
     }
 
@@ -1194,7 +1192,20 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
-        webView.Call("AbandonUnityAudioFocus");
+        webView.Call("abandonUnityAudioFocus");
+#endif
+    }
+
+
+    /// <summary>
+    /// Mutes the audio output from the WebView.
+    /// </summary>
+    public void MuteAudio(bool mute)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (webView == null)
+            return;
+        webView.Call("muteAudio", mute);
 #endif
     }
 
