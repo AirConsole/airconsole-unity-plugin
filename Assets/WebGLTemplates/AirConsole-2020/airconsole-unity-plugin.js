@@ -90,7 +90,10 @@ App.prototype.updateProgressBar = function(progress_bar, progress) {
 
 App.prototype.startNativeApp = function() {
     var me = this;
-    me.game_container.style.display = 'none';
+    
+    if (me.airconsole.supportsNativeGameSizing) {
+        me.game_container.style.display = 'none';
+    }
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({ action: "onGameEnd" }));

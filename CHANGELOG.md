@@ -6,6 +6,11 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+
+- Android: Platform overlay resizes correctly on Android TV
+- Editor: No longer update index.html directly for api usage. The index.html should no longer be cleared out during Application Domain reloads.
+
 ### Changed
 
 - Minimum Versions: The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.

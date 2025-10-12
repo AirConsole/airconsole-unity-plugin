@@ -470,19 +470,22 @@ namespace NDream.AirConsole.Editor {
             string[] dependencies = { "airconsole-settings.js", "airconsole-unity-plugin.js" };
 
             string fileContent = File.ReadAllText(indexPath);
+            string updatedContent = fileContent;
             Regex regex = new(@"<script\s+src\s*=\s*[""'].*airconsole-[\d\.]+\.js[""']\s*><\/script>");
+            bool contentChanged = false;
 
             foreach (string dependency in dependencies) {
-                if (fileContent.Contains(dependency)) {
+                if (updatedContent.Contains(dependency)) {
                     AirConsoleLogger.LogDevelopment(() => $"{dependency} already included in index.html.");
                     continue;
                 }
 
-                Match match = regex.Match(fileContent);
+                Match match = regex.Match(updatedContent);
                 if (match.Success) {
                     string matchedLine = match.Value;
                     string replacement = matchedLine + $"\n    <script src=\"{dependency}\"></script>";
-                    fileContent = fileContent.Replace(matchedLine, replacement);
+                    updatedContent = updatedContent.Replace(matchedLine, replacement);
+                    contentChanged = true;
 
                     AirConsoleLogger.Log(() => $"Automatically added {dependency} to index.html.");
                 } else {
@@ -493,7 +496,28 @@ namespace NDream.AirConsole.Editor {
                 }
             }
 
-            File.WriteAllText(indexPath, fileContent);
+            if (!contentChanged) {
+                return;
+            }
+
+            string directoryName = Path.GetDirectoryName(indexPath) ?? ".";
+            string tempFileName = Path.Combine(directoryName, $"{Path.GetFileName(indexPath)}.{Guid.NewGuid():N}.tmp");
+
+            try {
+                File.WriteAllText(tempFileName, updatedContent);
+                if (File.Exists(indexPath)) {
+                    File.Delete(indexPath);
+                }
+
+                File.Move(tempFileName, indexPath);
+            } catch (Exception exception) {
+                AirConsoleLogger.LogError(() => $"Failed updating {indexPath}: {exception.Message}");
+                throw;
+            } finally {
+                if (File.Exists(tempFileName)) {
+                    File.Delete(tempFileName);
+                }
+            }
         }
         #endregion Controller Screen Consistency Checks
 
