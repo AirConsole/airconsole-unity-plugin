@@ -1,0 +1,20 @@
+{
+    "name": "com.airconsole.unity-webview.runtime",
+    "rootNamespace": "",
+    "references": [
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Android",
+        "Editor",
+        "WebGL"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
