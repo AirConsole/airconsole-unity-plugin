@@ -1,12 +1,5 @@
 {
   "dependencies": {
-    "com.airconsole.unity-webview": {
-      "version": "https://github.com/airconsole/airconsole-unity-webview.git?path=/dist/package-nofragment#v1.1.5",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "2879295c80ba9dba67bd271482ba91aafde27c03"
-    },
     "com.unity.ext.nunit": {
       "version": "2.0.5",
       "depth": 0,
@@ -15,7 +8,7 @@
       "url": "https://packages.unity.com"
     },
     "com.unity.ide.rider": {
-      "version": "3.0.36",
+      "version": "3.0.38",
       "depth": 0,
       "source": "registry",
       "dependencies": {
@@ -25,13 +18,6 @@
     },
     "com.unity.ide.vscode": {
       "version": "1.2.5",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.mobile.android-logcat": {
-      "version": "1.4.5",
       "depth": 0,
       "source": "registry",
       "dependencies": {},

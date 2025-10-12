@@ -6,19 +6,27 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+With version 2.6.2, we are targeting Android TV and Android Automotive related issues impacting or blocking game releases.
+This includes security related updates like requiring fixed Unity versions and increasing Android Target SDK version.
+
 ### Fixed
 
-- Android: Platform overlay resizes correctly on Android TV
-- Editor: No longer update index.html directly for API usage. The index.html should no longer be cleared out during Application Domain reloads.
+- **Android:** Platform overlay resizes correctly on Android TV
+- **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
 
 ### Changed
 
-- Android Target SDK: Increased to 35 to meet Google Play requirements per Nov 1, 2025.
-- Minimum Versions: The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
+- **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
+- **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
+
+### Added
+
+- **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
+- **Android:** After the last device disconnects, the webview is reset along the game state.
 
 ### Removed
 
-- **Android**: The android library no longer manages AudioFocus or overriding the usage from USAGE_GAME.
+- **Android**: The android library no longer manages Audio Focus or overriding the usage from USAGE_GAME.
 
 ## [2.6.1] - 2025-09-02
 

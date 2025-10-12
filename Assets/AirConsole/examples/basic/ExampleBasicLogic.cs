@@ -38,9 +38,12 @@
         }
 
         private void OnReady(string code) {
+            AirConsoleLogger.Log(() => "OnReady: " + code);
             //Log to on-screen Console
             logWindow.text = "ExampleBasic: AirConsole is ready! \n \n";
 
+            Time.timeScale = 1.0f;
+            
             //Mark Buttons as Interactable as soon as AirConsole is ready
             Button[] allButtons = (Button[])FindObjectsOfType(typeof(Button));
             foreach (Button button in allButtons) {
@@ -114,8 +117,7 @@
         }
 
         private void OnGameEnd() {
-            Debug.Log("OnGameEnd is called");
-            Camera.main.enabled = false;
+            AirConsoleLogger.Log(() => "OnGameEnd is called");
             Time.timeScale = 0.0f;
         }
 
