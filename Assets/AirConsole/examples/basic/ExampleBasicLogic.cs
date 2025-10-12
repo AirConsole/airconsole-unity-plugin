@@ -38,6 +38,7 @@
         }
 
         private void OnReady(string code) {
+            AirConsoleLogger.Log(() => "OnReady: " + code);
             //Log to on-screen Console
             logWindow.text = "ExampleBasic: AirConsole is ready! \n \n";
 
@@ -114,7 +115,7 @@
         }
 
         private void OnGameEnd() {
-            Debug.Log("OnGameEnd is called");
+            AirConsoleLogger.Log(() => "OnGameEnd is called");
             Camera.main.enabled = false;
             Time.timeScale = 0.0f;
         }
