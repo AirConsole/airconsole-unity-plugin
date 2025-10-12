@@ -1117,7 +1117,6 @@ namespace NDream.AirConsole {
             if (IsAndroidRuntime) {
                 AirConsoleLogger.Log(() => $"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
-                defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
             }
         }
@@ -1561,10 +1560,6 @@ namespace NDream.AirConsole {
         }
 
         private void UnsubscribeWebSocketEvents() {
-            if (wsListener == null) {
-                return;
-            }
-
             // Unsubscribe all event handlers to prevent stale events
             wsListener.OnSetSafeArea -= OnSetSafeArea;
             wsListener.onReady -= OnReady;
@@ -1598,12 +1593,14 @@ namespace NDream.AirConsole {
         private void CleanupWebSocketListener() {
             AirConsoleLogger.LogDevelopment(() => "Cleaning up WebSocket listener");
 
-            // Unsubscribe all event handlers to prevent stale events
-            UnsubscribeWebSocketEvents();
+            if (wsListener != null) {
+                // Unsubscribe all event handlers to prevent stale events
+                UnsubscribeWebSocketEvents();
+                wsListener = null;
+            }
 
             // Stop websocket server if in editor
             StopWebsocketServer();
-            wsListener = null;
 
             AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
         }
@@ -1629,14 +1626,21 @@ namespace NDream.AirConsole {
             // Cleanup websocket listener first to prevent stale events
             CleanupWebSocketListener();
 
+            // Reset webview manager
+            _webViewManager = null;
+
             // Destroy the old webview
-            if (webViewObject != null) {
+            if (webViewObject) {
+                if (_pluginManager != null && _reloadWebviewHandler != null) {
+                    _pluginManager.OnReloadWebview -= _reloadWebviewHandler;
+                    _reloadWebviewHandler = null;
+                }
+
+                webViewObject.Destroy();
+
                 Destroy(webViewObject.gameObject);
                 webViewObject = null;
             }
-
-            // Reset webview manager
-            _webViewManager = null;
 
             // Recreate the webview with stored connection URL
             CreateAndroidWebview(_webViewConnectionUrl);
@@ -1877,6 +1881,7 @@ namespace NDream.AirConsole {
         private int defaultScreenHeight;
         private List<UnityEngine.UI.CanvasScaler> fixedCanvasScalers = new();
 
+        private Action _reloadWebviewHandler;
         private PluginManager _pluginManager;
 
         private List<JToken> _devices = new();
@@ -2106,6 +2111,7 @@ namespace NDream.AirConsole {
                 url += "&game-version=" + androidGameVersion;
                 url += "&unity-version=" + Application.unityVersion;
 
+                defaultScreenHeight = Screen.height;
                 _webViewOriginalUrl = url;
                 _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
 
@@ -2113,13 +2119,16 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
                 webViewObject.LoadURL(url);
 
-                if (IsAndroidRuntime && _pluginManager != null) {
-                    _pluginManager.OnReloadWebview += () => webViewObject.LoadURL(url);
-                    _pluginManager.InitializeOfflineCheck();
-                }
+                if (IsAndroidRuntime) {
+                    if (_pluginManager != null) {
+                        _reloadWebviewHandler = () => webViewObject.LoadURL(url);
+                        _pluginManager.OnReloadWebview += _reloadWebviewHandler;
+                        _pluginManager.InitializeOfflineCheck();
+                    }
 
-                bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
-                webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
+                    bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
+                    webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
+                }
 
                 _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
