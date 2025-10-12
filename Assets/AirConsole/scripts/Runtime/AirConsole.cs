@@ -1535,7 +1535,11 @@ namespace NDream.AirConsole {
             }
         }
 
-        private void ResetCaches() {
+        /// <summary>
+        /// Resets the caches.
+        /// </summary>
+        /// <param name="taskToQueueAfterClear">Optional task to queue after the eventQueue gets cleared.</param>
+        private void ResetCaches(Action taskToQueueAfterClear) {
             AirConsoleLogger.LogDevelopment(() => "Resetting AirConsole caches");
 
             // Clear device and player data
@@ -1555,6 +1559,9 @@ namespace NDream.AirConsole {
 
             // Clear event queue
             eventQueue.Clear();
+            if (taskToQueueAfterClear != null) {
+                eventQueue.Enqueue(taskToQueueAfterClear);
+            }
 
             AirConsoleLogger.LogDevelopment(() => "AirConsole caches reset complete");
         }
@@ -1663,9 +1670,10 @@ namespace NDream.AirConsole {
                 }
 
                 // Reset all caches and recreate webview on the main thread
-                eventQueue.Enqueue(delegate() {
-                    ResetCaches();
-                    RecreateWebView();
+                eventQueue.Enqueue(delegate {
+                    // We want to chain RecreateWebView to ensure it happens independent of
+                    //  the eventQueue getting cleared and related side effects.
+                    ResetCaches(RecreateWebView);
                 });
             } catch (Exception e) {
                 if (Settings.debug.error) {
