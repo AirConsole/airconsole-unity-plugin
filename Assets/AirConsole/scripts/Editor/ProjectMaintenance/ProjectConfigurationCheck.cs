@@ -262,8 +262,8 @@ namespace NDream.AirConsole.Editor {
         private static void EnsureAndroidPlatformSettings() {
             PlayerSettings.Android.forceInternetPermission = true;
 
-            // To ensure Google Play compatibility, we require a target SDK of 34 or higher.
-            const int requiredAndroidTargetSdk = 34;
+            // To ensure Google Play compatibility, we require a target SDK of 35 or higher.
+            const int requiredAndroidTargetSdk = 35;
             if ((int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
                 AirConsoleLogger.LogError(() => $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
                                                 + "We are updating the Android settings now.");
