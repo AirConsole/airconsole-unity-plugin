@@ -88,6 +88,7 @@ public class WebViewObject : MonoBehaviour
     float mMarginRightComputed;
     float mMarginBottomComputed;
     bool mMarginRelativeComputed;
+
     /// <summary>
     /// Optional canvas used by the macOS editor/player implementation to host background visuals behind the WebView.
     /// </summary>
@@ -203,6 +204,9 @@ public class WebViewObject : MonoBehaviour
                 break;
             case "CallOnHooked":
                 CallOnHooked(s.Substring(i + 1));
+                break;
+            case "CallOnCookies":
+                CallOnCookies(s.Substring(i + 1));
                 break;
             case "CallOnAudioFocusChanged":
                 CallOnAudioFocusChanged(s.Substring(i + 1));
@@ -826,6 +830,8 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="center">Desired centre position in screen pixels (historically anchored to lower-left).</param>
     /// <param name="scale">Desired width and height of the WebView in pixels.</param>
+    /// <param name="center">Desired centre position in screen pixels (historically anchored to lower-left).</param>
+    /// <param name="scale">Desired width and height of the WebView in pixels.</param>
     public void SetCenterPositionWithScale(Vector2 center, Vector2 scale)
     {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
@@ -1175,8 +1181,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Forces the Android plugin to request audio focus back for Unity's audio subsystem.
     /// </summary>
-    public void RequestUnityAudioFocus()
-    {
+    public void RequestUnityAudioFocus() {
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1187,8 +1192,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Relinquishes Unity's audio focus so WebView media can take control.
     /// </summary>
-    public void AbandonUnityAudioFocus()
-    {
+    public void AbandonUnityAudioFocus() {
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1196,12 +1200,11 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-
     /// <summary>
     /// Mutes the audio output from the WebView.
     /// </summary>
-    public void MuteAudio(bool mute)
-    {
+    public void MuteAudio(bool mute) {
+        Debug.LogWarning($"MuteAudio({mute}).");
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1663,7 +1666,6 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-
     /// <summary>
     /// Flushes the in-memory cookie store to disk.
     /// </summary>
@@ -1683,7 +1685,6 @@ public class WebViewObject : MonoBehaviour
         webView.Call("SaveCookies");
 #endif
     }
-
 
     /// <summary>
     /// Requests the cookie string for a given URL. Result is returned via <see cref="CallOnCookies"/>.
@@ -1752,7 +1753,6 @@ public class WebViewObject : MonoBehaviour
         webView.Call("ClearCache", includeDiskFiles);
 #endif
     }
-
 
     /// <summary>
     /// Adjusts the Android text zoom scaling factor (100 is default size).
