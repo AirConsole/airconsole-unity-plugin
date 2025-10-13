@@ -12,6 +12,9 @@ namespace NDream.AirConsole.Examples {
         private AudioSource _audioSource;
 
         private void Awake() {
+            // Initially pause all audio until OnReady is called.
+            AudioListener.pause = true;
+
             _audioSource = GetComponent<AudioSource>();
             if (!_audioSource) {
                 AirConsoleLogger.LogError(() => "AudioPlayer requires an AudioSource component.", this);
@@ -19,12 +22,19 @@ namespace NDream.AirConsole.Examples {
                 return;
             }
 
-            SetupAudioSource();
+            // SetupAudioSource();
+
             AirConsole.instance.onReady += HandleOnReady;
-            AirConsole.instance.onGameEnd += HandleOnGameEnd;
 
             // Until OnReady is called, we don't want any audio from Unity playing as the Player Lobby overlay will be shown.
             AudioListener.pause = true;
+            AirConsole.instance.OnMaximumVolumeChanged += HandleAudioVolumeChange;
+        }
+
+        private void OnDestroy() {
+            if (AirConsole.instance) {
+                AirConsole.instance.OnMaximumVolumeChanged -= HandleAudioVolumeChange;
+            }
         }
 
         private void SetupAudioSource() {
@@ -36,16 +46,14 @@ namespace NDream.AirConsole.Examples {
             }
         }
 
-        private void HandleOnGameEnd() {
-            // After OnGameEnd is called, we must not play any audio until OnReady is called again. During this time the Player Lobby
-            //  overlay will be shown.
-            AudioListener.pause = true;
-        }
-
         private void HandleOnReady(string code) {
             AirConsoleLogger.Log(() => $"OnReady for {code}");
-            AudioListener.pause = false;
-            _audioSource.Play();
+            if (AirConsole.instance.MaximumAudioVolume > 0) {
+                AudioListener.pause = false;
+                _audioSource.Play();
+            } else {
+                AudioListener.pause = true;
+            }
         }
 
         private void HandleAudioVolumeChange(float volume) {
@@ -54,7 +62,9 @@ namespace NDream.AirConsole.Examples {
                 AudioListener.pause = false;
                 AudioListener.volume = volume;
                 _audioSource.Play();
+                AirConsoleLogger.Log(() => $"AudioListener.pause = false, AudioListener.volume = {volume}");
             } else if (Mathf.Approximately(0, volume)) {
+                AirConsoleLogger.Log(() => "AudioListener.pause = true");
                 AudioListener.pause = true;
             }
         }
