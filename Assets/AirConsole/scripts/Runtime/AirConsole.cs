@@ -63,16 +63,11 @@ namespace NDream.AirConsole {
     public delegate void OnResume();
 
     /// <summary>
-    /// Signals the new maximum volume to adopt in the game.
-    /// The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
+    /// Used to notify the game about changes to audio focus and maximum allowed volume.
     /// </summary>
-    public delegate void OnMaximumVolumeChanged(float maximumVolume);
-
-    /// <summary>
-    /// Called with the new volume to adopt in the game.
-    /// The volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
-    /// </summary>
-    public delegate void OnChangeFloat(float volume);
+    /// <param name="hasAudioFocus">True, if the application has AudioFocus. Otherwise the application should stop all audio playback e.g. AudioListener.pause = !hasAudioFocus</param>
+    /// <param name="newMaximumVolume">The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).</param>
+    public delegate void OnGameAudioFocusChanged(bool hasAudioFocus, float newMaximumVolume);
 
     /// <summary>
     /// Gets called when the safe area of the screen changes.
@@ -274,16 +269,14 @@ namespace NDream.AirConsole {
         public event OnResume onResume;
 
         /// <summary>
-        /// Invoked when the game needs to change it's maximum master volume.
+        /// Used to notify the game about changes to audio focus and maximum allowed volume.
         /// This must be implemented for Android based games and must be registered before OnReady is invoked.
-        /// The volume is a float value between 0.0 (muted) and 1.0 (maximum volume).
-        /// At volume 0.0, you can stop the audio playback.
         /// </summary>
-        public event OnMaximumVolumeChanged OnMaximumVolumeChanged;
+        /// <param name="hasAudioFocus">True, if the application has AudioFocus. Otherwise the application should stop all audio playback e.g. AudioListener.pause = !hasAudioFocus</param>
+        /// <param name="newMaximumVolume">The received volume is a float value between 0.0 (muted) and 1.0 (maximum volume).</param>
+        public event OnGameAudioFocusChanged OnGameAudioFocusChanged;
 
-        private float _maxAllowedVolume;
         private bool _canHaveAudioFocus;
-        private bool _hasAudioFocus;
         private bool _ignoreAudioFocusLoss = true;
 
         internal event Action UnityDestroy;
@@ -1433,7 +1426,7 @@ namespace NDream.AirConsole {
         }
 
         private void OnMessage(JObject msg) {
-            if (!_hasAudioFocus) {
+            if (!HasAudioFocus) {
                 RequestAudioFocus();
             }
             
@@ -1453,19 +1446,19 @@ namespace NDream.AirConsole {
             }
 
             if (IsAndroidRuntime) {
-                _hasAudioFocus = _pluginManager.RequestAudioFocus();
+                HasAudioFocus = _pluginManager.RequestAudioFocus();
             } else {
-                _hasAudioFocus = true;
+                HasAudioFocus = true;
             }
 
-            if (!_hasAudioFocus) {
+            if (!HasAudioFocus) {
                 AirConsoleLogger.LogError(() =>
                     "AirConsole: Failed to obtain audio focus. Audio may not work as expected. Should pause platform");
             }
         }
 
         private void AbandonAudioFocus() {
-            _hasAudioFocus = false;
+            HasAudioFocus = false;
             if (IsAndroidRuntime) {
                 _pluginManager.AbandonAudioFocus();
             }
@@ -1478,7 +1471,7 @@ namespace NDream.AirConsole {
             if (Application.platform == RuntimePlatform.Android) {
                 // Android based games must respect the volume change requests so we can correctly handle Android AudioFocus behavior as
                 //  demanded by Automotive on one side and Android 33+ on the other side.
-                if (OnMaximumVolumeChanged == null || OnMaximumVolumeChanged.GetInvocationList().Length == 0) {
+                if (OnGameAudioFocusChanged == null || OnGameAudioFocusChanged.GetInvocationList().Length == 0) {
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
                     throw new Exception("No listeners registered to OnChangeVolume. Editor playback stopped.");
@@ -1490,8 +1483,14 @@ namespace NDream.AirConsole {
                 if (!Application.isEditor) {
                     webViewObject.AbandonUnityAudioFocus();
 
+                    // TODO(PRO-1637): What needs to be done here to correctly maintain the state machine?
                     // Technically we also want to request the audio focus but we do that in the WEBVIEW_AUDIOFOCUS_ABANDONED callback from the webview.
                     // RequestAudioFocus();
+                }
+            } else {
+                if (OnGameAudioFocusChanged != null && OnGameAudioFocusChanged.GetInvocationList().Length > 0) {
+                    AirConsoleLogger.Log(() =>
+                        "Registration to event OnGameAudioFocusChanged identified. This will only be called when running on Android devices.");
                 }
             }
           
@@ -1954,6 +1953,8 @@ namespace NDream.AirConsole {
         /// <value>1</value>
         public float MaximumAudioVolume { get; private set; } = 1;
 
+        public bool HasAudioFocus { get; private set; } = true;
+        
         /// <summary>
         /// True, if this is the Android platform running on the device, not the editor.
         /// </summary>
@@ -2427,7 +2428,7 @@ namespace NDream.AirConsole {
         private void HandleOnMaxVolumeChanged(float newMaximumVolume) {
             MaximumAudioVolume = Mathf.Clamp01(_canHaveAudioFocus ? newMaximumVolume : 0f);
             AirConsoleLogger.LogDevelopment(() => $"HandleOnMaxVolumeChanged({newMaximumVolume}) -> {MaximumAudioVolume}");
-            eventQueue.Enqueue(() => OnMaximumVolumeChanged?.Invoke(MaximumAudioVolume));
+            eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(!Mathf.Approximately(MaximumAudioVolume, 0), MaximumAudioVolume));
         }
 
         // TODO(QAB-14400, QAB-14401, QAB-14403): Handle Audio Focus change not yet fully implemented.
@@ -2442,6 +2443,7 @@ namespace NDream.AirConsole {
                 return;
             }
 
+            // TODO(PRO-1637): Implement a more complete state machine to handle audio focus changes correctly.
             _canHaveAudioFocus = canHaveAudioFocus;
             if (!_canHaveAudioFocus) {
                 HandleOnMaxVolumeChanged(0f);
@@ -2450,6 +2452,8 @@ namespace NDream.AirConsole {
             }
 
             ConfigureWebviewAudioMute();
+
+            eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(canHaveAudioFocus, MaximumAudioVolume));
         }
 
         private void ConfigureWebviewAudioMute() {
@@ -2472,11 +2476,13 @@ namespace NDream.AirConsole {
                 case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE":
                 case "WEBVIEW_AUDIOFOCUS_GAIN_TRAINSIENT_MAY_DUCK":
                 case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT":
-                    HandleAudioFocusChange(false, false);
+                    // TODO(PRO-1637): Update statemachine to ensure that we await abandon to re-request audio focus.
+                    HandleAudioFocusChanged(false);
                     break;
                 case "WEBVIEW_AUDIOFOCUS_LOSS":
                 case "WEBVIEW_AUDIOFOCUS_LOSS_TRANSIENT":
                 case "WEBVIEW_AUDIOFOCUS_LOSS_CAN_DUCK":
+                    // TODO(PRO-1637): Update statemachine to ensure that we do not re-request audio focus until onResume.
                     _ignoreAudioFocusLoss = false;
                     HandleAudioFocusChanged(false);
                     break;
@@ -2485,7 +2491,6 @@ namespace NDream.AirConsole {
                 case "WEBVIEW_AUDIOFOCUS_ABANDON":
                     _ignoreAudioFocusLoss = false;
                     HandleAudioFocusChanged(true);
-                    OnMaximumVolumeChanged?.Invoke(1);
 
                     RequestAudioFocus();
 
