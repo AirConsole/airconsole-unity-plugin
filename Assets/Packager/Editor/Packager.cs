@@ -80,27 +80,11 @@ namespace NDream.Unity {
             Debug.ClearDeveloperConsole();
             AirConsoleLogger.Log(() => $"Exporting to {outputPath}");
 
-            string packageCache = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "PackageCache"));
-            string webviewPackagePath =
-                Directory.GetDirectories(packageCache).FirstOrDefault(d => d.Contains("com.airconsole.unity-webview"));
+            // if (CopyUnityWebviewPackageIntoAssets(out string webviewPackagePath, out string webviewPackagePathAssets,
+            //         out string targetPath)) {
+            //     return;
+            // }
 
-            if (!Directory.Exists(webviewPackagePath)) {
-                EditorUtility.DisplayDialog("Error", "Can not find airconsole webview package", "OK");
-                AirConsoleLogger.LogError(() => "Can not find airconsole webview package");
-                return;
-            }
-
-            string webviewPackagePathAssets = Path.Combine(webviewPackagePath, "Assets");
-
-            string targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
-            DeleteAssetDatabaseDirectory(targetPath);
-            AssetDatabase.Refresh();
-
-            EditorApplication.LockReloadAssemblies();
-
-            MoveSubDirectories(webviewPackagePathAssets, targetPath);
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
-            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
             RemoveControllersFromWebGlTemplates();
             RemoveAirConsolePreferences();
             AssetDatabase.Refresh();
@@ -110,6 +94,13 @@ namespace NDream.Unity {
             CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
             AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
 
+            // RemoveCopiedWebViewPackageFromAssets(targetPath, webviewPackagePath, webviewPackagePathAssets);
+            
+            Debug.ClearDeveloperConsole();
+        }
+
+        private static void RemoveCopiedWebViewPackageFromAssets(string targetPath, string webviewPackagePath,
+            string webviewPackagePathAssets) {
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef"), Path.Combine(webviewPackagePath, "unity-webview.asmdef"));
             File.Move(Path.Combine(targetPath, "unity-webview.asmdef.meta"), Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"));
             MoveSubDirectories(targetPath, webviewPackagePathAssets);
@@ -117,7 +108,33 @@ namespace NDream.Unity {
             CleanupCodePackage();
             AssetDatabase.Refresh();
             EditorApplication.UnlockReloadAssemblies();
-            Debug.ClearDeveloperConsole();
+        }
+
+        private static bool CopyUnityWebviewPackageIntoAssets(out string webviewPackagePath, out string webviewPackagePathAssets,
+            out string targetPath) {
+            string packageCache = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "PackageCache"));
+            webviewPackagePath = Directory.GetDirectories(packageCache).FirstOrDefault(d => d.Contains("com.airconsole.unity-webview"));
+
+            if (!Directory.Exists(webviewPackagePath)) {
+                EditorUtility.DisplayDialog("Error", "Can not find airconsole webview package", "OK");
+                AirConsoleLogger.LogError(() => "Can not find airconsole webview package");
+                webviewPackagePathAssets = null;
+                targetPath = null;
+                return true;
+            }
+
+            webviewPackagePathAssets = Path.Combine(webviewPackagePath, "Assets");
+
+            targetPath = Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "unity-webview"));
+            DeleteAssetDatabaseDirectory(targetPath);
+            AssetDatabase.Refresh();
+
+            EditorApplication.LockReloadAssemblies();
+
+            MoveSubDirectories(webviewPackagePathAssets, targetPath);
+            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef"), Path.Combine(targetPath, "unity-webview.asmdef"));
+            File.Move(Path.Combine(webviewPackagePath, "unity-webview.asmdef.meta"), Path.Combine(targetPath, "unity-webview.asmdef.meta"));
+            return false;
         }
 
         /// <summary>
