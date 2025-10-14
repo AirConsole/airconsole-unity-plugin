@@ -8,42 +8,27 @@ namespace NDream.AirConsole.Examples {
     /// It also listens to volume changes and adjusts the audio accordingly.
     /// </summary>
     public class AudioManager : MonoBehaviour {
+        // We are using a Platform Script Defines here to avoid extra code to handle non-Android runtime platforms.
+#if UNITY_ANDROID && !UNITY_EDITOR 
         private void Awake() {
-            // Initially pause all audio until OnReady is called.
+            // Until OnReady is called, we don't want any audio from Unity playing as the webview Player Lobby overlay will be shown.
             AudioListener.pause = true;
-            AirConsole.instance.onReady += HandleOnReady;
 
-            // Until OnReady is called, we don't want any audio from Unity playing as the Player Lobby overlay will be shown.
-            AudioListener.pause = true;
-            AirConsole.instance.OnMaximumVolumeChanged += HandleAudioVolumeChange;
+            AirConsole.instance.OnGameAudioFocusChanged += HandleGameAudioFocusChange;
         }
 
         private void OnDestroy() {
             if (AirConsole.instance) {
-                AirConsole.instance.OnMaximumVolumeChanged -= HandleAudioVolumeChange;
+                AirConsole.instance.OnGameAudioFocusChanged -= HandleGameAudioFocusChange;
             }
         }
 
-        private void HandleOnReady(string code) {
-            AirConsoleLogger.Log(() => $"OnReady for {code}");
-            if (AirConsole.instance.MaximumAudioVolume > 0) {
-                AudioListener.pause = false;
-            } else {
-                AudioListener.pause = true;
-            }
+        private void HandleGameAudioFocusChange(bool hasAudioFocus, float newMaximumVolume) {
+            AirConsoleLogger.Log(() => $"HandleGameAudioFocusChange({hasAudioFocus},{newMaximumVolume}");
+            AudioListener.volume = newMaximumVolume;
+            AudioListener.pause = !hasAudioFocus;
         }
-
-        private void HandleAudioVolumeChange(float volume) {
-            AirConsoleLogger.Log(() => $"Setting volume to {volume}");
-            if (volume > 0) {
-                AudioListener.pause = false;
-                AudioListener.volume = volume;
-                AirConsoleLogger.Log(() => $"AudioListener.pause = false, new volume = {volume}");
-            } else if (Mathf.Approximately(0, volume)) {
-                AirConsoleLogger.Log(() => "AudioListener.pause = true, new volume = 0");
-                AudioListener.pause = true;
-            }
-        }
+#endif
     }
 }
 #endif
