@@ -20,7 +20,7 @@ namespace NDream.AirConsole.Android.Plugin {
         internal event Action<string> OnConnectionUrlReceived;
 
         internal event Action<float> OnUpdateVolume;
-        internal event Action<bool> OnAudioFocusChange;
+        internal event Action<string> OnAudioFocusChange;
         
         internal PluginManager(AirConsole airConsole) {
 
@@ -42,10 +42,10 @@ namespace NDream.AirConsole.Android.Plugin {
                 // AudioListener.volume = volume;
             });
 
-            GenericUnityPluginCallback<bool> onAudioFocusChangeCallback = new(hasAudioFocus => {
-                AirConsoleLogger.LogDevelopment(() => $"Audio focus changed to {hasAudioFocus}");
+            GenericUnityPluginCallback<string> onAudioFocusChangeCallback = new(focusEvent => {
+                AirConsoleLogger.LogDevelopment(() => $"Audio focus event received: {focusEvent}");
 
-                OnAudioFocusChange?.Invoke(hasAudioFocus);
+                OnAudioFocusChange?.Invoke(focusEvent);
 
                 // Handle audio focus change if needed
             });
