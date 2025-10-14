@@ -7,23 +7,10 @@ namespace NDream.AirConsole.Examples {
     /// Example Audio Player that starts playing when the game is ready and stops when the game ends.
     /// It also listens to volume changes and adjusts the audio accordingly.
     /// </summary>
-    [RequireComponent(typeof(AudioSource))]
-    public class AudioPlayer : MonoBehaviour {
-        private AudioSource _audioSource;
-
+    public class AudioManager : MonoBehaviour {
         private void Awake() {
             // Initially pause all audio until OnReady is called.
             AudioListener.pause = true;
-
-            _audioSource = GetComponent<AudioSource>();
-            if (!_audioSource) {
-                AirConsoleLogger.LogError(() => "AudioPlayer requires an AudioSource component.", this);
-                enabled = false;
-                return;
-            }
-
-            // SetupAudioSource();
-
             AirConsole.instance.onReady += HandleOnReady;
 
             // Until OnReady is called, we don't want any audio from Unity playing as the Player Lobby overlay will be shown.
@@ -37,20 +24,10 @@ namespace NDream.AirConsole.Examples {
             }
         }
 
-        private void SetupAudioSource() {
-            _audioSource.playOnAwake = false;
-            _audioSource.loop = true;
-            _audioSource.volume = 1.0f;
-            if (!_audioSource.clip) {
-                _audioSource.clip = Resources.Load<AudioClip>("Audio/Music/Happy_1");
-            }
-        }
-
         private void HandleOnReady(string code) {
             AirConsoleLogger.Log(() => $"OnReady for {code}");
             if (AirConsole.instance.MaximumAudioVolume > 0) {
                 AudioListener.pause = false;
-                _audioSource.Play();
             } else {
                 AudioListener.pause = true;
             }
@@ -61,10 +38,9 @@ namespace NDream.AirConsole.Examples {
             if (volume > 0) {
                 AudioListener.pause = false;
                 AudioListener.volume = volume;
-                _audioSource.Play();
-                AirConsoleLogger.Log(() => $"AudioListener.pause = false, AudioListener.volume = {volume}");
+                AirConsoleLogger.Log(() => $"AudioListener.pause = false, new volume = {volume}");
             } else if (Mathf.Approximately(0, volume)) {
-                AirConsoleLogger.Log(() => "AudioListener.pause = true");
+                AirConsoleLogger.Log(() => "AudioListener.pause = true, new volume = 0");
                 AudioListener.pause = true;
             }
         }
