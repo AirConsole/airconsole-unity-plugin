@@ -2464,16 +2464,19 @@ namespace NDream.AirConsole {
         private void HandleWebViewAudioFocusChanged(string command) {
             AirConsoleLogger.LogDevelopment(() => $"HandleWebViewAudioFocusChanged('{command}')");
             switch (command) {
-                case "WEBVIEW_AUDIO_START":
+                case "WEBVIEW_AUDIOFOCUS_START":
                     break;
-                case "WEBVIEW_AUDIO_STOP":
+                case "WEBVIEW_AUDIOFOCUS_STOP":
                     break;
                 case "WEBVIEW_AUDIOFOCUS_GAIN":
-                    HandleAudioFocusChanged(false);
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRAINSIENT_MAY_DUCK":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT":
+                    HandleAudioFocusChange(false, false);
                     break;
                 case "WEBVIEW_AUDIOFOCUS_LOSS":
                 case "WEBVIEW_AUDIOFOCUS_LOSS_TRANSIENT":
-                case "WEBVIEW_AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK":
+                case "WEBVIEW_AUDIOFOCUS_LOSS_CAN_DUCK":
                     _ignoreAudioFocusLoss = false;
                     HandleAudioFocusChanged(false);
                     break;
