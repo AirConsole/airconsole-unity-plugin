@@ -23,6 +23,9 @@ This includes security related updates like requiring fixed Unity versions and i
 
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
 - **Android:** After the last device disconnects, the webview is reset along the game state.
+- **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive.
+- **Android Audio Focus:** Drive maximum volume based on Android system requirements to avoid pausing when losing audio focus.
+- **Android Audio Focus:** Native plugin now emits `NATIVE_AUDIOFOCUS_*` events that mirror webview audio focus notifications and flow through the shared Unity handler.
 
 ### Removed
 
