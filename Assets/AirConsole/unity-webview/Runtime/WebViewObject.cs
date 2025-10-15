@@ -1175,8 +1175,8 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Forces the Android plugin to request audio focus back for Unity's audio subsystem.
     /// </summary>
-    public void RequestUnityAudioFocus()
-    {
+    public void RequestUnityAudioFocus() {
+      MuteAudio(false);
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1187,15 +1187,14 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Relinquishes Unity's audio focus so WebView media can take control.
     /// </summary>
-    public void AbandonUnityAudioFocus()
-    {
+    public void AbandonUnityAudioFocus() {
+      MuteAudio(true);
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("abandonUnityAudioFocus");
 #endif
     }
-
 
     /// <summary>
     /// Mutes the audio output from the WebView.
@@ -1216,8 +1215,7 @@ public class WebViewObject : MonoBehaviour
     /// <param name="denyPattern">Regex pattern for URLs that should be blocked.</param>
     /// <param name="hookPattern">Regex pattern that triggers hook callbacks.</param>
     /// <returns><c>true</c> if the operation is supported on the current platform.</returns>
-    public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern)
-    {
+    public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return false;
