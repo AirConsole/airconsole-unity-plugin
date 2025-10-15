@@ -141,7 +141,7 @@ public class UnityWebViewPostprocessBuild
                         independencies = true;
                     } else if (independencies && line == "}") {
                         independencies = false;
-                        lines.Add("    implementation 'androidx.webkit:webkit:1.13.0'");
+                        lines.Add("    implementation 'androidx.webkit:webkit:1.12.0'");
                     } else if (independencies) {
                         if (line.Contains("implementation(name: 'webkit")
                             || line.Contains("implementation(name: 'androidx.webkit.webkit")
