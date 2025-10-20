@@ -1200,7 +1200,6 @@ public class WebViewObject : MonoBehaviour
     /// Mutes the audio output from the WebView.
     /// </summary>
     public void MuteAudio(bool mute) {
-      Debug.LogWarning($"WebViewObject.MuteAudio {mute}.");
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
