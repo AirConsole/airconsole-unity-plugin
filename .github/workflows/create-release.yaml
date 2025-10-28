@@ -125,7 +125,7 @@ jobs:
     #   run: |
     #     filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
     #     if [ ! -f "$filepath" ]; then
-    #       echo "Build validation of airconsole-unity-plugin-v${{ env.version }}unitypackage failed"
+    #       echo "Build validation of airconsole-unity-plugin-v${{ env.version }} unitypackage failed"
     #       exit 1
     #     fi
 
@@ -140,7 +140,7 @@ jobs:
     #   uses: softprops/action-gh-release@v1
     #   if: startsWith(github.ref, 'refs/tags/')
     #   with:
-    #     files: Builds/release-${{ github.event.inputs.version }}.unitypackage
+    #     files: Builds/airconsole-unity-plugin-v${{ github.event.inputs.version }}.unitypackage
     #     body: ${{ steps.extract-release-notes.outputs.release_notes }}
     #   env:
     #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
