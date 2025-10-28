@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System;
 using System.Diagnostics;
-using System.Threading;
 using NDream.AirConsole.Android.Plugin;
 using WebSocketSharp.Server;
 using Newtonsoft.Json.Linq;
@@ -2115,6 +2114,8 @@ namespace NDream.AirConsole {
                     url += $"&bundle-version={GetAndroidBundleVersionCode()}";
                 }
 
+                androidGameVersion = AndroidIntentUtils.GetIntentExtraString("game_version", androidGameVersion);
+                
                 url += "&game-id=" + Application.identifier;
                 url += "&game-version=" + androidGameVersion;
                 url += "&unity-version=" + Application.unityVersion;
