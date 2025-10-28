@@ -11,7 +11,7 @@ namespace NDream.AirConsole.Android.Plugin {
                 using (AndroidJavaClass unityPlayer = new("com.unity3d.player.UnityPlayer")) {
                     AndroidJavaObject currentActivity = unityPlayer.GetStatic<AndroidJavaObject>("currentActivity");
                     AndroidJavaObject intent = currentActivity.Call<AndroidJavaObject>("getIntent");
-                    return intent.Call<string>("getStringExtra", key);
+                    return intent.Call<string>("getStringExtra", key) ?? defaultValue;
                 }
             } catch (System.Exception e) {
                 AirConsoleLogger.LogWarning(() => "Error getting intent extra: " + e);
