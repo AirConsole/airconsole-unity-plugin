@@ -23,6 +23,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
 - **Android:** After the last device disconnects, the webview is reset along the game state.
+- **Android:** Add support to override the game version used in a previously built android game through intent extras with adb.
 
 ### Removed
 
