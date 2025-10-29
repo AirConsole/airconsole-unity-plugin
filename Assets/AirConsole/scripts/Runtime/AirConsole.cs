@@ -2184,7 +2184,7 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
-            connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+            // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (webViewObject == null) {
                 _webViewConnectionUrl = connectionUrl;
@@ -2230,6 +2230,8 @@ namespace NDream.AirConsole {
                 url += "&game-id=" + Application.identifier;
                 url += "&game-version=" + androidGameVersion;
                 url += "&unity-version=" + Application.unityVersion;
+                bool nativeSizingSupported = ResolveNativeGameSizingSupport(nativeGameSizingSupported);
+                url += nativeSizingSupported ? "&supportsNativeGameSizing=true" : "&supportsNativeGameSizing=false";
 
                 defaultScreenHeight = Screen.height;
                 _webViewOriginalUrl = url;
@@ -2256,6 +2258,11 @@ namespace NDream.AirConsole {
                 _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
             }
+        }
+
+        private static bool ResolveNativeGameSizingSupport(bool fallback) {
+            NativeGameSizingSettings settings = Resources.Load<NativeGameSizingSettings>(NativeGameSizingSettings.ResourceName);
+            return settings ? settings.NativeGameSizingSupported : fallback;
         }
 
 
