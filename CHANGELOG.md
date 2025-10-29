@@ -12,6 +12,7 @@ This includes security related updates like requiring fixed Unity versions and i
 ### Fixed
 
 - **Android:** Platform overlay resizes correctly on Android TV
+- **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
 - **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
 
 ### Changed
@@ -23,6 +24,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
 - **Android:** After the last device disconnects, the webview is reset along the game state.
+- **Android:** The support for native game sizing is communicated
 - **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive.
 - **Android Audio Focus:** Drive maximum volume based on Android system requirements to avoid pausing when losing audio focus.
 
