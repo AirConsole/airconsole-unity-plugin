@@ -25,7 +25,7 @@ namespace NDream.AirConsole.Editor {
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
         private const string ANDROID_NATIVE_GAME_SIZING_ACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = true;";
         private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
-        private const string NATIVE_GAME_SIZING_ASSET_FILE = NativeGameSizingSettings.ResourceName + ".asset";
+        private const string AIRCONSOLE_RUNTIME_SETTINGS_ASSET_FILE = AirconsoleRuntimeSettings.ResourceName + ".asset";
 
         private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
 
@@ -190,7 +190,7 @@ namespace NDream.AirConsole.Editor {
                 nativeGameSizingSupportedValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
                 hasNativeGameSizingValue = true;
             } else {
-                NativeGameSizingSettings asset = LoadNativeGameSizingSettingsAsset();
+                AirconsoleRuntimeSettings asset = LoadAirconsoleRuntimeSettingsAsset();
                 if (asset != null) {
                     nativeGameSizingSupportedValue = asset.NativeGameSizingSupported;
                     hasNativeGameSizingValue = true;
@@ -198,7 +198,7 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (hasNativeGameSizingValue) {
-                PersistNativeGameSizingSetting(nativeGameSizingSupportedValue);
+                PersistAirconsoleRuntimeSettings(nativeGameSizingSupportedValue);
             }
         }
 
@@ -209,7 +209,7 @@ namespace NDream.AirConsole.Editor {
                     + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
                     + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}\n"
                     + GenerateGameInformation());
-                PersistNativeGameSizingSetting(nativeGameSizingSupportedValue);
+                PersistAirconsoleRuntimeSettings(nativeGameSizingSupportedValue);
             } catch (IOException e) {
                 AirConsoleLogger.LogError(() => $"Failed to write settings file at {SettingsPath}: {e.Message}");
             }
@@ -239,22 +239,22 @@ namespace NDream.AirConsole.Editor {
                 "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version");
         }
 
-        private static NativeGameSizingSettings LoadNativeGameSizingSettingsAsset() {
+        private static AirconsoleRuntimeSettings LoadAirconsoleRuntimeSettingsAsset() {
             string assetPath = GetNativeGameSizingSettingsAssetPath(false);
             return string.IsNullOrEmpty(assetPath)
                 ? null
-                : AssetDatabase.LoadAssetAtPath<NativeGameSizingSettings>(assetPath);
+                : AssetDatabase.LoadAssetAtPath<AirconsoleRuntimeSettings>(assetPath);
         }
 
-        private static void PersistNativeGameSizingSetting(bool value) {
+        private static void PersistAirconsoleRuntimeSettings(bool value) {
             string assetPath = GetNativeGameSizingSettingsAssetPath(true);
             if (string.IsNullOrEmpty(assetPath)) {
                 return;
             }
 
-            NativeGameSizingSettings asset = AssetDatabase.LoadAssetAtPath<NativeGameSizingSettings>(assetPath);
+            AirconsoleRuntimeSettings asset = AssetDatabase.LoadAssetAtPath<AirconsoleRuntimeSettings>(assetPath);
             if (asset == null) {
-                asset = ScriptableObject.CreateInstance<NativeGameSizingSettings>();
+                asset = CreateInstance<AirconsoleRuntimeSettings>();
                 asset.SetNativeGameSizingSupported(value);
                 AssetDatabase.CreateAsset(asset, assetPath);
                 AssetDatabase.SaveAssets();
@@ -276,7 +276,7 @@ namespace NDream.AirConsole.Editor {
                 return null;
             }
 
-            return $"{resourcesFolder}/{NATIVE_GAME_SIZING_ASSET_FILE}";
+            return $"{resourcesFolder}/{AIRCONSOLE_RUNTIME_SETTINGS_ASSET_FILE}";
         }
 
         private static string GetResourcesFolderRelativeToAirConsole(bool ensureFolderExists) {

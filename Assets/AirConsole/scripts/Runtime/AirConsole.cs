@@ -2147,7 +2147,7 @@ namespace NDream.AirConsole {
         }
 
         private static bool ResolveNativeGameSizingSupport(bool fallback) {
-            NativeGameSizingSettings settings = Resources.Load<NativeGameSizingSettings>(NativeGameSizingSettings.ResourceName);
+            AirconsoleRuntimeSettings settings = Resources.Load<AirconsoleRuntimeSettings>(AirconsoleRuntimeSettings.ResourceName);
             return settings ? settings.NativeGameSizingSupported : fallback;
         }
 
