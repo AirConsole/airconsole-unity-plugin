@@ -12,7 +12,9 @@ function App(container, canvas, web_config, progress_config) {
 
     me.is_native_app = typeof Unity != "undefined";
     me.is_editor = !!me.getURLParameterByName("unity-editor-websocket-port");
-    me.top_bar_height = window.outerHeight - window.innerHeight;
+    if (!window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING) {
+        me.top_bar_height = window.outerHeight - window.innerHeight;
+    }
     me.is_unity_ready = false;
     me.queue = false;
     me.game_container = container;
@@ -92,17 +94,17 @@ App.prototype.updateProgressBar = function(progress_bar, progress) {
 App.prototype.startNativeApp = function() {
     var me = this;
     
-    if (me.airconsole.supportsNativeGameSizing) {
-        me.game_container.style.display = 'none';
-    }
+    me.game_container.style.display = 'none';
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({ action: "onGameEnd" }));
-    };
-    Unity.call(JSON.stringify({
-        action: "onUnityWebviewResize",
-        top_bar_height: me.top_bar_height,
-    }));
+    }
+    if (!window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING) {;
+        Unity.call(JSON.stringify({
+            action: "onUnityWebviewResize",
+            top_bar_height: me.top_bar_height,
+        }));
+    }
     // forward WebView postMessage data from parent window
     window.addEventListener("message", function (event) {
         if (event.data["action"] == "androidunity") {

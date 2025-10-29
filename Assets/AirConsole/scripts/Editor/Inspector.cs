@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
+using NDream.AirConsole;
 
 namespace NDream.AirConsole.Editor {
     [CustomEditor(typeof(AirConsole))]
@@ -24,6 +25,7 @@ namespace NDream.AirConsole.Editor {
         private const string INACTIVE_PLAYERS_SILENCED_INACTIVE = "var AIRCONSOLE_INACTIVE_PLAYERS_SILENCED = false;";
         private const string ANDROID_NATIVE_GAME_SIZING_ACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = true;";
         private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
+        private const string NATIVE_GAME_SIZING_ASSET_FILE = NativeGameSizingSettings.ResourceName + ".asset";
 
         private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
 
@@ -180,14 +182,24 @@ namespace NDream.AirConsole.Editor {
         }
 
         private void ReadConstructorSettings() {
-            if (!File.Exists(SettingsPath)) {
-                return;
+            bool hasNativeGameSizingValue = false;
+            if (File.Exists(SettingsPath)) {
+                string persistedSettings = File.ReadAllText(SettingsPath);
+                translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
+                inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
+                nativeGameSizingSupportedValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
+                hasNativeGameSizingValue = true;
+            } else {
+                NativeGameSizingSettings asset = LoadNativeGameSizingSettingsAsset();
+                if (asset != null) {
+                    nativeGameSizingSupportedValue = asset.NativeGameSizingSupported;
+                    hasNativeGameSizingValue = true;
+                }
             }
 
-            string persistedSettings = File.ReadAllText(SettingsPath);
-            translationValue = persistedSettings.Contains(TRANSLATION_ACTIVE);
-            inactivePlayersSilencedValue = !persistedSettings.Contains(INACTIVE_PLAYERS_SILENCED_INACTIVE);
-            nativeGameSizingSupportedValue = !persistedSettings.Contains(ANDROID_NATIVE_GAME_SIZING_INACTIVE);
+            if (hasNativeGameSizingValue) {
+                PersistNativeGameSizingSetting(nativeGameSizingSupportedValue);
+            }
         }
 
         private void WriteConstructorSettings() {
@@ -197,6 +209,7 @@ namespace NDream.AirConsole.Editor {
                     + $"{(inactivePlayersSilencedValue ? INACTIVE_PLAYERS_SILENCED_ACTIVE : INACTIVE_PLAYERS_SILENCED_INACTIVE)}\n"
                     + $"{(nativeGameSizingSupportedValue ? ANDROID_NATIVE_GAME_SIZING_ACTIVE : ANDROID_NATIVE_GAME_SIZING_INACTIVE)}\n"
                     + GenerateGameInformation());
+                PersistNativeGameSizingSetting(nativeGameSizingSupportedValue);
             } catch (IOException e) {
                 AirConsoleLogger.LogError(() => $"Failed to write settings file at {SettingsPath}: {e.Message}");
             }
@@ -224,6 +237,90 @@ namespace NDream.AirConsole.Editor {
         private static void OpenUpgradeInstructions() {
             Application.OpenURL(
                 "https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version");
+        }
+
+        private static NativeGameSizingSettings LoadNativeGameSizingSettingsAsset() {
+            string assetPath = GetNativeGameSizingSettingsAssetPath(false);
+            return string.IsNullOrEmpty(assetPath)
+                ? null
+                : AssetDatabase.LoadAssetAtPath<NativeGameSizingSettings>(assetPath);
+        }
+
+        private static void PersistNativeGameSizingSetting(bool value) {
+            string assetPath = GetNativeGameSizingSettingsAssetPath(true);
+            if (string.IsNullOrEmpty(assetPath)) {
+                return;
+            }
+
+            NativeGameSizingSettings asset = AssetDatabase.LoadAssetAtPath<NativeGameSizingSettings>(assetPath);
+            if (asset == null) {
+                asset = ScriptableObject.CreateInstance<NativeGameSizingSettings>();
+                asset.SetNativeGameSizingSupported(value);
+                AssetDatabase.CreateAsset(asset, assetPath);
+                AssetDatabase.SaveAssets();
+                return;
+            }
+
+            if (asset.NativeGameSizingSupported == value) {
+                return;
+            }
+
+            asset.SetNativeGameSizingSupported(value);
+            EditorUtility.SetDirty(asset);
+            AssetDatabase.SaveAssets();
+        }
+
+        private static string GetNativeGameSizingSettingsAssetPath(bool ensureFolderExists) {
+            string resourcesFolder = GetResourcesFolderRelativeToAirConsole(ensureFolderExists);
+            if (string.IsNullOrEmpty(resourcesFolder)) {
+                return null;
+            }
+
+            return $"{resourcesFolder}/{NATIVE_GAME_SIZING_ASSET_FILE}";
+        }
+
+        private static string GetResourcesFolderRelativeToAirConsole(bool ensureFolderExists) {
+            string airConsoleDirectory = GetAirConsoleScriptDirectory();
+            if (string.IsNullOrEmpty(airConsoleDirectory)) {
+                return null;
+            }
+
+            string resourcesFolder = $"{airConsoleDirectory}/Resources";
+            if (AssetDatabase.IsValidFolder(resourcesFolder)) {
+                return resourcesFolder;
+            }
+
+            if (!ensureFolderExists) {
+                return resourcesFolder;
+            }
+
+            string parentFolder = Path.GetDirectoryName(resourcesFolder)?.Replace("\\", "/");
+            string folderName = Path.GetFileName(resourcesFolder);
+            if (string.IsNullOrEmpty(parentFolder) || string.IsNullOrEmpty(folderName)) {
+                AirConsoleLogger.LogError(() => $"Failed to resolve Resources folder relative to {airConsoleDirectory}");
+                return null;
+            }
+
+            if (!AssetDatabase.IsValidFolder(parentFolder)) {
+                AirConsoleLogger.LogError(() => $"Resources parent folder not found: {parentFolder}");
+                return null;
+            }
+
+            AssetDatabase.CreateFolder(parentFolder, folderName);
+            return resourcesFolder;
+        }
+
+        private static string GetAirConsoleScriptDirectory() {
+            string[] guids = AssetDatabase.FindAssets("AirConsole t:MonoScript");
+            foreach (string guid in guids) {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith("/AirConsole.cs")) {
+                    return Path.GetDirectoryName(path)?.Replace("\\", "/");
+                }
+            }
+
+            AirConsoleLogger.LogError(() => "Unable to locate AirConsole.cs via AssetDatabase.");
+            return null;
         }
     }
 }
