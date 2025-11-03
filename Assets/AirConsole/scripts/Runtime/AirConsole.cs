@@ -1475,9 +1475,9 @@ namespace NDream.AirConsole {
                 if (OnGameAudioFocusChanged == null || OnGameAudioFocusChanged.GetInvocationList().Length == 0) {
 #if UNITY_EDITOR
                     UnityEditor.EditorApplication.isPlaying = false;
-                    throw new Exception("No listeners registered to OnChangeVolume. Editor playback stopped.");
+                    throw new Exception("No listeners registered to OnGameAudioFocusChanged. Editor playback stopped.");
 #else
-                    throw new System.Exception("No listeners registered to OnChangeVolume.");
+                    throw new System.Exception("No listeners registered to OnGameAudioFocusChanged.");
 #endif
                 }
 
@@ -1691,7 +1691,7 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment(() => "WebSocket listener cleanup complete");
         }
 
-        private void RecreateWebView() {
+        private void ReloadWebView() {
             if (string.IsNullOrEmpty(_webViewOriginalUrl) || string.IsNullOrEmpty(_webViewConnectionUrl)) {
                 List<string> missingComponents = new();
                 if (string.IsNullOrEmpty(_webViewOriginalUrl)) {
@@ -1703,33 +1703,35 @@ namespace NDream.AirConsole {
                 }
 
                 string missing = string.Join(" and ", missingComponents);
-                AirConsoleLogger.LogDevelopment(() => $"Cannot recreate webview - missing {missing}");
+                AirConsoleLogger.LogDevelopment(() => $"Cannot reload webview - missing {missing}");
                 return;
             }
 
-            AirConsoleLogger.LogDevelopment(() => $"Recreating webview with URL: {_webViewOriginalUrl}");
+            AirConsoleLogger.LogDevelopment(() => $"Reloading webview with URL: {_webViewOriginalUrl}");
 
             // Cleanup websocket listener first to prevent stale events
-            CleanupWebSocketListener();
+            // CleanupWebSocketListener();
 
             // Reset webview manager
-            _webViewManager = null;
+            // _webViewManager = null;
 
             // Destroy the old webview
             if (webViewObject) {
-                if (_pluginManager != null && _reloadWebviewHandler != null) {
-                    _pluginManager.OnReloadWebview -= _reloadWebviewHandler;
-                    _reloadWebviewHandler = null;
-                }
+                // if (_pluginManager != null && _reloadWebviewHandler != null) {
+                //     _pluginManager.OnReloadWebview -= _reloadWebviewHandler;
+                //     _reloadWebviewHandler = null;
+                // }
+                //
+                // webViewObject.Destroy();
+                //
+                // Destroy(webViewObject.gameObject);
+                // webViewObject = null;
 
-                webViewObject.Destroy();
-
-                Destroy(webViewObject.gameObject);
-                webViewObject = null;
+                LoadAndroidWebview(_webViewOriginalUrl);
             }
 
             // Recreate the webview with stored connection URL
-            CreateAndroidWebview(_webViewConnectionUrl);
+            // CreateAndroidWebview(_webViewConnectionUrl);
 
             // Reapply audio focus based muting state
             ConfigureWebviewAudioMute();
@@ -1757,7 +1759,7 @@ namespace NDream.AirConsole {
                 eventQueue.Enqueue(delegate {
                     // We want to chain RecreateWebView to ensure it happens independent of
                     //  the eventQueue getting cleared and related side effects.
-                    ResetCaches(RecreateWebView);
+                    ResetCaches(ReloadWebView);
                 });
             } catch (Exception e) {
                 if (Settings.debug.error) {
@@ -2184,9 +2186,9 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
-            // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
+            connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=JP&SwPu=99-99";
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
-            if (webViewObject == null) {
+            if (!webViewObject) {
                 _webViewConnectionUrl = connectionUrl;
 
                 webViewObject = new GameObject("WebViewObject").AddComponent<WebViewObject>();
@@ -2232,31 +2234,34 @@ namespace NDream.AirConsole {
                 url += "&unity-version=" + Application.unityVersion;
                 bool nativeSizingSupported = ResolveNativeGameSizingSupport(nativeGameSizingSupported);
                 url += nativeSizingSupported ? "&supportsNativeGameSizing=true" : "&supportsNativeGameSizing=false";
-
-                defaultScreenHeight = Screen.height;
-                _webViewOriginalUrl = url;
-                _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
-
-                webViewObject.SetVisibility(!Application.isEditor);
+                // TODO(Japan Mobility Show): remove
                 url += "&kiosk=1";
 
-                // url += "#!kiosk=1";
-                AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
-                webViewObject.LoadURL(url);
-
-                if (IsAndroidRuntime) {
-                    if (_pluginManager != null) {
-                        _reloadWebviewHandler = () => webViewObject.LoadURL(url);
-                        _pluginManager.OnReloadWebview += _reloadWebviewHandler;
-                        _pluginManager.InitializeOfflineCheck();
-                    }
-
-                    bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
-                    webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
-                }
+                LoadAndroidWebview(url);
 
                 _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
+            }
+        }
+
+        private void LoadAndroidWebview(string url) {
+            defaultScreenHeight = Screen.height;
+            _webViewOriginalUrl = url;
+            _webViewManager = new WebViewManager(webViewObject, defaultScreenHeight);
+
+            webViewObject.SetVisibility(!Application.isEditor);
+            AirConsoleLogger.LogDevelopment(() => $"Initial URL: {url}");
+            webViewObject.LoadURL(url);
+
+            if (IsAndroidRuntime) {
+                if (_pluginManager != null) {
+                    _reloadWebviewHandler = () => webViewObject.LoadURL(url);
+                    _pluginManager.OnReloadWebview += _reloadWebviewHandler;
+                    _pluginManager.InitializeOfflineCheck();
+                }
+
+                bool isWebviewDebuggable = AndroidIntentUtils.GetIntentExtraBool("webview_debuggable", false);
+                webViewObject.EnableWebviewDebugging(isWebviewDebuggable);
             }
         }
 
