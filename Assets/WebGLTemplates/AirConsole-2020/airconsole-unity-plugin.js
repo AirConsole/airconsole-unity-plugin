@@ -9,10 +9,12 @@
 
 function App(container, canvas, web_config, progress_config) {
     var me = this;
-
+    
     me.is_native_app = typeof Unity != "undefined";
     me.is_editor = !!me.getURLParameterByName("unity-editor-websocket-port");
-    me.top_bar_height = window.outerHeight - window.innerHeight;
+    if (!window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING) {
+        me.top_bar_height = window.outerHeight - window.innerHeight;
+    }
     me.is_unity_ready = false;
     me.queue = false;
     me.game_container = container;
@@ -90,18 +92,18 @@ App.prototype.updateProgressBar = function(progress_bar, progress) {
 
 App.prototype.startNativeApp = function() {
     var me = this;
-    
-    if (me.airconsole.supportsNativeGameSizing) {
-        me.game_container.style.display = 'none';
-    }
+
+    me.game_container.style.display = 'none';
     me.is_unity_ready = true;
     window.onbeforeunload = function() {
         Unity.call(JSON.stringify({ action: "onGameEnd" }));
     };
-    Unity.call(JSON.stringify({
-        action: "onUnityWebviewResize",
-        top_bar_height: me.top_bar_height,
-    }));
+    if (!window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING) {
+        Unity.call(JSON.stringify({
+            action: "onUnityWebviewResize",
+            top_bar_height: me.top_bar_height,
+        }));
+    }
     // forward WebView postMessage data from parent window
     window.addEventListener("message", function (event) {
         if (event.data["action"] == "androidunity") {
@@ -136,8 +138,8 @@ App.prototype.setupEditorSocket = function() {
         document.body.innerHTML = "<div style='position:absolute; top:50%; left:0%; width:100%; margin-top:-32px; color:white;'><div style='font-size:32px'>Game <span style='color:red'>stopped</span> in Unity. Please close this tab.</div></div>";
     };
     document.body.innerHTML = "<div style='position:absolute; top:50%; left:0%; width:100%; margin-top:-32px; color:white;'>"
-      + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
-      + "</div>";
+        + "<div id='editor-message' style='text-align:center; font-family: Arial'><div style='font-size:32px;'>You can see the game scene in the Unity Editor.</div><br>Keep this window open in the background.</div>"
+        + "</div>";
 };
 
 App.prototype.validateNotLatestApi = function () {
@@ -159,14 +161,14 @@ App.prototype.validateNotLatestApi = function () {
 
 App.prototype.initAirConsole = function() {
     this.validateNotLatestApi();
-    
+
     var me = this;
-    var translation = window.AIRCONSOLE_TRANSLATION;   
+    var translation = window.AIRCONSOLE_TRANSLATION;
     var silence_inactive_players = window.AIRCONSOLE_INACTIVE_PLAYERS_SILENCED;
     var androidNativeGameSizing = window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING;
 
     me.airconsole = new AirConsole({ "synchronize_time": true, "translation": translation, "silence_inactive_players": silence_inactive_players, "supportsNativeGameSizing": androidNativeGameSizing });
-    
+
     const version = me.airconsole.version.split('.');
     if(version.length < 3 || parseInt(version[0]) < 1 || parseInt(version[1]) < 10) {
         confirm('Unity AirConsole Plugin 2.6.0 requires at minimum the AirConsole API version 1.10.0. Please review the upgrade instructions');
@@ -193,8 +195,9 @@ App.prototype.initAirConsole = function() {
             "gameSafeArea": me.airconsole.gameSafeArea
         });
     };
-    
+
     me.airconsole.onSetSafeArea = function (safeArea) {
+        console.log('onSetSafeArea', safeArea);
         me.postToUnity({
             action: 'onSetSafeArea',
             safeArea: safeArea
@@ -302,15 +305,15 @@ App.prototype.initAirConsole = function() {
 App.prototype.getURLParameterByName = function(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
-      results = regex.exec(location.search);
+        results = regex.exec(location.search);
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 };
 
 App.prototype.setupErrorHandler = function() {
     window.onerror = function(message) {
         if (message.indexOf("UnknownError") != -1 ||
-          message.indexOf("Program terminated with exit(0)") != -1 ||
-          message.indexOf("DISABLE_EXCEPTION_CATCHING") != -1) {
+            message.indexOf("Program terminated with exit(0)") != -1 ||
+            message.indexOf("DISABLE_EXCEPTION_CATCHING") != -1) {
             // message already correct, but preserving order.
         } else if (message.indexOf("Cannot enlarge memory arrays") != -1) {
             window.setTimeout(function() {
@@ -318,8 +321,8 @@ App.prototype.setupErrorHandler = function() {
             });
             return false;
         } else if (message.indexOf("Invalid array buffer length") != -1 ||
-          message.indexOf("out of memory") != -1 ||
-          message.indexOf("Array buffer allocation failed") != -1) {
+            message.indexOf("out of memory") != -1 ||
+            message.indexOf("Array buffer allocation failed") != -1) {
             alert("Your browser ran out of memory. Try restarting your browser and close other applications running on your computer.");
             return true;
         }
@@ -434,6 +437,7 @@ App.prototype.processUnityData = function (data) {
 };
 
 App.prototype.resizeCanvas = function() {
+    console.log('resizeCanvas', window.innerWidth, window.innerHeight);
     var aspect_ratio = this.web_config.width / this.web_config.height;
     var w, h;
 
@@ -453,6 +457,7 @@ App.prototype.resizeCanvas = function() {
 App.prototype.onGameReady = function(autoScale) {
     var me = this;
 
+    console.log('onGameReady', autoScale);
     me.is_unity_ready = true;
     me.postQueue();
 
