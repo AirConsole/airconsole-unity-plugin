@@ -2223,8 +2223,6 @@ namespace NDream.AirConsole {
                 url += "&unity-version=" + Application.unityVersion;
                 bool nativeSizingSupported = ResolveNativeGameSizingSupport(nativeGameSizingSupported);
                 url += nativeSizingSupported ? "&supportsNativeGameSizing=true" : "&supportsNativeGameSizing=false";
-                // TODO(Japan Mobility Show): remove
-                url += "&kiosk=1";
 
                 defaultScreenHeight = Screen.height;
                 _webViewOriginalUrl = url;

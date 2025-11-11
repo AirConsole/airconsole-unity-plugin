@@ -1,7 +1,13 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/AirConsole/airconsole-code.unitypackage.meta
 guid: 650df41e73e92448cbb08f0f46465ae7
 DefaultImporter:
+========
+guid: 52e9777dea32a417c8b847c3272075a6
+NativeFormatImporter:
+>>>>>>>> PRO-1674-androidtv-gameframe:Assets/AirConsole/scripts/Runtime/Resources/AirconsoleRuntimeSettings.asset.meta
   externalObjects: {}
+  mainObjectFileID: 11400000
   userData: 
   assetBundleName: 
   assetBundleVariant: 
