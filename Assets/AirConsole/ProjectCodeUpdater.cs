@@ -30,10 +30,12 @@ namespace NDream.Unity {
                 // In 2.6.0, this was moved to Assets/AirConsole/scripts/Editor/Assets/AirConsoleIcon.png with editor icon focused import settings.
                 AssetDatabase.DeleteAsset("Assets/AirConsole/resources/AirConsoleLogo.png");
 
-                AssetDatabase.DeleteAsset("Assets/AirConsole/examples");
-                AssetDatabase.DeleteAsset("Assets/AirConsole/scripts");
-                AssetDatabase.DeleteAsset("Assets/AirConsole/unity-webview");
-                AssetDatabase.Refresh();
+                if (RequiresStructureCleanup()) {
+                    AssetDatabase.DeleteAsset("Assets/AirConsole/examples");
+                    AssetDatabase.DeleteAsset("Assets/AirConsole/scripts");
+                    AssetDatabase.DeleteAsset("Assets/AirConsole/unity-webview");
+                    AssetDatabase.Refresh();
+                }
 
                 // Because the AssetDatabase refresh happens asynchronously at the end of the editor loop, we must use delayedCall to
                 // execute the package import. Otherwise, files like AirConsole.cs that must be imported in the 'scripts/Runtime' directory
@@ -49,6 +51,16 @@ namespace NDream.Unity {
             AssetDatabase.ImportPackage(CodePackagePath, false);
             AssetDatabase.DeleteAsset($"Assets/AirConsole/{nameof(ProjectCodeUpdater)}.cs");
             AssetDatabase.DeleteAsset(CodePackagePath.Replace(Application.dataPath, "Assets"));
+        }
+
+        private static bool RequiresStructureCleanup() {
+            string legacyAirConsolePath = Path.Combine(Application.dataPath, "AirConsole", "scripts", "AirConsole.cs");
+            string runtimeAirConsolePath = Path.Combine(Application.dataPath, "AirConsole", "scripts", "Runtime", "AirConsole.cs");
+
+            bool legacyExists = File.Exists(legacyAirConsolePath);
+            bool runtimeExists = File.Exists(runtimeAirConsolePath);
+
+            return legacyExists && !runtimeExists;
         }
     }
 }
