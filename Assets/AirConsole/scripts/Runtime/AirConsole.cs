@@ -1,18 +1,20 @@
 ﻿#if !UNITY_EDITOR && UNITY_ANDROID
 #define AIRCONSOLE_ANDROID_RUNTIME
 #endif
-using UnityEngine;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System;
-using System.Diagnostics;
-using NDream.AirConsole.Android.Plugin;
-using WebSocketSharp.Server;
-using Newtonsoft.Json.Linq;
-using UnityEngine.Serialization;
-using UnityEngine.SceneManagement;
 
 namespace NDream.AirConsole {
+    using UnityEngine;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
+    using System;
+    using System.Diagnostics;
+    using Android.Plugin;
+    using WebSocketSharp.Server;
+    using Newtonsoft.Json.Linq;
+    using UnityEngine.Serialization;
+    using UnityEngine.SceneManagement;
+    using System.Threading;
+
     public enum StartMode {
         VirtualControllers,
         Debug,
@@ -2261,7 +2263,6 @@ namespace NDream.AirConsole {
             return settings ? settings.NativeGameSizingSupported : fallback;
         }
 
-
         private static int GetAndroidBundleVersionCode() {
             AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
             AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
@@ -2277,13 +2278,11 @@ namespace NDream.AirConsole {
 
             if (gameId != Application.identifier || gameVersion != instance.androidGameVersion) {
                 // Marshal to main thread since this is called from WebSocket background thread
-                eventQueue.Enqueue(() => {
-                    StartCoroutine(HandleLaunchAppTransition(msg, gameId, gameVersion));
-                });
+                HandleLaunchAppTransition(msg, gameId, gameVersion);
             }
         }
 
-        private System.Collections.IEnumerator HandleLaunchAppTransition(JObject msg, string gameId, string gameVersion) {
+        private void HandleLaunchAppTransition(JObject msg, string gameId, string gameVersion) {
             bool quitAfterLaunchIntent = false; // Flag used to force old pre v2.5 way of quitting
 
             if (msg["quit_after_launch_intent"] != null) {
@@ -2294,8 +2293,9 @@ namespace NDream.AirConsole {
             if (!quitAfterLaunchIntent) {
                 Application.Quit();
                 if (_pluginManager == null || !_pluginManager.IsAutomotive()) {
-                    AirConsoleLogger.LogDevelopment(() => $"Quit and wait for 2 seconds");
-                    yield return new WaitForSecondsRealtime(2.0f);
+                    int waitTime = _pluginManager != null && _pluginManager.IsAutomotive() ? 500 : 2000;
+                    AirConsoleLogger.LogDevelopment(() => $"Quit and wait for {waitTime} seconds");
+                    Thread.Sleep(waitTime);
                 } else {
                     AirConsoleLogger.LogDevelopment(() => $"Quit immediately");
                 }
@@ -2309,11 +2309,10 @@ namespace NDream.AirConsole {
             if (quitAfterLaunchIntent) {
                 AirConsoleLogger.LogDevelopment(() => $"Quit after launch intent");
                 Application.Quit();
-                yield break;
+                return;
             }
 
-            float timeout = 2.0f;
-            yield return new WaitForSecondsRealtime(timeout);
+            Thread.Sleep(_pluginManager != null && _pluginManager.IsAutomotive() ? 500 : 2000);
             FinishActivity();
         }
 
