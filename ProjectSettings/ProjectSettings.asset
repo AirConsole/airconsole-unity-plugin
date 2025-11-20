@@ -80,7 +80,7 @@ PlayerSettings:
   androidPredictiveBackSupport: 0
   defaultIsNativeResolution: 1
   macRetinaSupport: 1
-  runInBackground: 0
+  runInBackground: 1
   captureSingleScreen: 0
   muteOtherAudioSources: 0
   Prepare IOS For Recording: 0
@@ -141,7 +141,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 1.0.0.27768077
+  bundleVersion: 1.0.0.27879520
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -174,7 +174,7 @@ PlayerSettings:
     iPhone: 0
     tvOS: 0
   overrideDefaultApplicationIdentifier: 1
-  AndroidBundleVersionCode: 27768077
+  AndroidBundleVersionCode: 27879520
   AndroidMinSdkVersion: 27
   AndroidTargetSdkVersion: 35
   AndroidPreferredInstallLocation: 0
@@ -886,7 +886,7 @@ PlayerSettings:
   webGLPowerPreference: 2
   scriptingDefineSymbols:
     Android: AIRCONSOLE_DEVELOPMENT
-    WebGL: 
+    WebGL: AIRCONSOLE_DEVELOPMENT
   additionalCompilerArguments:
     Android: []
   platformArchitecture:

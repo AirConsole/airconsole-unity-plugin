@@ -254,24 +254,6 @@ public class UnityWebViewPostprocessBuild
             var androidManifest = new AndroidManifest(manifest);
             if (!nofragment) {
                 changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
-                var files = Directory.GetFiles("Assets/Plugins/Android/");
-                var found = false;
-                foreach (var file in files) {
-                    if (Regex.IsMatch(file, @"^Assets/Plugins/Android/(androidx\.core\.)?core-.*.aar$")) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    foreach (var file in files) {
-                        var match = Regex.Match(file, @"^Assets/Plugins/Android/(core.*.aar).tmpl$");
-                        if (match.Success) {
-                            var name = match.Groups[1].Value;
-                            File.Copy(file, "Assets/Plugins/Android/" + name, true);
-                            break;
-                        }
-                    }
-                }
             }
 
             changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
@@ -461,7 +443,7 @@ internal class AndroidManifest : AndroidXmlDocument {
         bool changed = false;
         var authorities = PlayerSettings.applicationIdentifier + ".unitywebview.fileprovider";
         if (SelectNodes("/manifest/application/provider[@android:authorities='" + authorities + "']", nsMgr).Count == 0) {
-            // Add the file provider for the fragment based webview implementation.
+            // Add the file provider for the Fragment-based webview implementation.
             var elem = CreateElement("provider");
             elem.Attributes.Append(CreateAndroidAttribute("name", "androidx.core.content.FileProvider"));
             elem.Attributes.Append(CreateAndroidAttribute("authorities", authorities));

@@ -204,6 +204,9 @@ public class WebViewObject : MonoBehaviour
             case "CallOnHooked":
                 CallOnHooked(s.Substring(i + 1));
                 break;
+            case "CallOnCookies":
+                CallOnCookies(s.Substring(i + 1));
+                break;
             case "CallOnAudioFocusChanged":
                 CallOnAudioFocusChanged(s.Substring(i + 1));
                 break;
@@ -744,7 +747,7 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
-    public void Destroy()
+    private void OnDestroy()
     {
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
@@ -1176,7 +1179,7 @@ public class WebViewObject : MonoBehaviour
     /// Forces the Android plugin to request audio focus back for Unity's audio subsystem.
     /// </summary>
     public void RequestUnityAudioFocus() {
-      MuteAudio(false);
+        MuteAudio(false);
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1188,7 +1191,7 @@ public class WebViewObject : MonoBehaviour
     /// Relinquishes Unity's audio focus so WebView media can take control.
     /// </summary>
     public void AbandonUnityAudioFocus() {
-      MuteAudio(true);
+        MuteAudio(true);
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
@@ -1201,6 +1204,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     public void MuteAudio(bool mute) {
 #if UNITY_ANDROID && !UNITY_EDITOR
+        Debug.LogWarning($"WebViewObject.MuteAudio {mute}.");
         if (webView == null)
             return;
         webView.Call("muteAudio", mute);

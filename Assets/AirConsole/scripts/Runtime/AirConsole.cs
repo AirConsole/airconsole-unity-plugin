@@ -2519,7 +2519,7 @@ namespace NDream.AirConsole {
                     break;
                 case "WEBVIEW_AUDIOFOCUS_GAIN":
                 case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE":
-                case "WEBVIEW_AUDIOFOCUS_GAIN_TRAINSIENT_MAY_DUCK":
+                case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK":
                 case "WEBVIEW_AUDIOFOCUS_GAIN_TRANSIENT":
                     AirConsoleLogger.Log(() =>
                         $"{command}: Can ignore native loss={_canIgnoreNativeAudioLoss}");
