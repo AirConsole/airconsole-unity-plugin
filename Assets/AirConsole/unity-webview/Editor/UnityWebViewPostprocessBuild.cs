@@ -50,11 +50,7 @@ public class UnityWebViewPostprocessBuild
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
 
-        AddWebkitPermissions(ref changed, androidManifest, basePath);
-
-        if (!nofragment) {
-            AddCorePermissions(ref changed, androidManifest, basePath);
-        }
+        AddAndroidXDependencies(ref changed, androidManifest, basePath, !nofragment);
 
         changed = (androidManifest.SetExported(true) || changed);
         changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
@@ -75,78 +71,39 @@ public class UnityWebViewPostprocessBuild
         }
     }
 
-    private void AddCorePermissions(ref bool changed, AndroidManifest androidManifest, string basePath) {
+    private void AddAndroidXDependencies(ref bool changed, AndroidManifest androidManifest, string basePath, bool includeCoreDependency) {
         changed = androidManifest.AddFileProvider(basePath) || changed;
         {
             string path = GetBuildGradlePath(basePath);
             string[] lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[] { '\n' });
             {
                 List<string> lines = new();
-                bool independencies = false;
+                bool inDependencies = false;
+                bool hasWebkit = false;
+                bool hasCore = false;
                 foreach (string line in lines0) {
                     if (line == "dependencies {") {
-                        independencies = true;
-                    } else if (independencies && line == "}") {
-                        independencies = false;
-                        lines.Add("    implementation 'androidx.core:core:1.6.0'");
-                    } else if (independencies) {
-                        if (line.Contains("implementation(name: 'core")
-                            || line.Contains("implementation(name: 'androidx.core.core")
-                            || line.Contains("implementation 'androidx.core:core")) {
-                            break;
+                        inDependencies = true;
+                    } else if (inDependencies && line == "}") {
+                        if (!hasWebkit) {
+                            lines.Add("    implementation 'androidx.webkit:webkit:1.12.0'");
+                            hasWebkit = true;
                         }
-                    }
-
-                    lines.Add(line);
-                }
-
-                if (lines.Count > lines0.Length) {
-                    File.WriteAllText(path, string.Join("\n", lines) + "\n");
-                }
-            }
-        }
-        {
-            string path = GetGradlePropertiesPath(basePath);
-            string lines0 = "";
-            string lines = "";
-            if (File.Exists(path)) {
-                lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n") + "\n";
-                lines = lines0;
-            }
-
-            if (!lines.Contains("android.useAndroidX=true")) {
-                lines += "android.useAndroidX=true\n";
-            }
-
-            if (!lines.Contains("android.enableJetifier=true")) {
-                lines += "android.enableJetifier=true\n";
-            }
-
-            if (lines != lines0) {
-                File.WriteAllText(path, lines);
-            }
-        }
-    }
-
-    private void AddWebkitPermissions(ref bool changed, AndroidManifest androidManifest, string basePath) {
-        changed = androidManifest.AddFileProvider(basePath) || changed;
-        {
-            string path = GetBuildGradlePath(basePath);
-            string[] lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[] { '\n' });
-            {
-                List<string> lines = new();
-                bool independencies = false;
-                foreach (string line in lines0) {
-                    if (line == "dependencies {") {
-                        independencies = true;
-                    } else if (independencies && line == "}") {
-                        independencies = false;
-                        lines.Add("    implementation 'androidx.webkit:webkit:1.12.0'");
-                    } else if (independencies) {
+                        if (includeCoreDependency && !hasCore) {
+                            lines.Add("    implementation 'androidx.core:core:1.6.0'");
+                            hasCore = true;
+                        }
+                        inDependencies = false;
+                    } else if (inDependencies) {
                         if (line.Contains("implementation(name: 'webkit")
                             || line.Contains("implementation(name: 'androidx.webkit.webkit")
                             || line.Contains("implementation 'androidx.webkit:webkit")) {
-                            break;
+                            hasWebkit = true;
+                        }
+                        if (line.Contains("implementation(name: 'core")
+                            || line.Contains("implementation(name: 'androidx.core.core")
+                            || line.Contains("implementation 'androidx.core:core")) {
+                            hasCore = true;
                         }
                     }
 

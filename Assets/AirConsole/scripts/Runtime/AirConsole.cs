@@ -80,7 +80,6 @@ namespace NDream.AirConsole {
 
     public class AirConsole : MonoBehaviour {
         #region airconsole unity config
-
         [Tooltip("The controller html file for your game")]
         public UnityEngine.Object controllerHtml;
 
@@ -115,15 +114,14 @@ namespace NDream.AirConsole {
         [Tooltip("Language used in the simulator during play mode.")]
         public string devLanguage;
 
-        [Tooltip("Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
+        [Tooltip(
+            "Used as local IP instead of your public IP in Unity Editor. Use this to use the controller together with ngrok")]
         public string LocalIpOverride;
-
         #endregion
 
 #if !DISABLE_AIRCONSOLE
 
         #region airconsole api
-
         // ReSharper disable MemberCanBePrivate.Global UnusedMember.Global
 
         /// <summary>
@@ -612,7 +610,8 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="uid">The uid for which you want a profile picture. Screens don't have profile pictures.</param>
         /// <param name="size">The size of in pixels of the picture. Default is 64.</param>
-        public string GetProfilePicture(string uid, int size = 64) => $"{Settings.AIRCONSOLE_PROFILE_PICTURE_URL}{uid}&size={size}";
+        public string GetProfilePicture(string uid, int size = 64) =>
+            $"{Settings.AIRCONSOLE_PROFILE_PICTURE_URL}{uid}&size={size}";
 
         /// <summary>
         /// Returns the url to a profile picture of a user.
@@ -630,7 +629,10 @@ namespace NDream.AirConsole {
 
             if (GetDevice(GetDeviceId()) != null) {
                 try {
-                    return Settings.AIRCONSOLE_PROFILE_PICTURE_URL + (string)GetDevice(device_id)["uid"] + "&size=" + size;
+                    return Settings.AIRCONSOLE_PROFILE_PICTURE_URL
+                           + (string)GetDevice(device_id)["uid"]
+                           + "&size="
+                           + size;
                 } catch (Exception) {
                     if (Settings.debug.warning) {
                         AirConsoleLogger.LogWarning(() =>
@@ -842,7 +844,8 @@ namespace NDream.AirConsole {
         /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends", "partner". Default is ["world"].</param>
         /// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
         /// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
-        public void RequestHighScores(string level_name, string level_version, List<string> uids = null, List<string> ranks = null,
+        public void RequestHighScores(string level_name, string level_version, List<string> uids = null,
+            List<string> ranks = null,
             int total = -1, int top = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -893,7 +896,8 @@ namespace NDream.AirConsole {
         /// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
         /// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
         /// </summary>
-        public void StoreHighScore(string level_name, string level_version, float score, string uid, JObject data = null,
+        public void StoreHighScore(string level_name, string level_version, float score, string uid,
+            JObject data = null,
             string score_string = null) {
             List<string> uids = new();
             uids.Add(uid);
@@ -911,7 +915,8 @@ namespace NDream.AirConsole {
         /// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
         /// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
         /// </summary>
-        public void StoreHighScore(string level_name, string level_version, float score, List<string> uids, JObject data = null,
+        public void StoreHighScore(string level_name, string level_version, float score, List<string> uids,
+            JObject data = null,
             string score_string = null) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -945,9 +950,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Gets thrown when you call an API method before OnReady was called.
         /// </summary>
-        public class NotReadyException : SystemException {
-            public NotReadyException() : base() { }
-        }
+        public class NotReadyException : SystemException { }
 
         /// <summary>
         /// Requests persistent data from the servers.
@@ -1122,18 +1125,18 @@ namespace NDream.AirConsole {
         #endregion
 
         #region unity functions
-
         protected void Awake() {
             if (instance != this) {
                 Destroy(gameObject);
             }
 
-            // always set default object name
-            // important for unity webgl communication
+            // Always set default object name
+            // Critical for unity webgl communication
             gameObject.name = "AirConsole";
 
             if (IsAndroidRuntime) {
-                AirConsoleLogger.Log(() => $"Launching build {Application.version} in Unity v{Application.unityVersion}");
+                AirConsoleLogger.Log(() =>
+                    $"Launching build {Application.version} in Unity v{Application.unityVersion}");
 
                 defaultScreenHeight = Screen.height;
                 _pluginManager = new PluginManager(this);
@@ -1194,7 +1197,7 @@ namespace NDream.AirConsole {
             wsListener.onResume += OnResume;
 
             if (Application.isEditor) {
-                // start websocket connection
+                // Start websocket and connection
                 wsServer = new WebSocketServer(Settings.webSocketPort);
                 wsServer.AddWebSocketService(Settings.WEBSOCKET_PATH, () => wsListener);
                 wsServer.Start();
@@ -1204,7 +1207,7 @@ namespace NDream.AirConsole {
                 }
             } else {
                 if (Application.platform == RuntimePlatform.WebGLPlayer) {
-                    // call external javascript init function
+                    // Call external javascript init function
                     Application.ExternalCall("onGameReady", autoScaleCanvas);
                 }
             }
@@ -1223,7 +1226,8 @@ namespace NDream.AirConsole {
         internal void SetSafeArea(JObject msg) {
             JObject safeAreaObj = msg.SelectToken("safeArea")?.Value<JObject>();
             if (safeAreaObj == null) {
-                throw new UnityException($"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
+                throw new UnityException(
+                    $"OnSetSafeArea called without safeArea property in the message: {msg.ToString()}");
             }
 
             eventQueue.Enqueue(delegate {
@@ -1239,7 +1243,6 @@ namespace NDream.AirConsole {
             float height = Screen.height * heightValue;
             float width = Screen.width * GetFloatFromMessage(safeAreaObj, "width", 1);
 
-            // TODO(Marc) Update when we send width / height that are no longer bottom / right
             Rect safeArea = new() {
                 y = y,
                 height = height,
@@ -1248,9 +1251,11 @@ namespace NDream.AirConsole {
             };
             SafeArea = safeArea;
 
-            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera
+                    or AndroidUIResizeMode.ResizeCameraAndReferenceResolution
                 && Camera.main) {
-                AirConsoleLogger.LogDevelopment(() => $"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
+                AirConsoleLogger.LogDevelopment(() =>
+                    $"Original pixelRect {Camera.main.pixelRect}, new pixelRect {safeArea}");
 
                 Camera.main.pixelRect = safeArea;
             }
@@ -1269,15 +1274,18 @@ namespace NDream.AirConsole {
             _runtimeConfigurator?.RefreshConfiguration();
 
             if (IsAndroidRuntime) {
-                //back button on TV remotes
+                // Back button on TV remotes
                 if (Input.GetKeyDown(KeyCode.Escape)) {
                     Application.Quit();
                 }
             }
         }
 
+        protected void LateUpdate() => ProcessEvents();
+
+        protected void FixedUpdate() => ProcessEvents();
+
         private void ProcessEvents() {
-            // dispatch event queue on main unity thread
             while (eventQueue.Count > 0) {
                 eventQueue.Dequeue().Invoke();
             }
@@ -1310,11 +1318,9 @@ namespace NDream.AirConsole {
             return FindFirstObjectByType<T>();
 #endif
         }
-
         #endregion
 
         #region internal functions
-
         private void OnDeviceStateChange(JObject msg) {
             if (msg["device_id"] == null) {
                 return;
@@ -1322,25 +1328,25 @@ namespace NDream.AirConsole {
 
             try {
                 int deviceId = (int)msg["device_id"];
-                AllocateDeviceSlots(deviceId);
                 JToken deviceData = msg["device_data"];
-                if (deviceData != null && deviceData.HasValues) {
-                    _devices[deviceId] = deviceData;
-                } else {
-                    _devices[deviceId] = null;
-                }
 
-                if (onDeviceStateChange != null) {
-                    eventQueue.Enqueue(delegate() {
-                        if (onDeviceStateChange != null) {
-                            onDeviceStateChange(deviceId, GetDevice(_device_id));
-                        }
-                    });
-                }
+                // Queue all _devices modifications to run on the Unity main thread to avoid race conditions
+                eventQueue.Enqueue(delegate() {
+                    AllocateDeviceSlots(deviceId);
+                    if (deviceData != null && deviceData.HasValues) {
+                        _devices[deviceId] = deviceData;
+                    } else {
+                        _devices[deviceId] = null;
+                    }
 
-                if (Settings.debug.info) {
-                    AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
-                }
+                    if (onDeviceStateChange != null) {
+                        onDeviceStateChange(deviceId, GetDevice(_device_id));
+                    }
+
+                    if (Settings.debug.info) {
+                        AirConsoleLogger.Log(() => $"AirConsole: saved devicestate of {deviceId}");
+                    }
+                });
             } catch (Exception e) {
                 if (Settings.debug.error) {
                     AirConsoleLogger.LogError(() => e.Message);
@@ -1703,6 +1709,7 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogDevelopment(() => "Skipping reload. We have not yet left the Player Lobby.");
                 return;
             }
+
             if (string.IsNullOrEmpty(_webViewOriginalUrl) || string.IsNullOrEmpty(_webViewConnectionUrl)) {
                 List<string> missingComponents = new();
                 if (string.IsNullOrEmpty(_webViewOriginalUrl)) {
@@ -1714,7 +1721,7 @@ namespace NDream.AirConsole {
                 }
 
                 string missing = string.Join(" and ", missingComponents);
-                AirConsoleLogger.LogDevelopment(() => $"Cannot reload webview - missing {missing}");
+                AirConsoleLogger.LogDevelopment(() => $"Cannot recreate webview - missing {missing}");
                 return;
             }
 
@@ -1874,7 +1881,7 @@ namespace NDream.AirConsole {
 
         private void OnPause(JObject msg) {
             AbandonAudioFocus();
-            
+
             try {
                 if (onPause != null) {
                     eventQueue.Enqueue(delegate() {
@@ -1950,7 +1957,7 @@ namespace NDream.AirConsole {
         public float MaximumAudioVolume { get; private set; } = 1;
 
         public bool HasAudioFocus { get; private set; } = true;
-        
+
         /// <summary>
         /// True, if this is the Android platform running on the device, not the editor.
         /// </summary>
@@ -2018,14 +2025,13 @@ namespace NDream.AirConsole {
 
         private void OnClose() {
             // Queue the clear operation to run on the Unity main thread to avoid race conditions
-            eventQueue.Enqueue(delegate() {
-                _devices.Clear();
-            });
+            eventQueue.Enqueue(delegate() { _devices.Clear(); });
         }
 
         public static string GetUrl(StartMode mode) {
             bool isHttps = !Application.isEditor
-                           || (!string.IsNullOrEmpty(instance.LocalIpOverride) && instance.LocalIpOverride.StartsWith("https://"));
+                           || (!string.IsNullOrEmpty(instance.LocalIpOverride)
+                               && instance.LocalIpOverride.StartsWith("https://"));
             string url = isHttps ? Settings.AIRCONSOLE_DEV_URL_HTTPS : Settings.AIRCONSOLE_DEV_URL_HTTP;
             if (mode == StartMode.VirtualControllers || mode == StartMode.DebugVirtualControllers) {
                 url += "simulator/";
@@ -2102,13 +2108,12 @@ namespace NDream.AirConsole {
 
         private int GetScaledWebViewHeight() => (int)((float)webViewHeight * Screen.height / defaultScreenHeight);
 
-        private void OnConnectUrlReceived (string connectionUrl) {
+        private void OnConnectUrlReceived(string connectionUrl) {
             _pluginManager.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
                 // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 CreateAndroidWebview(connectionUrl);
             });
-
         }
 
         private string ComputeUrlVersion(string version) {
@@ -2122,7 +2127,8 @@ namespace NDream.AirConsole {
             if (!string.IsNullOrEmpty(androidGameVersion)) {
                 PrepareWebviewOverlay();
                 if (Application.isEditor) {
-                    string connectionUrl = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
+                    string connectionUrl
+                        = $"client?id=androidunity-{ComputeUrlVersion(Settings.VERSION)}&runtimePlatform=android";
                     CreateAndroidWebview(connectionUrl);
                 } else if (IsAndroidRuntime) {
                     AirConsoleLogger.LogDevelopment(() =>
@@ -2130,7 +2136,8 @@ namespace NDream.AirConsole {
 
                     if (_pluginManager.IsInitialized) {
                         string connectionUrl = _pluginManager.ConnectionUrl;
-                        AirConsoleLogger.LogDevelopment(() => $"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
+                        AirConsoleLogger.LogDevelopment(() =>
+                            $"InitWebView: DataProviderInitialized, use connection url {connectionUrl}");
 
                         CreateAndroidWebview(connectionUrl);
                     } else {
@@ -2154,7 +2161,7 @@ namespace NDream.AirConsole {
         private void PrepareWebviewOverlay() {
             webViewLoadingCanvas = new GameObject("WebViewLoadingCanvas").AddComponent<Canvas>();
             webViewLoadingCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            
+
             webViewLoadingBG = new GameObject("WebViewLoadingBG").AddComponent<UnityEngine.UI.Image>();
             webViewLoadingBG.color = Color.black;
             webViewLoadingBG.transform.SetParent(webViewLoadingCanvas.transform, true);
@@ -2170,6 +2177,7 @@ namespace NDream.AirConsole {
             } else {
                 webViewLoadingImage.rectTransform.sizeDelta = new Vector2(Screen.width / 2, Screen.height / 2);
             }
+
             webViewLoadingImage.preserveAspect = true;
             if (!webViewLoadingSprite) {
                 webViewLoadingImage.sprite = Resources.Load("androidtv-loadingscreen", typeof(Sprite)) as Sprite;
@@ -2177,7 +2185,6 @@ namespace NDream.AirConsole {
         }
 
         private void CreateAndroidWebview(string connectionUrl) {
-            // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
             AirConsoleLogger.LogDevelopment(() => $"CreateAndroidWebview with connection url {connectionUrl}");
             if (!webViewObject) {
                 _webViewConnectionUrl = connectionUrl;
@@ -2219,7 +2226,7 @@ namespace NDream.AirConsole {
                 }
 
                 androidGameVersion = AndroidIntentUtils.GetIntentExtraString("game_version", androidGameVersion);
-                
+
                 url += "&game-id=" + Application.identifier;
                 url += "&game-version=" + androidGameVersion;
                 url += "&unity-version=" + Application.unityVersion;
@@ -2259,14 +2266,16 @@ namespace NDream.AirConsole {
         }
 
         private static bool ResolveNativeGameSizingSupport(bool fallback) {
-            AirconsoleRuntimeSettings settings = Resources.Load<AirconsoleRuntimeSettings>(AirconsoleRuntimeSettings.ResourceName);
+            AirconsoleRuntimeSettings settings
+                = Resources.Load<AirconsoleRuntimeSettings>(AirconsoleRuntimeSettings.ResourceName);
             return settings ? settings.NativeGameSizingSupported : fallback;
         }
 
         private static int GetAndroidBundleVersionCode() {
             AndroidJavaObject ca = UnityAndroidObjectProvider.GetUnityActivity();
             AndroidJavaObject packageManager = ca.Call<AndroidJavaObject>("getPackageManager");
-            AndroidJavaObject pInfo = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
+            AndroidJavaObject pInfo
+                = packageManager.Call<AndroidJavaObject>("getPackageInfo", Application.identifier, 0);
 
             return pInfo.Get<int>("versionCode");
         }
@@ -2294,7 +2303,7 @@ namespace NDream.AirConsole {
                 Application.Quit();
                 if (_pluginManager == null || !_pluginManager.IsAutomotive()) {
                     int waitTime = _pluginManager != null && _pluginManager.IsAutomotive() ? 500 : 2000;
-                    AirConsoleLogger.LogDevelopment(() => $"Quit and wait for {waitTime} seconds");
+                    AirConsoleLogger.LogDevelopment(() => $"Quit and wait for {waitTime} milliseconds");
                     Thread.Sleep(waitTime);
                 } else {
                     AirConsoleLogger.LogDevelopment(() => $"Quit immediately");
@@ -2365,7 +2374,8 @@ namespace NDream.AirConsole {
             int h = Screen.height;
 
             if (msg["top_bar_height"] != null) {
-                h = (int)msg["top_bar_height"] * 2; // todo(android-native): This probably should use the screen dpi scaling factor
+                h = (int)msg["top_bar_height"]
+                    * 2; // todo(android-native): This probably should use the screen dpi scaling factor
                 webViewHeight = h;
                 _webViewManager.SetWebViewHeight(h);
             }
@@ -2377,7 +2387,8 @@ namespace NDream.AirConsole {
             }
 
             if (Camera.main
-                && androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+                && androidUIResizeMode is AndroidUIResizeMode.ResizeCamera
+                    or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
         }
@@ -2404,7 +2415,8 @@ namespace NDream.AirConsole {
                 return;
             }
 
-            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
+            if (androidUIResizeMode is AndroidUIResizeMode.ResizeCamera
+                or AndroidUIResizeMode.ResizeCameraAndReferenceResolution) {
                 Camera.main.pixelRect = GetCameraPixelRect();
             }
 
@@ -2440,7 +2452,7 @@ namespace NDream.AirConsole {
             AirConsoleLogger.LogDevelopment(() =>
                 $"HandleOnMaxVolumeChanged({newMaximumVolume}) -> {MaximumAudioVolume}. No action taken.");
 
-            // eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(!Mathf.Approximately(MaximumAudioVolume, 0), MaximumAudioVolume));
+
         }
 
         private bool _muteWebView = false;
@@ -2465,15 +2477,9 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogError(() => "Can have audio focus lost.");
             }
 
-            // if (!_canHaveAudioFocus) {
-            //     HandleOnMaxVolumeChanged(0f);
-            // } else {
-            //     HandleOnMaxVolumeChanged(1f);
-            // }
-
             ConfigureWebviewAudioMute();
 
-            // ConfigureWebviewAudioMute();
+
             MaximumAudioVolume = canHaveAudioFocus ? 1f : 0f;
             eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(canHaveAudioFocus, MaximumAudioVolume));
         }
@@ -2636,7 +2642,6 @@ namespace NDream.AirConsole {
             !string.IsNullOrEmpty((string)msg[name])
                 ? (float)msg[name]
                 : defaultValue;
-
         #endregion
 
         #region AirConsole Internal
@@ -2651,7 +2656,6 @@ namespace NDream.AirConsole {
 
             wsListener.Message(msg);
         }
-
         #endregion AirConsole Internal
 
 #endif

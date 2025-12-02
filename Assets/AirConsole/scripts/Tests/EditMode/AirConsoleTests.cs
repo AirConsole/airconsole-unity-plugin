@@ -102,6 +102,10 @@ namespace NDream.AirConsole.EditMode.Tests {
                 frameCount++;
                 base.Update();
             }
+            
+            internal new void FixedUpdate() => base.FixedUpdate();
+            internal new void LateUpdate() => base.LateUpdate();
+            
 
             internal new void SetSafeArea(JObject message) {
                 base.SetSafeArea(message);

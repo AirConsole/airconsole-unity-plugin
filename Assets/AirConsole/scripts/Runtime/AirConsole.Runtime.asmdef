@@ -1,27 +1,27 @@
 {
-    "name": "AirConsole.Runtime",
-    "rootNamespace": "NDream.AirConsole",
-    "references": [
-        "Unity.TextMeshPro",
-        "UnityEngine.UI",
-        "com.airconsole.unity-webview.runtime"
-    ],
-    "includePlatforms": [
-        "Android",
-        "Editor",
-        "WebGL"
-    ],
-    "excludePlatforms": [],
-    "allowUnsafeCode": false,
-    "overrideReferences": true,
-    "precompiledReferences": [
-        "Newtonsoft.Json.dll",
-        "websocket-sharp.dll"
-    ],
-    "autoReferenced": true,
-    "defineConstraints": [
-        "UNITY_2022_3_OR_NEWER"
-    ],
-    "versionDefines": [],
-    "noEngineReferences": false
+  "name": "AirConsole.Runtime",
+  "rootNamespace": "NDream.AirConsole",
+  "references": [
+    "Unity.TextMeshPro",
+    "UnityEngine.UI",
+    "com.airconsole.unity-webview.runtime"
+  ],
+  "includePlatforms": [
+    "Android",
+    "Editor",
+    "WebGL"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "Newtonsoft.Json.dll",
+    "websocket-sharp.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "UNITY_2022_3_OR_NEWER"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
 }

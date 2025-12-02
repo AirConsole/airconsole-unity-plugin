@@ -24,7 +24,7 @@ namespace NDream.AirConsole.Examples {
         }
 
         private void HandleGameAudioFocusChange(bool hasAudioFocus, float newMaximumVolume) {
-            AirConsoleLogger.Log(() => $"HandleGameAudioFocusChange({hasAudioFocus},{newMaximumVolume}");
+            AirConsoleLogger.Log(() => $"HandleGameAudioFocusChange({hasAudioFocus},{newMaximumVolume})");
             AudioListener.volume = newMaximumVolume;
             AudioListener.pause = !hasAudioFocus;
         }
