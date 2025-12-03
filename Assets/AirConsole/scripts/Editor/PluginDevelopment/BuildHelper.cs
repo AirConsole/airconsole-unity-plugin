@@ -14,7 +14,9 @@ namespace NDream.AirConsole.Editor {
         private const string BasePath = "TestBuilds";
         private const string KEY_INTERNAL_BUILD = "AIRCONSOLE.IS_INTERNAL_BUILD";
 
-        public static bool IsInternalBuild => EditorPrefs.GetBool(KEY_INTERNAL_BUILD, false);
+        public static bool IsInternalBuild {
+            get => EditorPrefs.GetBool(KEY_INTERNAL_BUILD, false);
+        }
 
         public static void BuildWeb() {
             ProjectConfigurationCheck.CheckSettings(BuildTarget.WebGL);

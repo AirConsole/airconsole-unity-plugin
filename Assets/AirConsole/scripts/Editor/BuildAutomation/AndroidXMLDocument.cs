@@ -26,9 +26,7 @@ namespace NDream.AirConsole.Editor {
         /// Saves the XML document at the current documentPath.
         /// </summary>
         /// <returns>Returns the path at which the document was saved.</returns>
-        internal string Save() {
-            return SaveAs(documentPath);
-        }
+        internal string Save() => SaveAs(documentPath);
 
         private string SaveAs(string path) {
             using (XmlTextWriter writer = new(path, new UTF8Encoding(false))) {

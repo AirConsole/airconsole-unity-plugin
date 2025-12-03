@@ -39,11 +39,12 @@
 
         private void OnReady(string code) {
             AirConsoleLogger.Log(() => "OnReady: " + code);
+
             //Log to on-screen Console
             logWindow.text = "ExampleBasic: AirConsole is ready! \n \n";
 
             Time.timeScale = 1.0f;
-            
+
             //Mark Buttons as Interactable as soon as AirConsole is ready
             Button[] allButtons = (Button[])FindObjectsOfType(typeof(Button));
             foreach (Button button in allButtons) {
@@ -53,7 +54,8 @@
 
         private void OnMessage(int from, JToken data) {
             //Log to on-screen Console
-            logWindow.text = logWindow.text.Insert(0, "Incoming message from device: " + from + ": " + data.ToString() + " \n \n");
+            logWindow.text = logWindow.text.Insert(0,
+                "Incoming message from device: " + from + ": " + data.ToString() + " \n \n");
 
             // Rotate the AirConsole Logo to the right
             if ((string)data == "left") {
@@ -92,7 +94,8 @@
 
         private void OnDeviceStateChange(int device_id, JToken data) {
             //Log to on-screen Console
-            logWindow.text = logWindow.text.Insert(0, "Device State Change on device: " + device_id + ", data: " + data + "\n \n");
+            logWindow.text = logWindow.text.Insert(0,
+                "Device State Change on device: " + device_id + ", data: " + data + "\n \n");
         }
 
         private void OnCustomDeviceStateChange(int device_id, JToken custom_data) {
@@ -124,6 +127,7 @@
         private void OnHighScores(JToken highscores) {
             //Log to on-screen Console
             logWindow.text = logWindow.text.Insert(0, "On High Scores " + highscores + " \n \n");
+
             //logWindow.text = logWindow.text.Insert (0, "Converted Highscores: " + HighScoreHelper.ConvertHighScoresToTables(highscores).ToString() + " \n \n");
         }
 
@@ -197,7 +201,8 @@
             string nicknameOfFirstController = AirConsole.instance.GetNickname(idOfFirstController);
 
             //Log to on-screen Console
-            logWindow.text = logWindow.text.Insert(0, "The first controller's nickname is: " + nicknameOfFirstController + "\n \n");
+            logWindow.text = logWindow.text.Insert(0,
+                "The first controller's nickname is: " + nicknameOfFirstController + "\n \n");
         }
 
         private IEnumerator DisplayUrlPicture(string uri) {
@@ -227,7 +232,8 @@
             string urlOfProfilePic = AirConsole.instance.GetProfilePicture(idOfFirstController, 512);
 
             //Log url to on-screen Console
-            logWindow.text = logWindow.text.Insert(0, "URL of Profile Picture of first Controller: " + urlOfProfilePic + "\n \n");
+            logWindow.text = logWindow.text.Insert(0,
+                "URL of Profile Picture of first Controller: " + urlOfProfilePic + "\n \n");
             StartCoroutine(DisplayUrlPicture(urlOfProfilePic));
         }
 
@@ -246,7 +252,11 @@
                     // go through all properties
                     foreach (JProperty prop in ((JObject)data).Properties()) {
                         logWindow.text = logWindow.text.Insert(0,
-                            "Custom Data on first Controller - Key:  " + prop.Name + " / Value:" + prop.Value + "\n \n");
+                            "Custom Data on first Controller - Key:  "
+                            + prop.Name
+                            + " / Value:"
+                            + prop.Value
+                            + "\n \n");
                     }
                 } else {
                     //If there's only one property, log it to on-screen Console
@@ -310,7 +320,8 @@
             //This does not count devices that have been connected and then left,
             //only devices that are still active
             int numberOfActiveControllers = AirConsole.instance.GetControllerDeviceIds().Count;
-            logWindow.text = logWindow.text.Insert(0, "Number of Active Controllers: " + numberOfActiveControllers + "\n \n");
+            logWindow.text
+                = logWindow.text.Insert(0, "Number of Active Controllers: " + numberOfActiveControllers + "\n \n");
         }
 
         public void SetActivePlayers() {
@@ -333,7 +344,8 @@
             if (device_id != -1) {
                 logWindow.text = logWindow.text.Insert(0, "Player #1 has device ID: " + device_id + " \n \n");
             } else {
-                logWindow.text = logWindow.text.Insert(0, "There is no active player # 1 - Set Active Players first!\n \n");
+                logWindow.text
+                    = logWindow.text.Insert(0, "There is no active player # 1 - Set Active Players first!\n \n");
             }
         }
 
@@ -371,6 +383,7 @@
         public void ShowAd() {
             //Display an Advertisement
             AirConsole.instance.ShowAd();
+
             //Log to on-screen Console
             logWindow.text = logWindow.text.Insert(0, "Called ShowAd" + "\n \n");
         }

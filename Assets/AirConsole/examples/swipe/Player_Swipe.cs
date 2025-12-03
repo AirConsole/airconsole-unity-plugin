@@ -1,5 +1,4 @@
-﻿
-namespace NDream.AirConsole.Examples {
+﻿namespace NDream.AirConsole.Examples {
     using System.Collections;
     using UnityEngine;
     using Newtonsoft.Json.Linq;
@@ -31,7 +30,8 @@ namespace NDream.AirConsole.Examples {
 
                     //we convert the x and y values we received to float values and make a new direction vector to pass to our movement function
                     movementCoroutine =
-                        StartCoroutine(MoveSphere(new Vector3((float)message["vector"]["x"], -(float)message["vector"]["y"], 0)));
+                        StartCoroutine(MoveSphere(new Vector3((float)message["vector"]["x"],
+                            -(float)message["vector"]["y"], 0)));
                 }
             }
         }

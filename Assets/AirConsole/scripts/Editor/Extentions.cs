@@ -24,7 +24,8 @@ namespace NDream.AirConsole.Editor {
                 GameObject _tmp = new("AirConsole");
                 _tmp.AddComponent<AirConsole>();
             } else {
-                EditorUtility.DisplayDialog("Already exists", "AirConsole object already exists in the current scene", "ok");
+                EditorUtility.DisplayDialog("Already exists", "AirConsole object already exists in the current scene",
+                    "ok");
                 EditorGUIUtility.PingObject(airConsole.GetInstanceID());
             }
         }
@@ -95,7 +96,10 @@ namespace NDream.AirConsole.Editor {
 
                         // add port info if starting the unity editor version
                         if (startUpPath.Contains(Settings.WEBTEMPLATE_PATH)) {
-                            url += "?unity-editor-websocket-port=" + Settings.webSocketPort + "&unity-plugin-version=" + Settings.VERSION;
+                            url += "?unity-editor-websocket-port="
+                                   + Settings.webSocketPort
+                                   + "&unity-plugin-version="
+                                   + Settings.VERSION;
                         }
 
                         Application.OpenURL(url);
@@ -104,7 +108,8 @@ namespace NDream.AirConsole.Editor {
                             "{action:\"onReady\", code:\"0\", devices:[], server_time_offset: 0, device_id: 0, location: \"\" }");
                     }
                 } else {
-                    EditorUtility.DisplayDialog("AirConsole", "Please link a controller file to the AirConsole object.", "ok");
+                    EditorUtility.DisplayDialog("AirConsole", "Please link a controller file to the AirConsole object.",
+                        "ok");
                     Debug.Break();
                 }
             }

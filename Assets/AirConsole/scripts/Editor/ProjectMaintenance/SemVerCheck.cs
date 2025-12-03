@@ -3,7 +3,7 @@ namespace NDream.AirConsole.Editor {
     using System;
     using System.Text.RegularExpressions;
     using UnityEditor.Build;
-    
+
     internal abstract class SemVerCheck {
         /// <summary>
         /// Validates that Unity matches a required minimum version.

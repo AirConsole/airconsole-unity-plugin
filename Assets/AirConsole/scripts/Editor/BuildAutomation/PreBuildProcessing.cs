@@ -9,7 +9,9 @@ namespace NDream.AirConsole.Editor {
     using UnityEngine;
 
     public class PreBuildProcessing : IPreprocessBuildWithReport {
-        public int callbackOrder => 1;
+        public int callbackOrder {
+            get => 1;
+        }
 
         public void OnPreprocessBuild(BuildReport report) {
             if (report.summary.platform == BuildTarget.WebGL) {
@@ -32,7 +34,8 @@ namespace NDream.AirConsole.Editor {
                     throw new BuildFailedException("Controller missing in WebGL template location.");
                 }
 
-                if (!Directory.GetFiles(templatePath).Any(filename => filename.EndsWith("airconsole-unity-plugin.js"))) {
+                if (!Directory.GetFiles(templatePath)
+                        .Any(filename => filename.EndsWith("airconsole-unity-plugin.js"))) {
                     EditorUtility.DisplayDialog("Error",
                         "airconsole-unity-plugin missing. Please set up your airconsole plugin again",
                         "Cancel");

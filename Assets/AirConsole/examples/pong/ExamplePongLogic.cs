@@ -48,6 +48,7 @@
         private void OnDisconnect(int device_id) {
             int player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
             if (player >= 0)
+
                 // Player that was in the game left the game.
                 // Setting active players to length 0
             {
@@ -82,6 +83,7 @@
 
         private void OnPause() {
             Time.timeScale = 0;
+
             // If we were playing any sounds we must mute them when the game gets paused
             AudioListener.pause = true;
         }
@@ -96,6 +98,7 @@
         /// </summary>
         private void OnAdShow() {
             Time.timeScale = 0;
+
             // If we were playing any sounds we must mute them when an ad is shown
             AudioListener.pause = true;
         }
@@ -137,7 +140,8 @@
         /// </summary>
         /// <param name="player"></param>
         private void Vibrate(int player) {
-            AirConsole.instance.Message(AirConsole.instance.ConvertPlayerNumberToDeviceId(player), new { vibrate = 1000 });
+            AirConsole.instance.Message(AirConsole.instance.ConvertPlayerNumberToDeviceId(player),
+                new { vibrate = 1000 });
         }
 
         /// <summary>

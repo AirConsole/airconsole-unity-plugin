@@ -7,7 +7,7 @@ namespace NDream.AirConsole {
     public class WebViewManager {
         private readonly WebViewObject _webViewObject;
         private readonly int _defaultScreenHeight;
-        
+
         private WebViewState _currentState;
         private bool _isSafeAreaActive;
         private int _webViewHeight;
@@ -41,7 +41,8 @@ namespace NDream.AirConsole {
         }
 
         internal void RequestStateTransition(WebViewState newState) {
-            AirConsoleLogger.LogDevelopment(() => $"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
+            AirConsoleLogger.LogDevelopment(() =>
+                $"WebViewManager.RequestStateTransition: {_currentState} => {newState}");
 
             // When the SafeArea has been activated, we do not allow any other state transitions anymore.
             // The only thing allowed after this is for the safe area itself to change.

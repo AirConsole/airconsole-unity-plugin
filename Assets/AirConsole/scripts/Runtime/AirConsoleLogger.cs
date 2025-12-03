@@ -36,7 +36,8 @@ namespace NDream.AirConsole {
         internal static void LogEditor(string message) => Debug.Log($"AC UNITY EDITOR: {message}");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsDebugLoggingEnabled() => Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Log);
+        private static bool IsDebugLoggingEnabled() =>
+            Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Log);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Log(Func<string> messageFunction) {
@@ -53,7 +54,8 @@ namespace NDream.AirConsole {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsWarningLoggingEnabled() => Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Warning);
+        private static bool IsWarningLoggingEnabled() =>
+            Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Warning);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogWarning(Func<string> messageFunction) {
@@ -70,7 +72,8 @@ namespace NDream.AirConsole {
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsErrorLoggingEnabled() => Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Error);
+        private static bool IsErrorLoggingEnabled() =>
+            Debug.unityLogger != null && Debug.unityLogger.IsLogTypeAllowed(LogType.Error);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogError(Func<string> messageFunction) {

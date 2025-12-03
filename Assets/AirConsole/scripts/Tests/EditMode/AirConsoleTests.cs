@@ -43,7 +43,8 @@ namespace NDream.AirConsole.EditMode.Tests {
                     action = "onSetSafeArea",
                     safeArea = JObject.FromObject(new { left = 0.2f, top = 0.1f, width = 0.6f, height = 0.8f })
                 });
-            Rect expectedRect = new(0.2f * Screen.width, (1 - 0.1f - 0.8f) * Screen.height, 0.6f * Screen.width, 0.8f * Screen.height);
+            Rect expectedRect = new(0.2f * Screen.width, (1 - 0.1f - 0.8f) * Screen.height, 0.6f * Screen.width,
+                0.8f * Screen.height);
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.OnSafeAreaChanged += rect => {
                 RectTestHelper.AreRectsEqual(expectedRect, rect, "onSafeAreaChanged rect matches expectation");
@@ -73,7 +74,9 @@ namespace NDream.AirConsole.EditMode.Tests {
             try {
                 target.SetSafeArea(expectedMessage);
             } catch (UnityException e) {
-                Assert.AreEqual($"OnSetSafeArea called without safeArea property in the message: {expectedMessage.ToString()}", e.Message);
+                Assert.AreEqual(
+                    $"OnSetSafeArea called without safeArea property in the message: {expectedMessage.ToString()}",
+                    e.Message);
             }
 
             yield return null;
@@ -82,7 +85,9 @@ namespace NDream.AirConsole.EditMode.Tests {
         public class AirConsoleTestRunner : AirConsole, IMonoBehaviourTest {
             private int frameCount;
 
-            public bool IsTestFinished => frameCount > 10;
+            public bool IsTestFinished {
+                get => frameCount > 10;
+            }
 
             private void Awake() {
                 androidGameVersion = "1";

@@ -1,4 +1,3 @@
-
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor {
     using System.Text;
@@ -12,7 +11,7 @@ namespace NDream.AirConsole.Editor {
     using UnityEditor.Build.Reporting;
     using UnityEngine;
     using UnityEngine.Rendering;
-    
+
     internal abstract class EditorNotificationService {
         /// <summary>
         /// Displays an error dialog and logs an error message, optionally providing instructions to disable AirConsole.
@@ -23,7 +22,8 @@ namespace NDream.AirConsole.Editor {
         /// </param>
         /// <param name="title">The title of the error dialog. Defaults to "Unsupported".</param>
         /// <exception cref="UnityException">Always thrown with the provided error message.</exception>
-        internal static void InvokeError(string message, bool addAirConsoleDisable = false, string title = "Unsupported") {
+        internal static void InvokeError(string message, bool addAirConsoleDisable = false,
+            string title = "Unsupported") {
             EditorUtility.DisplayDialog(title, message, "I understand");
             if (addAirConsoleDisable) {
                 message +=
@@ -42,7 +42,8 @@ namespace NDream.AirConsole.Editor {
                 return;
             }
 
-            EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!", true);
+            EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!",
+                true);
         }
 
         public static bool IsSupportedUnityVersion() => Settings.IsUnity2022OrHigher();
@@ -61,14 +62,16 @@ namespace NDream.AirConsole.Editor {
             } else if (IsPlatformSupported(BuildTarget.Android)) {
                 EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.Android, BuildTarget.Android);
             } else {
-                EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires the WebGL or Android module to be present!",
+                EditorNotificationService.InvokeError(
+                    $"AirConsole {Settings.VERSION} requires the WebGL or Android module to be present!",
                     true);
             }
         }
 
         private static bool IsPlatformSupported(BuildTarget buildTarget) {
             Type moduleManager = Type.GetType("UnityEditor.Modules.ModuleManager,UnityEditor.dll");
-            MethodInfo IsPlatformSupportLoadedByBuildTarget = moduleManager.GetMethod("IsPlatformSupportLoadedByBuildTarget",
+            MethodInfo IsPlatformSupportLoadedByBuildTarget = moduleManager.GetMethod(
+                "IsPlatformSupportLoadedByBuildTarget",
                 BindingFlags.Static | BindingFlags.NonPublic);
 
             if (IsPlatformSupportLoadedByBuildTarget != null) {
@@ -106,14 +109,15 @@ namespace NDream.AirConsole.Editor {
                     throw new BuildFailedException($"AirConsole Plugin does not support platform {platform}");
             }
 
-            AirConsoleLogger.Log(() => $"AirConsole Plugin configuration checks for {platform} completed successfully.");
+            AirConsoleLogger.Log(() =>
+                $"AirConsole Plugin configuration checks for {platform} completed successfully.");
         }
 
         [InitializeOnLoadMethod]
         private static void EnsureSharedPlayerSettings() {
             Inspector airconsoleInspector = Editor.CreateInstance<Inspector>();
             airconsoleInspector.UpdateAirConsoleConstructorSettings();
-            
+
             PlayerSettings.resetResolutionOnWindowResize = true;
             PlayerSettings.SplashScreen.showUnityLogo = false;
 
@@ -128,7 +132,8 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (!UnityVersionCheck.IsSupportedUnityVersion()) {
-                string message = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
+                string message
+                    = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
                 AirConsoleLogger.LogError(() => message);
                 throw new BuildFailedException(message);
             }
@@ -155,7 +160,8 @@ namespace NDream.AirConsole.Editor {
 
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.WebGL, ScriptingImplementation.IL2CPP);
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
-            PlayerSettings.WebGL.nameFilesAsHashes = false; // We upload into timestamp based folders. This is not necessary.
+            PlayerSettings.WebGL.nameFilesAsHashes
+                = false; // We upload into timestamp based folders. This is not necessary.
 
             if (PlayerSettings.WebGL.dataCaching) {
                 AirConsoleLogger.LogWarning(() =>
@@ -189,8 +195,10 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
-                AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException("Please update the WebGL build or player settings to build for AirConsole WebGL.");
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                throw new BuildFailedException(
+                    "Please update the WebGL build or player settings to build for AirConsole WebGL.");
             }
         }
 
@@ -207,7 +215,8 @@ namespace NDream.AirConsole.Editor {
                     $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
                 AirConsoleLogger.LogError(() => incompatibleTemplateMessage);
 
-                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage, "Open Player Settings",
+                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage,
+                        "Open Player Settings",
                         "Cancel")) {
                     // In Unity 6 this needs to be done with a delay call, otherwise it breaks the window layout when Project Settings are docked already.
                     EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player");
@@ -220,7 +229,8 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
             if (PlayerSettings.muteOtherAudioSources) {
-                AirConsoleLogger.Log(() => "AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
+                AirConsoleLogger.Log(() =>
+                    "AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
                 PlayerSettings.muteOtherAudioSources = false;
             }
 
@@ -232,8 +242,10 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
-                AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException("Please update the Android Build or Player settings to build for AirConsole WebGL");
+                AirConsoleLogger.LogError(() =>
+                    "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+                throw new BuildFailedException(
+                    "Please update the Android Build or Player settings to build for AirConsole WebGL");
             }
 
             UpdateAndroidPlayerSettingsInProperties();
@@ -255,7 +267,8 @@ namespace NDream.AirConsole.Editor {
                 Mathf.Clamp(version.Minor, 0, version.Minor),
                 Mathf.Clamp(version.Build, 0, version.Build));
             PlayerSettings.bundleVersion
-                = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode).ToString();
+                = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode)
+                    .ToString();
 #pragma warning restore 0162 //  Unreachable code detected
         }
 
@@ -265,8 +278,9 @@ namespace NDream.AirConsole.Editor {
             // To ensure Google Play compatibility, we require a target SDK of 35 or higher.
             const int requiredAndroidTargetSdk = 35;
             if ((int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
-                AirConsoleLogger.LogError(() => $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
-                                                + "We are updating the Android settings now.");
+                AirConsoleLogger.LogError(() =>
+                    $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
+                    + "We are updating the Android settings now.");
             }
 
             PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
@@ -315,11 +329,11 @@ namespace NDream.AirConsole.Editor {
                 // When the layout corrects, the webview does not resize.
                 PlayerSettings.Android.startInFullscreen = true;
             }
-
         }
 
         private static void UpdateAndroidPlayerSettingsInProperties() {
-            SerializedObject playerSettings = new(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
+            SerializedObject playerSettings
+                = new(AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset")[0]);
 
             SerializedProperty filterTouchesProperty = playerSettings.FindProperty("AndroidFilterTouchesWhenObscured");
             filterTouchesProperty.boolValue = false;
@@ -372,7 +386,8 @@ namespace NDream.AirConsole.Editor {
             GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
 
             if (graphicsAPIs.First() != GraphicsDeviceType.Vulkan) {
-                AirConsoleLogger.LogWarning(() => "AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
+                AirConsoleLogger.LogWarning(() =>
+                    "AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
             }
         }
 
@@ -387,12 +402,14 @@ namespace NDream.AirConsole.Editor {
         private static void ValidateApiUsage() {
             string webGLTemplateDirectory = PreBuildProcessing.GetWebGLTemplateDirectory();
             AirConsoleLogger.Log(() => $"Validating API Usage in {webGLTemplateDirectory}");
-            if (!VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "index.html"), Settings.RequiredMinimumVersion)
+            if (!VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "index.html"),
+                    Settings.RequiredMinimumVersion)
 
                 // || !VerifyAPIUsage(pathToBuiltProject + "/screen.html", Settings.RequiredMinimumVersion)
                 || !VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "controller.html"),
                     Settings.RequiredMinimumVersion)) {
-                AirConsoleLogger.LogError(() => "Outdated AirConsole API detected. Please check the previous logs to address the problem.");
+                AirConsoleLogger.LogError(() =>
+                    "Outdated AirConsole API detected. Please check the previous logs to address the problem.");
                 throw new BuildFailedException(
                     "Build failed. Outdated AirConsole API detected. Please see Error Logs for more information.");
             }
@@ -407,19 +424,22 @@ namespace NDream.AirConsole.Editor {
             // Check if the reference to airconsole-Major.Minor.Patch.js is at least as big as requiredMinimumVersion.
             //  Ensure that the reference is not 'airconsole-latest.js'.
             string fileContent = File.ReadAllText(pathToHtml);
-            string apiVersion = $"airconsole-{requiredApiVersion.Major}.{requiredApiVersion.Minor}.{requiredApiVersion.Build}.js";
+            string apiVersion
+                = $"airconsole-{requiredApiVersion.Major}.{requiredApiVersion.Minor}.{requiredApiVersion.Build}.js";
 
             // If airconsole-latest usage is detected, we need to inform the game developer to use the specified version.
             //  We do not want Unity games to use latest due to prior implicit assumptions and requirements that might not be met anymore.
             Regex regexAirconsoleLatest = new(@"(?<!<!--.*)airconsole-latest\.js", RegexOptions.IgnoreCase);
             bool foundAirconsoleLatest = regexAirconsoleLatest.IsMatch(fileContent);
             if (foundAirconsoleLatest) {
-                AirConsoleLogger.LogError(() => $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
+                AirConsoleLogger.LogError(() =>
+                    $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
 
                 return false;
             }
 
-            Regex regexAirconsoleApiVersion = new(@"(?<!<!--\s*)<script[^>]*src\s*=\s*[""'].*airconsole-(\d+)\.(\d+)\.(\d+)\.js[""'][^>]*>",
+            Regex regexAirconsoleApiVersion = new(
+                @"(?<!<!--\s*)<script[^>]*src\s*=\s*[""'].*airconsole-(\d+)\.(\d+)\.(\d+)\.js[""'][^>]*>",
                 RegexOptions.IgnoreCase);
 
             // Regex regexAirconsoleApiVersion = new(@"(?<!<!--\s*)airconsole-(\d+)\.(\d+)\.(\d+)\.js", RegexOptions.IgnoreCase);
@@ -534,8 +554,10 @@ namespace NDream.AirConsole.Editor {
             // We do at this point only support WebGL and Android and only check for these two build targets.
             return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
                    || (buildTargetGroup == BuildTargetGroup.Android
-                       ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC or MobileTextureSubtarget.ETC2
-                       : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC or WebGLTextureSubtarget.ETC2);
+                       ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC
+                           or MobileTextureSubtarget.ETC2
+                       : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC
+                           or WebGLTextureSubtarget.ETC2);
         }
 
         private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
@@ -544,7 +566,7 @@ namespace NDream.AirConsole.Editor {
             MethodInfo methodInfo = playerSettingsType.GetMethod(
                 "GetDefaultTextureCompressionFormat",
                 BindingFlags.NonPublic | BindingFlags.Static);
-            
+
             if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
                 bool isUnity6 = true;
@@ -552,14 +574,16 @@ namespace NDream.AirConsole.Editor {
                 bool isUnity6 = false;
 #endif
                 return isUnity6
-                    ? (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup) })
+                    ? (TextureCompressionFormat)methodInfo.Invoke(null,
+                        new object[] { GetBuildTargetFromGroup(buildTargetGroup) })
                     : (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
             }
 
             return TextureCompressionFormat.Unknown;
         }
 
-        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup buildTargetGroup, TextureCompressionFormat format) {
+        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup buildTargetGroup,
+            TextureCompressionFormat format) {
             Type playerSettingsType = typeof(PlayerSettings);
 
             MethodInfo methodInfo = playerSettingsType.GetMethod(

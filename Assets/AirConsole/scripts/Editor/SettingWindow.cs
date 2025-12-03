@@ -43,10 +43,12 @@ namespace NDream.AirConsole.Editor {
 
             GUILayout.Label("AirConsole Settings", EditorStyles.boldLabel);
 
-            Settings.webSocketPort = EditorGUILayout.IntField("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth(200));
+            Settings.webSocketPort
+                = EditorGUILayout.IntField("Websocket Port", Settings.webSocketPort, GUILayout.MaxWidth(200));
             EditorPrefs.SetInt("webSocketPort", Settings.webSocketPort);
 
-            Settings.webServerPort = EditorGUILayout.IntField("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth(200));
+            Settings.webServerPort
+                = EditorGUILayout.IntField("Webserver Port", Settings.webServerPort, GUILayout.MaxWidth(200));
             EditorPrefs.SetInt("webServerPort", Settings.webServerPort);
 
             EditorGUILayout.LabelField("Webserver is running", Extentions.webserver.IsRunning().ToString());

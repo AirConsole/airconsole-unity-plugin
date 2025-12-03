@@ -108,8 +108,7 @@ namespace NDream.AirConsole.Examples {
 
             if (Mathf.Approximately(canvasScaler.matchWidthOrHeight, 1)) {
                 newReferenceResolution.x = originalReferenceResolution.y * safeAreaAspect;
-            } else if (canvasScaler.matchWidthOrHeight == 0) 
-            {
+            } else if (canvasScaler.matchWidthOrHeight == 0) {
                 newReferenceResolution.y = originalReferenceResolution.x / safeAreaAspect;
             } else {
                 float matchValue = canvasScaler.matchWidthOrHeight;

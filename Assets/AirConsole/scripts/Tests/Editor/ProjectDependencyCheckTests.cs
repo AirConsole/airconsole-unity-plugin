@@ -4,7 +4,7 @@ namespace NDream.AirConsole.Editor.Tests {
     using UnityEditor.Build;
     using UnityEngine;
     using UnityEngine.TestTools;
-    
+
     public class ProjectDependencyCheckTests {
         [TearDown]
         public void TearDown() {
@@ -39,7 +39,8 @@ namespace NDream.AirConsole.Editor.Tests {
         [TestCase("6000.1.16f1", "6000.1.17f1")]
         [TestCase("6000.2.5f1", "6000.2.6f2")]
         public void ValidateUnityVersion_WhenBelowMinimum_LogsWarning(string unityVersion, string expectedRequired) {
-            string expectedMessage = $"For security (CVE-2025-59489), AirConsole requires at least Unity {expectedRequired}";
+            string expectedMessage
+                = $"For security (CVE-2025-59489), AirConsole requires at least Unity {expectedRequired}";
 
             ProjectDependencyCheck.UnityVersionProvider = () => unityVersion;
 
@@ -72,7 +73,9 @@ namespace NDream.AirConsole.Editor.Tests {
             ProjectDependencyCheck.InvokeErrorOrLogOverride = (message, title, shallError) => {
                 handlerInvoked = true;
                 Assert.That(shallError, Is.True);
-                Assert.That(message, Is.EqualTo($"For security (CVE-2025-59489), AirConsole requires at least Unity {expectedRequired}"));
+                Assert.That(message,
+                    Is.EqualTo(
+                        $"For security (CVE-2025-59489), AirConsole requires at least Unity {expectedRequired}"));
                 Assert.That(title, Is.EqualTo($"Insecure version {unityVersion}"));
             };
 
