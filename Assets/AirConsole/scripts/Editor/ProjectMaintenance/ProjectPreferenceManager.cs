@@ -6,7 +6,9 @@ using UnityEngine;
 
 namespace NDream.AirConsole.Editor {
     internal abstract class ProjectPreferenceManager {
-        private static string PreferencePath => Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
+        private static string PreferencePath {
+            get => Path.GetFullPath(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
+        }
 
         /// <summary>
         /// Loads the Project Preferences.
@@ -19,7 +21,8 @@ namespace NDream.AirConsole.Editor {
                 return newPreferences;
             }
 
-            ProjectPreferences result = JsonConvert.DeserializeObject<ProjectPreferences>(File.ReadAllText(PreferencePath));
+            ProjectPreferences result
+                = JsonConvert.DeserializeObject<ProjectPreferences>(File.ReadAllText(PreferencePath));
             return result;
         }
 

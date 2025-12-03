@@ -8,7 +8,8 @@ namespace NDream.AirConsole.Examples {
     /// </summary>
     [RequireComponent(typeof(Camera))]
     public class FullscreenSafeAreaHandler : MonoBehaviour {
-        [Tooltip("Reference to the camera that should be adjusted to the safe area. Will use the attached camera if not assigned.")]
+        [Tooltip(
+            "Reference to the camera that should be adjusted to the safe area. Will use the attached camera if not assigned.")]
         [SerializeField]
         private Camera targetCamera;
 

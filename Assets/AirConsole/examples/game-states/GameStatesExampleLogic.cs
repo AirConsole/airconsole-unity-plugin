@@ -28,7 +28,9 @@
             public const string ResumeGame = "resume-game";
         }
 
-        private readonly string[] colorNames = new string[] { "red", "blue", "green", "yellow", "orange", "purple", "pink" };
+        private readonly string[] colorNames = new string[]
+            { "red", "blue", "green", "yellow", "orange", "purple", "pink" };
+
         private int colorIndex;
 
         // This field should overwrite any game state
@@ -158,6 +160,7 @@
                 // updates get delayed because of rate limiting the more devices are connected, the more this becomes a problem
                 AirConsole.instance.SetCustomDeviceStateProperty("playerColors",
                     UpdatePlayerColorData(AirConsole.instance.GetCustomDeviceState(0), i, colorNames[colorIndex]));
+
                 // The controller listens for the onCustomDeviceStateChanged event.
                 // See the  controller-game-states.html file for how this is handled there.
 
@@ -171,6 +174,7 @@
 
         private void SetGameState(string state) {
             gameStateText.text = state;
+
             // Set a custom device state property to inform all connected devices
             // of the current game state
             AirConsole.instance.SetCustomDeviceStateProperty("state", state);
@@ -199,7 +203,10 @@
             }
 
             // Logging and returning the updated playerColorData
-            Debug.Log("AssignPlayerColor for device " + deviceId + " returning new playerColorData: " + playerColorData);
+            Debug.Log("AssignPlayerColor for device "
+                      + deviceId
+                      + " returning new playerColorData: "
+                      + playerColorData);
 
             return playerColorData;
         }

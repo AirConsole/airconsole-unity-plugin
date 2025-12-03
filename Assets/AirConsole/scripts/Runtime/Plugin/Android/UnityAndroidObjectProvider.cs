@@ -25,7 +25,7 @@ namespace NDream.AirConsole.Android.Plugin {
             if (!AirConsole.IsAndroidRuntime) {
                 throw new UnityException("UnityAndroidObjectProvider is only supported on Unity Android builds.");
             }
-            
+
 #if UNITY_6000_0_OR_NEWER
             return UnityEngine.Android.AndroidApplication.currentActivity;
 #endif

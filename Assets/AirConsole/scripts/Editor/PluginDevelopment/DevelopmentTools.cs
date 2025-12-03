@@ -1,5 +1,4 @@
 #if !DISABLE_AIRCONSOLE && AIRCONSOLE_DEVELOPMENT
-
 namespace NDream.AirConsole.Editor {
     using UnityEngine;
     using UnityEditor;

@@ -75,7 +75,6 @@ namespace NDream.AirConsole.Examples {
         }
 
         #region Split Screen Configuration Methods
-
         /// <summary>
         /// Sets up two player cameras in a horizontal split (side by side)
         /// </summary>
@@ -234,7 +233,6 @@ namespace NDream.AirConsole.Examples {
             );
             playerCameras[3].pixelRect = bottomRightRect;
         }
-
         #endregion
 
         private void OnEnable() {

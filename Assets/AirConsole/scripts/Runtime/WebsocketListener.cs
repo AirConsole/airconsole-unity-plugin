@@ -7,7 +7,7 @@ namespace NDream.AirConsole {
     using WebSocketSharp.Server;
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;
-    
+
     public class WebsocketListener : WebSocketBehavior {
         public event Action<JObject> onReady;
         public event Action onClose;
@@ -188,7 +188,8 @@ namespace NDream.AirConsole {
         public void Message(JObject data) {
             switch (Application.platform) {
                 case RuntimePlatform.WebGLPlayer:
-                    Application.ExternalCall("window.app.processUnityData", data.ToString()); //TODO: External Call is obsolete?
+                    Application.ExternalCall("window.app.processUnityData",
+                        data.ToString()); //TODO: External Call is obsolete?
                     break;
                 case RuntimePlatform.Android: {
                     if (AirConsole.IsAndroidOrEditor) {

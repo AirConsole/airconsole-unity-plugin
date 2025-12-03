@@ -27,7 +27,9 @@ namespace NDream.AirConsole.Editor {
         private const string ANDROID_NATIVE_GAME_SIZING_INACTIVE = "var AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = false;";
         private const string AIRCONSOLE_RUNTIME_SETTINGS_ASSET_FILE = AirconsoleRuntimeSettings.ResourceName + ".asset";
 
-        private static string SettingsPath => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
+        private static string SettingsPath {
+            get => Application.dataPath + Settings.WEBTEMPLATE_PATH + "/airconsole-settings.js";
+        }
 
         [InitializeOnLoadMethod]
         private static void Migration() {
@@ -100,9 +102,10 @@ namespace NDream.AirConsole.Editor {
             DrawToggle(new GUIContent("Native Game Sizing", "Enables SafeArea support with fullscreen webview overlay"),
                 ref nativeGameSizingSupportedValue);
             if (!nativeGameSizingSupportedValue) {
-                AndroidOnlyHelpBox("Android for Automotive requires you to enable this and to implement the OnSafeAreaChanged "
-                                   + "event handler provided by the AirConsole instance, enabling you to only render your game content"
-                                   + " in relevant area", MessageType.Warning);
+                AndroidOnlyHelpBox(
+                    "Android for Automotive requires you to enable this and to implement the OnSafeAreaChanged "
+                    + "event handler provided by the AirConsole instance, enabling you to only render your game content"
+                    + " in relevant area", MessageType.Warning);
             }
         }
 
@@ -124,7 +127,8 @@ namespace NDream.AirConsole.Editor {
 
         private void ValidateAndroidGameVersion() {
             string androidGameVersion = serializedObject.FindProperty("androidGameVersion").stringValue;
-            if (string.IsNullOrEmpty(androidGameVersion) || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
+            if (string.IsNullOrEmpty(androidGameVersion)
+                || !Regex.IsMatch(androidGameVersion, @"^\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2}$")) {
                 EditorGUILayout.HelpBox("Please enter a valid Game Version for Android", MessageType.Error);
             }
         }
@@ -132,7 +136,8 @@ namespace NDream.AirConsole.Editor {
         private void ShowAdditionalProperties() {
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidGameVersion"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("androidUIResizeMode"));
-            if (serializedObject.FindProperty("androidUIResizeMode").enumValueIndex > (int)AndroidUIResizeMode.ResizeCamera
+            if (serializedObject.FindProperty("androidUIResizeMode").enumValueIndex
+                > (int)AndroidUIResizeMode.ResizeCamera
                 && nativeGameSizingSupportedValue) {
                 AndroidOnlyHelpBox("Android with native game sizing requires SafeAreas.\n"
                                    + "In this mode, AirConsole no longer supports UI Reference Resolution Scaling.",
@@ -151,6 +156,7 @@ namespace NDream.AirConsole.Editor {
 
         private void ShowButtons() {
             EditorGUILayout.BeginHorizontal(styleBlack);
+
             // check if a port was exported
             if (File.Exists(EditorPrefs.GetString("airconsolePortPath") + "/screen.html")) {
                 if (GUILayout.Button("Open Exported Port", GUILayout.MaxWidth(130))) {
@@ -225,11 +231,13 @@ namespace NDream.AirConsole.Editor {
             }
 
             if (!File.Exists(newPath)) {
-                AirConsoleLogger.LogWarning(() => "Update settings file to new version, renaming from translation.js to game-settings.js");
+                AirConsoleLogger.LogWarning(() =>
+                    "Update settings file to new version, renaming from translation.js to game-settings.js");
                 File.Move(originalPath, newPath);
                 File.AppendAllText(newPath, $"\n{INACTIVE_PLAYERS_SILENCED_INACTIVE}");
             } else {
-                AirConsoleLogger.LogError(() => $"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
+                AirConsoleLogger.LogError(() =>
+                    $"game-settings.js found [{newPath}]. Deleting prior translation.js [{originalPath}].");
                 File.Delete(originalPath);
             }
         }
@@ -297,7 +305,8 @@ namespace NDream.AirConsole.Editor {
             string parentFolder = Path.GetDirectoryName(resourcesFolder)?.Replace("\\", "/");
             string folderName = Path.GetFileName(resourcesFolder);
             if (string.IsNullOrEmpty(parentFolder) || string.IsNullOrEmpty(folderName)) {
-                AirConsoleLogger.LogError(() => $"Failed to resolve Resources folder relative to {airConsoleDirectory}");
+                AirConsoleLogger.LogError(() =>
+                    $"Failed to resolve Resources folder relative to {airConsoleDirectory}");
                 return null;
             }
 

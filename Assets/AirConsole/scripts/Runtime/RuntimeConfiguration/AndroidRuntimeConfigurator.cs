@@ -23,7 +23,8 @@ namespace NDream.AirConsole {
             // To ensure consistent behavior and layout on cars where custom safe areas can be in use,
             //  we ensure to run in fullscreen for it to be treated correctly.
             // In the optimal case we could use _pluginManager.IsAutomotiveDevice() to decide more granularly.
-            Screen.fullScreen = true; 
+            Screen.fullScreen = true;
+
             // Car OEMs can modify some of the standard android behavior so we want to make sure to be vSync aligned.
             QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = Mathf.CeilToInt((float)Screen.currentResolution.refreshRateRatio.value);

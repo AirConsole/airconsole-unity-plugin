@@ -59,7 +59,8 @@ namespace NDream.AirConsole.Editor {
             EditorNotificationService.InvokeError(message, false, title);
         }
 
-        private static string StringFromVersion(Version version) => $"{version.Major}.{version.Minor}.{version.Build}f{version.Revision}";
+        private static string StringFromVersion(Version version) =>
+            $"{version.Major}.{version.Minor}.{version.Build}f{version.Revision}";
 
         private static string GetUnityVersion() {
 #if UNITY_INCLUDE_TESTS

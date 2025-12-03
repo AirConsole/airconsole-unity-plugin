@@ -30,6 +30,7 @@ namespace NDream.AirConsole.Android.Plugin {
                     AirConsoleLogger.LogDevelopment(() =>
                         $"UnityPluginStringCallback received message[{i}]: {message.Substring(i, endValue - i)}");
                 }
+
                 // AirConsoleLogger.LogDevelopment($"UnityPluginStringCallback received message[{message.Length}]: {message}");
                 _successCallback.Invoke(message);
             } else {

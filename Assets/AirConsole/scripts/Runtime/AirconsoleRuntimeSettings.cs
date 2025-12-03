@@ -10,7 +10,9 @@ namespace NDream.AirConsole {
         [SerializeField]
         private bool nativeGameSizingSupported = true;
 
-        public bool NativeGameSizingSupported => nativeGameSizingSupported;
+        public bool NativeGameSizingSupported {
+            get => nativeGameSizingSupported;
+        }
 
 #if UNITY_EDITOR
         public void SetNativeGameSizingSupported(bool value) {

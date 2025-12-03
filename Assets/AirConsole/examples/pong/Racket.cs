@@ -2,17 +2,15 @@
 
 namespace NDream.AirConsole.Examples {
     public class Racket : MonoBehaviour {
-
         public ExamplePongLogic logic;
 
         // Use this for initialization
-        void Start() { }
+        private void Start() { }
 
-        void OnCollisionEnter2D(Collision2D col) {
-
+        private void OnCollisionEnter2D(Collision2D col) {
             if (col.gameObject.GetComponent<Rigidbody2D>() != null) {
-
-                float hitPos = (col.transform.position.y - transform.position.y) / (GetComponent<Collider2D>().bounds.size.y / 2);
+                float hitPos = (col.transform.position.y - transform.position.y)
+                               / (GetComponent<Collider2D>().bounds.size.y / 2);
                 float hitDir = 1f;
 
                 if (col.relativeVelocity.x > 0) {
@@ -21,7 +19,6 @@ namespace NDream.AirConsole.Examples {
 
                 Vector2 dir = new Vector2(hitDir, hitPos).normalized;
                 col.gameObject.GetComponent<Rigidbody2D>().velocity = dir * logic.ballSpeed;
-
             }
         }
     }

@@ -79,6 +79,7 @@ namespace NDream.AirConsole.Editor {
                 if (startUpPath.Contains(Settings.WEBTEMPLATE_PATH)) {
                     // remove query parameters
                     rawUrl = rawUrl.Split('?')[0];
+
                     // translate screen.html to index.html
                     rawUrl = rawUrl.Replace("screen.html", "index.html");
                 }

@@ -6,7 +6,8 @@ namespace NDream.AirConsole.Editor {
     using System.Linq;
 
     internal abstract class AndroidGradleProcessor {
-        private const string PROGUARD_CLASSMEMBERS = "-keepclasseswithmembers class com.airconsole.unityandroidlibrary.** {*;}";
+        private const string PROGUARD_CLASSMEMBERS
+            = "-keepclasseswithmembers class com.airconsole.unityandroidlibrary.** {*;}";
 
         internal static void Execute(string basePath) {
             UpdateMainGradleProperties(Path.GetFullPath(Path.Combine(basePath, "..")), "gradle.properties");
@@ -28,7 +29,10 @@ namespace NDream.AirConsole.Editor {
 
         private static void UpdateMainGradleTemplate(string basePath, string gradleTemplateName) {
             string gradleTemplatePath = Path.Combine(basePath, gradleTemplateName);
-            string[] initialLines = File.ReadAllText(gradleTemplatePath).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[] { '\n' });
+            string[] initialLines = File.ReadAllText(gradleTemplatePath)
+                .Replace("\r\n", "\n")
+                .Replace("\r", "\n")
+                .Split(new[] { '\n' });
 
             List<string> lines = new();
             bool inDependencies = false;
@@ -73,7 +77,8 @@ namespace NDream.AirConsole.Editor {
                 AirConsoleLogger.LogDevelopment(() =>
                     $"Gradle templates updated from {initialLines} to {lines} for {gradlePropertiesPath}");
             } else {
-                AirConsoleLogger.LogDevelopment(() => $"Gradle properties were {initialLines}, no update for {gradlePropertiesPath}");
+                AirConsoleLogger.LogDevelopment(() =>
+                    $"Gradle properties were {initialLines}, no update for {gradlePropertiesPath}");
             }
         }
 

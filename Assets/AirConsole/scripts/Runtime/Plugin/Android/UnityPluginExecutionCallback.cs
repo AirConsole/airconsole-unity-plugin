@@ -19,7 +19,8 @@ namespace NDream.AirConsole.Android.Plugin {
 
                 _executionCallback.Invoke();
             } else {
-                AirConsoleLogger.LogDevelopment(() => "UnityPluginExecutionCallback execution callback is not assigned.");
+                AirConsoleLogger.LogDevelopment(() =>
+                    "UnityPluginExecutionCallback execution callback is not assigned.");
             }
         }
     }

@@ -37,7 +37,8 @@ namespace NDream.AirConsole.Editor {
                     break;
 
                 default:
-                    AirConsoleLogger.LogDevelopment(() => "Default Plugin Upgrade path hit. If this is expected, ignore this message");
+                    AirConsoleLogger.LogDevelopment(() =>
+                        "Default Plugin Upgrade path hit. If this is expected, ignore this message");
 
                     break;
             }
@@ -105,9 +106,7 @@ namespace NDream.AirConsole.Editor {
             return result;
         }
 
-        internal static PluginVersionUpdateState GetPluginVersionUpdateState() {
-            return new PluginVersionUpdateState(GetLastKnownPluginVersion());
-        }
+        internal static PluginVersionUpdateState GetPluginVersionUpdateState() => new(GetLastKnownPluginVersion());
 
         internal static void RecordPluginVersionUpdate(string newVersionString) {
             ProjectPreferences preferences = ProjectPreferenceManager.LoadPreferences();
@@ -135,7 +134,8 @@ namespace NDream.AirConsole.Editor {
         public PluginVersionUpdateState(string previousPluginVersion) {
             PreviousPluginVersion = GetUpgradeVersionComponent(previousPluginVersion);
             int previousVersion = PluginVersionTracker.CalculatePluginVersion(PreviousPluginVersion);
-            int currentVersion = PluginVersionTracker.CalculatePluginVersion(GetUpgradeVersionComponent(Settings.VERSION));
+            int currentVersion
+                = PluginVersionTracker.CalculatePluginVersion(GetUpgradeVersionComponent(Settings.VERSION));
             RequiresUpdate = currentVersion > previousVersion;
         }
 
