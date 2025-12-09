@@ -738,8 +738,8 @@ namespace NDream.AirConsole {
 
             JToken custom = _devices[0]["custom"];
             if (custom == null) {
-                JObject new_custom = new();
-                _devices[0]["custom"] = JToken.FromObject(new_custom);
+                JObject newCustom = new();
+                _devices[0]["custom"] = JToken.FromObject(newCustom);
             }
 
 
@@ -1728,7 +1728,6 @@ namespace NDream.AirConsole {
             if (webViewObject) {
                 AirConsoleLogger.LogDevelopment(() => $"Reloading webview with URL: {_webViewOriginalUrl}");
                 LoadAndroidWebviewUrl(_webViewOriginalUrl);
-                ConfigureWebviewAudioMute();
             } else {
                 AirConsoleLogger.LogError(() => "Reloading webview failed, no webViewObject found.");
             }
@@ -2111,7 +2110,6 @@ namespace NDream.AirConsole {
         private void OnConnectUrlReceived(string connectionUrl) {
             _pluginManager.OnConnectionUrlReceived -= OnConnectUrlReceived;
             eventQueue.Enqueue(delegate {
-                // connectionUrl = "client?id=bmw-idc-23&runtimePlatform=android&homeCountry=DE&SwPu=24-11";
                 CreateAndroidWebview(connectionUrl);
             });
         }
@@ -2194,7 +2192,6 @@ namespace NDream.AirConsole {
                     DontDestroyOnLoad(webViewObject.gameObject);
                 }
 
-                // TODO(QAB-14400, QAB-14401, QAB-14403): Handle Audio Focus change to update internal
                 webViewObject.SetOnAudioFocusChanged(HandleWebViewAudioFocusChanged);
 
                 webViewObject.Init(ProcessJS,
@@ -2477,15 +2474,8 @@ namespace NDream.AirConsole {
                 AirConsoleLogger.LogError(() => "Can have audio focus lost.");
             }
 
-            ConfigureWebviewAudioMute();
-
-
             MaximumAudioVolume = canHaveAudioFocus ? 1f : 0f;
             eventQueue.Enqueue(() => OnGameAudioFocusChanged?.Invoke(canHaveAudioFocus, MaximumAudioVolume));
-        }
-
-        private void ConfigureWebviewAudioMute() {
-            webViewObject.MuteAudio(_muteWebView);
         }
 
         // Webview Audio Focus change handler
@@ -2532,7 +2522,6 @@ namespace NDream.AirConsole {
                     HasAudioFocus = true;
                     _ignoreAudioFocusLoss = true;
                     _muteWebView = !_canHaveAudioFocus;
-                    ConfigureWebviewAudioMute();
                     break;
                 case "WEBVIEW_AUDIOFOCUS_LOSS":
                     AirConsoleLogger.Log(() =>

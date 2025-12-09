@@ -79,27 +79,17 @@ public class UnityWebViewPostprocessBuild
             {
                 List<string> lines = new();
                 bool inDependencies = false;
-                bool hasWebkit = false;
                 bool hasCore = false;
                 foreach (string line in lines0) {
                     if (line == "dependencies {") {
                         inDependencies = true;
                     } else if (inDependencies && line == "}") {
-                        if (!hasWebkit) {
-                            lines.Add("    implementation 'androidx.webkit:webkit:1.12.0'");
-                            hasWebkit = true;
-                        }
                         if (includeCoreDependency && !hasCore) {
                             lines.Add("    implementation 'androidx.core:core:1.6.0'");
                             hasCore = true;
                         }
                         inDependencies = false;
                     } else if (inDependencies) {
-                        if (line.Contains("implementation(name: 'webkit")
-                            || line.Contains("implementation(name: 'androidx.webkit.webkit")
-                            || line.Contains("implementation 'androidx.webkit:webkit")) {
-                            hasWebkit = true;
-                        }
                         if (line.Contains("implementation(name: 'core")
                             || line.Contains("implementation(name: 'androidx.core.core")
                             || line.Contains("implementation 'androidx.core:core")) {
