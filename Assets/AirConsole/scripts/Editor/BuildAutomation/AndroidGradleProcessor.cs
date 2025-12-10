@@ -11,10 +11,8 @@ namespace NDream.AirConsole.Editor {
             = "-keepclasseswithmembers class com.airconsole.unityandroidlibrary.** {*;}";
 
         internal static void Execute(string basePath) {
-            // UpdateGradleWrapperVersion(Path.GetFullPath(Path.Combine(basePath, "..", "gradle", "wrapper")), "gradle-wrapper.properties");
             UpdateMainGradleProperties(Path.GetFullPath(Path.Combine(basePath, "..")), "gradle.properties");
 
-            // UpdateMainGradleTemplate(Path.GetFullPath(Path.Combine(basePath, "..")), "build.gradle");
             UpdateLibraryGradleTemplate(Path.GetFullPath(basePath), "build.gradle");
             UpdateProGuard(Path.GetFullPath(basePath), "proguard-unity.txt");
             AirConsoleLogger.LogDevelopment(() => "Updated gradle files for AirConsole Android build");
@@ -64,7 +62,7 @@ namespace NDream.AirConsole.Editor {
             for (int i = 0; i < lines.Length; i++) {
                 // regex to check the used gradle version
                 Match match = versionExtractor.Match(lines[i]);
-                if (lines[i].StartsWith("distributionUrl=")
+                if (lines[i].StartsWith("distributionUrl=") && match.Success
                     && (int.Parse(match.Groups["Major"].Value) < 8
                         || int.Parse(match.Groups["Minor"].Value) < 1
                         || int.Parse(match.Groups["Build"].Value) < 1)) {
@@ -104,8 +102,6 @@ namespace NDream.AirConsole.Editor {
                     AddImplementationLineIfNotPresent(initialLines, "com.android.volley:volley:1.2.1", lines);
                     AddImplementationLineIfNotPresent(initialLines, "androidx.appcompat:appcompat:1.6.1", lines);
                     AddImplementationLineIfNotPresent(initialLines, "androidx.security:security-crypto:1.0.0", lines);
-
-                    // TODO(WebView): Adding androidx.webkit:webkit:1.14.0 here would be way easier but not with the plugin separate.
                 }
 
                 lines.Add(line);

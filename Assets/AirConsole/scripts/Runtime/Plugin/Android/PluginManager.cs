@@ -23,8 +23,6 @@ namespace NDream.AirConsole.Android.Plugin {
         internal event Action<string> OnAudioFocusChange;
         
         internal PluginManager(AirConsole airConsole) {
-            AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
-
             GenericUnityPluginCallback<bool> pauseCallback = new(HandlePlatformPauseEvent);
 
             UnityPluginStringCallback callback = new(
