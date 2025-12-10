@@ -67,6 +67,9 @@ public class UnitySendMessageDispatcher
 /// </summary>
 public class WebViewObject : MonoBehaviour
 {
+#if UNITY_ANDROID
+    WebViewCallback callback;
+#endif
     Callback onJS;
     Callback onError;
     Callback onHttpError;
@@ -325,7 +328,7 @@ public class WebViewObject : MonoBehaviour
     }
 
     /// <summary>
-    /// Catches any events queued during the current frame's Update cycle.
+    /// Catches any events queued during the current frame's FixedUpdate cycle.
     /// </summary>
     private void FixedUpdate() {
         ProcessEventQueue();
@@ -626,7 +629,7 @@ public class WebViewObject : MonoBehaviour
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
 
         // Set up direct callback for zero-delay event delivery
-        WebViewCallback callback = new (this);
+        callback = new (this);
         webView.Call("SetCallback", callback);
 #else
         Debug.LogError("Webview is not supported on this platform.");
