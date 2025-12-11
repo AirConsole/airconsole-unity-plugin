@@ -1,6 +1,6 @@
 /**
  * Copyright by N-Dream AG 2025.
- * @version 2.6.0
+ * @version 2.6.2
  */
 
 /**
@@ -9,7 +9,11 @@
 
 function App(container, canvas, web_config, progress_config) {
     var me = this;
-
+    
+    // TODO(PRO-1804): Remove this workaround when Android TV uses a fullscreen webview too
+    const isAndroidTV = window.location.search.includes('androidTv=1');
+    window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING = window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING && !isAndroidTV;
+    
     me.is_native_app = typeof Unity != "undefined";
     me.is_editor = !!me.getURLParameterByName("unity-editor-websocket-port");
     if (!window.AIRCONSOLE_ANDROID_NATIVE_GAMESIZING) {
