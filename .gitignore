@@ -36,12 +36,6 @@ ehthumbs.db
 Thumbs.db
 
 # ============ #
-# IDEA generated #
-# ============ #
-/.idea
-
-
-# ============ #
 # Visual Studio Code generated #
 # ============ #
 /.vs
@@ -50,3 +44,14 @@ TestBuilds/
 Assets/AirConsole/airconsole.prefs*
 
 Assets/WebGLTemplates/**/airconsole-settings.js
+
+# ============ #
+# IntellJ Code Style
+# ============ #
+
+!/.idea/
+/.idea/*
+!/.idea/.idea.airconsole-unity-plugin/
+!/.idea/.idea.airconsole-unity-plugin/.idea/
+/.idea/.idea.airconsole-unity-plugin/.idea/*
+!/.idea/.idea.airconsole-unity-plugin/.idea/codeStyles/

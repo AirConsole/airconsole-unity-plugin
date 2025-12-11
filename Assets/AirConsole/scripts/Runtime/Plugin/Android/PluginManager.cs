@@ -18,12 +18,13 @@ namespace NDream.AirConsole.Android.Plugin {
         /// <remarks>Currently only supports UNITY_ANDROID && !UNITY_EDITOR scenarios.</remarks>
         // ReSharper disable once EventNeverSubscribedTo.Global
         internal event Action<string> OnConnectionUrlReceived;
+
+        internal event Action<float> OnUpdateVolume;
+        internal event Action<string> OnAudioFocusChange;
         
         internal PluginManager(AirConsole airConsole) {
-            AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
-
             GenericUnityPluginCallback<bool> pauseCallback = new(HandlePlatformPauseEvent);
-            
+
             UnityPluginStringCallback callback = new(
                 url => {
                     IsInitialized = true;
@@ -32,6 +33,17 @@ namespace NDream.AirConsole.Android.Plugin {
                 },
                 error => { AirConsoleLogger.Log(() => $"AndroidDataProvider initialization failed with {error}"); }
             );
+
+            GenericUnityPluginCallback<float> onVolumeChangeCallback = new(volume => {
+                AirConsoleLogger.LogDevelopment(() => $"Volume changed to {volume}");
+                OnUpdateVolume?.Invoke(volume);
+            });
+
+            GenericUnityPluginCallback<string> onAudioFocusChangeCallback = new(focusEvent => {
+                AirConsoleLogger.LogDevelopment(() => $"Audio focus event received: {focusEvent}");
+
+                OnAudioFocusChange?.Invoke(focusEvent);
+            });
             
             UnityPluginExecutionCallback reloadCallback = new(() => { OnReloadWebview?.Invoke(); });
             _service =
@@ -39,12 +51,14 @@ namespace NDream.AirConsole.Android.Plugin {
                     pauseCallback,
                     reloadCallback,
                     Settings.AIRCONSOLE_BASE_URL,
-                    callback);
+                    callback,
+                    onVolumeChangeCallback,
+                    onAudioFocusChangeCallback);
 
             _airConsole = airConsole;
-            _airConsole.UnityPause += OnPause;
-            _airConsole.UnityResume += OnResume;
             _airConsole.UnityDestroy += OnDestroy;
+            
+            AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
         }
 
         internal void ReportPlatformReady() {
@@ -52,43 +66,38 @@ namespace NDream.AirConsole.Android.Plugin {
 
             _service.Call("reportPlatformReady");
         }
+
+        internal bool RequestAudioFocus() {
+            AirConsoleLogger.LogDevelopment(() => "RequestAudioFocus called.");
+            return _service.Call<bool>("requestAudioFocus");
+        }
+
+        internal void AbandonAudioFocus() {
+            AirConsoleLogger.LogDevelopment(() => "AbandonAudioFocus called.");
+            _service.Call("abandonAudioFocus");
+        }
         
 //         /// <summary>
 //         /// Writes client identification related information using the native library
 //         /// </summary>
 //         /// <param name="connectCode">The screen connectCode to write.</param>
 //         /// <param name="uid">The screen uid to write.</param>
-         internal void WriteClientIdentification(string connectCode, string uid) {
-             AirConsoleLogger.LogDevelopment(() => $"WriteClientIdentification w/ connectCode: {connectCode}, uid: {uid}");
-             _service?.Call("writeClientIdentification", connectCode, uid);
-         }
-        
-         internal bool IsTV() {
-             return _service != null && _service.Call<bool>("isTV");
-         }
-         internal bool IsAutomotive() {
-             return _service != null && _service.Call<bool>("isAutomotive");
-         }
-         internal bool IsNormalDevice() {
-             return _service != null && _service.Call<bool>("isNormalDevice");
-         }
+        internal void WriteClientIdentification(string connectCode, string uid) {
+            AirConsoleLogger.LogDevelopment(() =>
+                $"WriteClientIdentification w/ connectCode: {connectCode}, uid: {uid}");
+            _service?.Call("writeClientIdentification", connectCode, uid);
+        }
+
+        internal bool IsTV() => _service != null && _service.Call<bool>("isTV");
+
+        internal bool IsAutomotive() => _service != null && _service.Call<bool>("isAutomotive");
+
+        internal bool IsNormalDevice() => _service != null && _service.Call<bool>("isNormalDevice");
 
         internal void InitializeOfflineCheck() {
             AirConsoleLogger.LogDevelopment(() => "InitializeOfflineCheck called.");
 
             _service.Call("initializeOfflineCheck");
-        }
-
-        private void OnPause() {
-            AirConsoleLogger.LogDevelopment(() => "OnPause called.");
-
-            _service.Call("onPause");
-        }
-
-        private void OnResume() {
-            AirConsoleLogger.LogDevelopment(() => "OnResume called.");
-
-            _service.Call("onResume");
         }
 
         private void OnDestroy() {

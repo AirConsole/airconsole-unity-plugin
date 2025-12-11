@@ -23,6 +23,8 @@ public class UnityWebViewPostprocessBuild
 {
     private static bool nofragment = true;
 
+
+
     //// for android/unity 2018.1 or newer
     //// cf. https://forum.unity.com/threads/android-hardwareaccelerated-is-forced-false-in-all-activities.532786/
     //// cf. https://github.com/Over17/UnityAndroidManifestCallback
@@ -47,53 +49,9 @@ public class UnityWebViewPostprocessBuild
     public void OnPostGenerateGradleAndroidProject(string basePath) {
         var changed = false;
         var androidManifest = new AndroidManifest(GetManifestPath(basePath));
-        if (!nofragment) {
-            changed = (androidManifest.AddFileProvider(basePath) || changed);
-            {
-                var path = GetBuildGradlePath(basePath);
-                var lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[]{'\n'});
-                {
-                    var lines = new List<string>();
-                    var independencies = false;
-                    foreach (var line in lines0) {
-                        if (line == "dependencies {") {
-                            independencies = true;
-                        } else if (independencies && line == "}") {
-                            independencies = false;
-                            lines.Add("    implementation 'androidx.core:core:1.6.0'");
-                        } else if (independencies) {
-                            if (line.Contains("implementation(name: 'core")
-                                || line.Contains("implementation(name: 'androidx.core.core")
-                                || line.Contains("implementation 'androidx.core:core")) {
-                                break;
-                            }
-                        }
-                        lines.Add(line);
-                    }
-                    if (lines.Count > lines0.Length) {
-                        File.WriteAllText(path, string.Join("\n", lines) + "\n");
-                    }
-                }
-            }
-            {
-                var path = GetGradlePropertiesPath(basePath);
-                var lines0 = "";
-                var lines = "";
-                if (File.Exists(path)) {
-                    lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n") + "\n";
-                    lines = lines0;
-                }
-                if (!lines.Contains("android.useAndroidX=true")) {
-                    lines += "android.useAndroidX=true\n";
-                }
-                if (!lines.Contains("android.enableJetifier=true")) {
-                    lines += "android.enableJetifier=true\n";
-                }
-                if (lines != lines0) {
-                    File.WriteAllText(path, lines);
-                }
-            }
-        }
+
+        AddAndroidXDependencies(ref changed, androidManifest, basePath, !nofragment);
+
         changed = (androidManifest.SetExported(true) || changed);
         changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
         changed = (androidManifest.SetHardwareAccelerated(true) || changed);
@@ -110,6 +68,63 @@ public class UnityWebViewPostprocessBuild
         if (changed) {
             androidManifest.Save();
             Debug.Log("unitywebview: adjusted AndroidManifest.xml.");
+        }
+    }
+
+    private void AddAndroidXDependencies(ref bool changed, AndroidManifest androidManifest, string basePath, bool includeCoreDependency) {
+        changed = androidManifest.AddFileProvider(basePath) || changed;
+        {
+            string path = GetBuildGradlePath(basePath);
+            string[] lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n").Split(new[] { '\n' });
+            {
+                List<string> lines = new();
+                bool inDependencies = false;
+                bool hasCore = false;
+                foreach (string line in lines0) {
+                    if (line == "dependencies {") {
+                        inDependencies = true;
+                    } else if (inDependencies && line == "}") {
+                        if (includeCoreDependency && !hasCore) {
+                            lines.Add("    implementation 'androidx.core:core:1.6.0'");
+                            hasCore = true;
+                        }
+                        inDependencies = false;
+                    } else if (inDependencies) {
+                        if (line.Contains("implementation(name: 'core")
+                            || line.Contains("implementation(name: 'androidx.core.core")
+                            || line.Contains("implementation 'androidx.core:core")) {
+                            hasCore = true;
+                        }
+                    }
+
+                    lines.Add(line);
+                }
+
+                if (lines.Count > lines0.Length) {
+                    File.WriteAllText(path, string.Join("\n", lines) + "\n");
+                }
+            }
+        }
+        {
+            string path = GetGradlePropertiesPath(basePath);
+            string lines0 = "";
+            string lines = "";
+            if (File.Exists(path)) {
+                lines0 = File.ReadAllText(path).Replace("\r\n", "\n").Replace("\r", "\n") + "\n";
+                lines = lines0;
+            }
+
+            if (!lines.Contains("android.useAndroidX=true")) {
+                lines += "android.useAndroidX=true\n";
+            }
+
+            if (!lines.Contains("android.enableJetifier=true")) {
+                lines += "android.enableJetifier=true\n";
+            }
+
+            if (lines != lines0) {
+                File.WriteAllText(path, lines);
+            }
         }
     }
 #endif
@@ -186,25 +201,8 @@ public class UnityWebViewPostprocessBuild
             var androidManifest = new AndroidManifest(manifest);
             if (!nofragment) {
                 changed = (androidManifest.AddFileProvider("Assets/Plugins/Android") || changed);
-                var files = Directory.GetFiles("Assets/Plugins/Android/");
-                var found = false;
-                foreach (var file in files) {
-                    if (Regex.IsMatch(file, @"^Assets/Plugins/Android/(androidx\.core\.)?core-.*.aar$")) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    foreach (var file in files) {
-                        var match = Regex.Match(file, @"^Assets/Plugins/Android/(core.*.aar).tmpl$");
-                        if (match.Success) {
-                            var name = match.Groups[1].Value;
-                            File.Copy(file, "Assets/Plugins/Android/" + name, true);
-                            break;
-                        }
-                    }
-                }
             }
+
             changed = (androidManifest.SetWindowSoftInputMode("adjustPan") || changed);
             changed = (androidManifest.SetHardwareAccelerated(true) || changed);
 #if UNITYWEBVIEW_ANDROID_USES_CLEARTEXT_TRAFFIC
@@ -283,6 +281,7 @@ public class UnityWebViewPostprocessBuild
             File.WriteAllText(projPath, dst);
         }
     }
+
 }
 
 internal class AndroidXmlDocument : XmlDocument {
@@ -391,6 +390,7 @@ internal class AndroidManifest : AndroidXmlDocument {
         bool changed = false;
         var authorities = PlayerSettings.applicationIdentifier + ".unitywebview.fileprovider";
         if (SelectNodes("/manifest/application/provider[@android:authorities='" + authorities + "']", nsMgr).Count == 0) {
+            // Add the file provider for the Fragment-based webview implementation.
             var elem = CreateElement("provider");
             elem.Attributes.Append(CreateAndroidAttribute("name", "androidx.core.content.FileProvider"));
             elem.Attributes.Append(CreateAndroidAttribute("authorities", authorities));
@@ -401,6 +401,7 @@ internal class AndroidManifest : AndroidXmlDocument {
             meta.Attributes.Append(CreateAndroidAttribute("resource", "@xml/unitywebview_file_provider_paths"));
             elem.AppendChild(meta);
             ApplicationElement.AppendChild(elem);
+
             changed = true;
             var xml = GetFileProviderSettingPath(basePath);
             if (!File.Exists(xml)) {

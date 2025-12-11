@@ -23,7 +23,9 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
+using System.Threading;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
@@ -52,8 +54,7 @@ public class UnitySendMessageDispatcher
     /// <param name="name">Target GameObject name.</param>
     /// <param name="method">Method to call on the GameObject.</param>
     /// <param name="message">Message payload forwarded to the receiver.</param>
-    public static void Dispatch(string name, string method, string message)
-    {
+    public static void Dispatch(string name, string method, string message) {
         GameObject obj = GameObject.Find(name);
         if (obj != null)
             obj.SendMessage(method, message);
@@ -66,6 +67,9 @@ public class UnitySendMessageDispatcher
 /// </summary>
 public class WebViewObject : MonoBehaviour
 {
+#if UNITY_ANDROID
+    WebViewCallback callback;
+#endif
     Callback onJS;
     Callback onError;
     Callback onHttpError;
@@ -76,6 +80,11 @@ public class WebViewObject : MonoBehaviour
     Callback onAudioFocusChanged;
     bool paused;
     bool visibility;
+
+    // Thread-safe event queue infrastructure
+    private static int _mainThreadId = -1;
+    private readonly ConcurrentQueue<WebViewEvent> _eventQueue = new ConcurrentQueue<WebViewEvent>();
+
     bool alertDialogEnabled;
     bool scrollBounceEnabled;
     int mMarginLeft;
@@ -114,21 +123,42 @@ public class WebViewObject : MonoBehaviour
     NetworkReachability? androidNetworkReachability0 = null;
 #endif
 
-    void OnApplicationPause(bool paused)
-    {
+    private void OnApplicationPause(bool paused) {
+        // Temporarily disable pausing to ensure the event queue is processed
+        this.paused = false;
+        ProcessEventQueue();
+
         this.paused = paused;
+
         if (webView == null)
             return;
-        // if (!paused && mKeyboardVisibleHeight > 0)
-        // {
-        //     webView.Call("SetVisibility", false);
-        //     mResumedTimestamp = Time.realtimeSinceStartup;
-        // }
         webView.Call("OnApplicationPause", paused);
     }
 
-    void Update()
-    {
+    /// <summary>
+    /// Called when the component is disabled. Flushes any remaining events in the queue.
+    /// </summary>
+    private void OnDisable() {
+        // Flush remaining events before component destruction
+        // Temporarily unpause to allow processing
+        var wasPaused = paused;
+        paused = false;
+        ProcessEventQueue();
+        paused = wasPaused;
+    }
+
+    /// <summary>
+    /// Called when the application is about to quit. Flushes any remaining events.
+    /// </summary>
+    void OnApplicationQuit() {
+        // Final flush before app closes
+        var wasPaused = paused;
+        paused = false;
+        ProcessEventQueue();
+        paused = wasPaused;
+    }
+
+    private void Update() {
         // NOTE:
         //
         // When OnApplicationPause(true) is called and the app is in closing, webView.Call(...)
@@ -155,227 +185,75 @@ public class WebViewObject : MonoBehaviour
             return;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
         var t = Time.time;
-        if (t - 1.0f >= androidNetworkReachabilityCheckT0)
-        {
+        if (t - 1.0f >= androidNetworkReachabilityCheckT0) {
             androidNetworkReachabilityCheckT0 = t;
             var androidNetworkReachability = Application.internetReachability;
-            if (androidNetworkReachability0 != androidNetworkReachability)
-            {
+            if (androidNetworkReachability0 != androidNetworkReachability) {
                 androidNetworkReachability0 = androidNetworkReachability;
                 webView.Call("SetNetworkAvailable", androidNetworkReachability != NetworkReachability.NotReachable);
             }
         }
 #endif
-        if (mResumedTimestamp != 0.0f && Time.realtimeSinceStartup - mResumedTimestamp > 0.5f)
-        {
+        if (mResumedTimestamp != 0.0f && Time.realtimeSinceStartup - mResumedTimestamp > 0.5f) {
             mResumedTimestamp = 0.0f;
             webView.Call("SetVisibility", mVisibility);
         }
-        if (Screen.height != mLastScreenHeight)
-        {
+        if (Screen.height != mLastScreenHeight) {
             mLastScreenHeight = Screen.height;
             webView.Call("EvaluateJS", "(function() {var e = document.activeElement; if (e != null && e.tagName.toLowerCase() != 'body') {e.blur(); e.focus();}})()");
         }
-        for (;;) {
-            if (webView == null)
-                break;
-            var s = webView.Call<String>("GetMessage");
-            if (s == null)
-                break;
-            var i = s.IndexOf(':', 0);
-            if (i == -1)
-                continue;
-            switch (s.Substring(0, i)) {
-            case "CallFromJS":
-                CallFromJS(s.Substring(i + 1));
-                break;
-            case "CallOnError":
-                CallOnError(s.Substring(i + 1));
-                break;
-            case "CallOnHttpError":
-                CallOnHttpError(s.Substring(i + 1));
-                break;
-            case "CallOnLoaded":
-                CallOnLoaded(s.Substring(i + 1));
-                break;
-            case "CallOnStarted":
-                CallOnStarted(s.Substring(i + 1));
-                break;
-            case "CallOnHooked":
-                CallOnHooked(s.Substring(i + 1));
-                break;
-            case "CallOnAudioFocusChanged":
-                CallOnAudioFocusChanged(s.Substring(i + 1));
-                break;
-            case "SetKeyboardVisible":
-                SetKeyboardVisible(s.Substring(i + 1));
-                break;
-            case "RequestFileChooserPermissions":
-                RequestFileChooserPermissions();
-                break;
-            }
-        }
-    }
 
-    /// <summary>
-    /// Updates the tracked keyboard height when the native plugin reports visibility changes.
-    /// </summary>
-    /// <param name="keyboardVisibleHeight">Keyboard height, in pixels, supplied by the Android plugin.</param>
-    public void SetKeyboardVisible(string keyboardVisibleHeight)
-    {
-        if (BottomAdjustmentDisabled())
-        {
-            return;
-        }
-        var keyboardVisibleHeight0 = mKeyboardVisibleHeight;
-        var keyboardVisibleHeight1 = Int32.Parse(keyboardVisibleHeight);
-        if (keyboardVisibleHeight0 != keyboardVisibleHeight1)
-        {
-            mKeyboardVisibleHeight = keyboardVisibleHeight1;
-            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
-        }
-    }
-
-    /// <summary>
-    /// Requests runtime storage permissions required by the Android file chooser implementation.
-    /// </summary>
-    public void RequestFileChooserPermissions()
-    {
-        var permissions = new List<string>();
-        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
-        {
-            if (version.GetStatic<int>("SDK_INT") >= 33)
-            {
-                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_IMAGES"))
-                {
-                    permissions.Add("android.permission.READ_MEDIA_IMAGES");
-                }
-                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_VIDEO"))
-                {
-                    permissions.Add("android.permission.READ_MEDIA_VIDEO");
-                }
-                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_AUDIO"))
-                {
-                    permissions.Add("android.permission.READ_MEDIA_AUDIO");
-                }
-            }
-            else
-            {
-                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead))
-                {
-                    permissions.Add(Permission.ExternalStorageRead);
-                }
-                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite))
-                {
-                    permissions.Add(Permission.ExternalStorageWrite);
-                }
-            }
-        }
-        if (!Permission.HasUserAuthorizedPermission(Permission.Camera))
-        {
-            permissions.Add(Permission.Camera);
-        }
-        if (permissions.Count > 0)
-        {
-#if UNITY_2020_2_OR_NEWER
-            var grantedCount = 0;
-            var deniedCount = 0;
-            var callbacks = new PermissionCallbacks();
-            callbacks.PermissionGranted += (permission) =>
-            {
-                grantedCount++;
-                if (grantedCount + deniedCount == permissions.Count)
-                {
-                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
-                }
-            };
-            callbacks.PermissionDenied += (permission) =>
-            {
-                deniedCount++;
-                if (grantedCount + deniedCount == permissions.Count)
-                {
-                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
-                }
-            };
-            callbacks.PermissionDeniedAndDontAskAgain += (permission) =>
-            {
-                deniedCount++;
-                if (grantedCount + deniedCount == permissions.Count)
-                {
-                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
-                }
-            };
-            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
-#else
-            StartCoroutine(RequestFileChooserPermissionsCoroutine(permissions.ToArray()));
-#endif
-        }
-        else
-        {
-            StartCoroutine(CallOnRequestFileChooserPermissionsResult(true));
-        }
+        // Process any events queued from background threads
+        ProcessEventQueue();
     }
 
 #if UNITY_2020_2_OR_NEWER
 #else
     int mRequestPermissionPhase;
 
-    IEnumerator RequestFileChooserPermissionsCoroutine(string[] permissions)
-    {
-        foreach (var permission in permissions)
-        {
+    IEnumerator RequestFileChooserPermissionsCoroutine(string[] permissions) {
+        foreach (var permission in permissions) {
             mRequestPermissionPhase = 0;
             Permission.RequestUserPermission(permission);
             // waiting permission dialog that may not be opened.
-            for (var i = 0; i < 8 && mRequestPermissionPhase == 0; i++)
-            {
+            for (var i = 0; i < 8 && mRequestPermissionPhase == 0; i++) {
                 yield return new WaitForSeconds(0.25f);
             }
-            if (mRequestPermissionPhase == 0)
-            {
+            if (mRequestPermissionPhase == 0) {
                 // permission dialog was not opened.
                 continue;
             }
-            while (mRequestPermissionPhase == 1)
-            {
+            while (mRequestPermissionPhase == 1) {
                 yield return new WaitForSeconds(0.3f);
             }
         }
         yield return new WaitForSeconds(0.3f);
         var granted = 0;
-        foreach (var permission in permissions)
-        {
-            if (Permission.HasUserAuthorizedPermission(permission))
-            {
+        foreach (var permission in permissions) {
+            if (Permission.HasUserAuthorizedPermission(permission)) {
                 granted++;
             }
         }
         StartCoroutine(CallOnRequestFileChooserPermissionsResult(granted == permissions.Length));
     }
 
-    void OnApplicationFocus(bool hasFocus)
-    {
-        if (hasFocus)
-        {
-            if (mRequestPermissionPhase == 1)
-            {
+    void OnApplicationFocus(bool hasFocus) {
+        if (hasFocus) {
+            if (mRequestPermissionPhase == 1) {
                 mRequestPermissionPhase = 2;
             }
         }
         else
         {
-            if (mRequestPermissionPhase == 0)
-            {
+            if (mRequestPermissionPhase == 0) {
                 mRequestPermissionPhase = 1;
             }
         }
     }
 #endif
 
-    private IEnumerator CallOnRequestFileChooserPermissionsResult(bool granted)
-    {
-        for (var i = 0; i < 3; i++)
-        {
+    private IEnumerator CallOnRequestFileChooserPermissionsResult(bool granted) {
+        for (var i = 0; i < 3; i++) {
             yield return null;
         }
         webView.Call("OnRequestFileChooserPermissionsResult", granted);
@@ -386,14 +264,11 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="bottom">Original bottom margin in pixels.</param>
     /// <returns>The adjusted bottom margin accounting for keyboard height.</returns>
-    public int AdjustBottomMargin(int bottom)
-    {
-        if (BottomAdjustmentDisabled())
-        {
+    public int AdjustBottomMargin(int bottom) {
+        if (BottomAdjustmentDisabled()) {
             return bottom;
         }
-        else if (mKeyboardVisibleHeight <= 0)
-        {
+        else if (mKeyboardVisibleHeight <= 0) {
             return bottom;
         }
         else
@@ -403,10 +278,8 @@ public class WebViewObject : MonoBehaviour
             using (var activity = unityClass.GetStatic<AndroidJavaObject>("currentActivity"))
             using (var player = activity.Get<AndroidJavaObject>("mUnityPlayer"))
             using (var view = player.Call<AndroidJavaObject>("getView"))
-            using (var rect = new AndroidJavaObject("android.graphics.Rect"))
-            {
-                if (view.Call<bool>("getGlobalVisibleRect", rect))
-                {
+            using (var rect = new AndroidJavaObject("android.graphics.Rect")) {
+                if (view.Call<bool>("getGlobalVisibleRect", rect)) {
                     int h0 = rect.Get<int>("bottom");
                     view.Call("getWindowVisibleDisplayFrame", rect);
                     int h1 = rect.Get<int>("bottom");
@@ -417,8 +290,7 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
-    private bool BottomAdjustmentDisabled()
-    {
+    private bool BottomAdjustmentDisabled() {
 #if UNITYWEBVIEW_ANDROID_FORCE_MARGIN_ADJUSTMENT_FOR_KEYBOARD
         return false;
 #else
@@ -432,8 +304,12 @@ public class WebViewObject : MonoBehaviour
     IntPtr webView;
 #endif
 
-    void Awake()
-    {
+    private void Awake() {
+        // Capture the main thread ID for thread-safe event queueing
+        if (_mainThreadId == -1) {
+            _mainThreadId = Thread.CurrentThread.ManagedThreadId;
+        }
+
         Debug.Log($"Initializing WebViewObject v{VersionInfo.VERSION}");
         alertDialogEnabled = true;
         scrollBounceEnabled = true;
@@ -441,6 +317,21 @@ public class WebViewObject : MonoBehaviour
         mMarginTopComputed = -9999;
         mMarginRightComputed = -9999;
         mMarginBottomComputed = -9999;
+    }
+
+    /// <summary>
+    /// Secondary event drain called after all Update() methods have run.
+    /// Catches any events queued during the current frame's Update cycle.
+    /// </summary>
+    private void LateUpdate() {
+        ProcessEventQueue();
+    }
+
+    /// <summary>
+    /// Catches any events queued during the current frame's FixedUpdate cycle.
+    /// </summary>
+    private void FixedUpdate() {
+        ProcessEventQueue();
     }
 
     /// <summary>
@@ -627,11 +518,9 @@ public class WebViewObject : MonoBehaviour
     /// Determines whether the current platform exposes a compatible WebView implementation.
     /// </summary>
     /// <returns><c>true</c> when the underlying native plugin can be instantiated; otherwise <c>false</c>.</returns>
-    public static bool IsWebViewAvailable()
-    {
+    public static bool IsWebViewAvailable() {
 #if !UNITY_EDITOR && UNITY_ANDROID
-        using (var plugin = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin"))
-        {
+        using (var plugin = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin")) {
             return plugin.CallStatic<bool>("IsWebViewAvailable");
         }
 #else
@@ -680,9 +569,7 @@ public class WebViewObject : MonoBehaviour
         bool wkAllowsLinkPreview = true,
         bool wkAllowsBackForwardNavigationGestures = true,
         // editor
-        bool separated = false,
-        Callback audioFocusChanged = null)
-    {
+        bool separated = false) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         _CWebViewPlugin_InitStatic(
             Application.platform == RuntimePlatform.OSXEditor,
@@ -695,7 +582,6 @@ public class WebViewObject : MonoBehaviour
         onLoaded = ld;
         onHooked = hooked;
         onCookies = cookies;
-        onAudioFocusChanged = audioFocusChanged;
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
@@ -741,13 +627,16 @@ public class WebViewObject : MonoBehaviour
         webView.SetStatic<bool>("forceBringToFront", true);
 #endif
         webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
+
+        // Set up direct callback for zero-delay event delivery
+        callback = new (this);
+        webView.Call("SetCallback", callback);
 #else
         Debug.LogError("Webview is not supported on this platform.");
 #endif
     }
 
-    public void Destroy()
-    {
+    private void OnDestroy() {
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_destroy(name);
@@ -782,8 +671,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Pauses WebView timers and rendering to match Unity's lifecycle.
     /// </summary>
-    public void Pause()
-    {
+    public void Pause() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -805,8 +693,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Resumes WebView timers previously paused via <see cref="Pause"/>.
     /// </summary>
-    public void Resume()
-    {
+    public void Resume() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -828,8 +715,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="center">Desired centre position in screen pixels (historically anchored to lower-left).</param>
     /// <param name="scale">Desired width and height of the WebView in pixels.</param>
-    public void SetCenterPositionWithScale(Vector2 center, Vector2 scale)
-    {
+    public void SetCenterPositionWithScale(Vector2 center, Vector2 scale) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -851,8 +737,7 @@ public class WebViewObject : MonoBehaviour
     /// <param name="right">Right margin in pixels or percentage.</param>
     /// <param name="bottom">Bottom margin in pixels or percentage.</param>
     /// <param name="relative">When <c>true</c>, margins are interpreted as percentages of the screen size.</param>
-    public void SetMargins(int left, int top, int right, int bottom, bool relative = false)
-    {
+    public void SetMargins(int left, int top, int right, int bottom, bool relative = false) {
 #if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
         //TODO: UNSUPPORTED
         return;
@@ -887,8 +772,7 @@ public class WebViewObject : MonoBehaviour
         mr = right;
         mb = bottom;
 #elif UNITY_IPHONE
-        if (relative)
-        {
+        if (relative) {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
             ml = left / w;
@@ -904,20 +788,17 @@ public class WebViewObject : MonoBehaviour
             mb = bottom;
         }
 #elif UNITY_ANDROID
-        if (relative)
-        {
+        if (relative) {
             float w = (float)Screen.width;
             float h = (float)Screen.height;
             int iw = Display.main.systemWidth;
             int ih = Display.main.systemHeight;
-            if (!Screen.fullScreen)
-            {
+            if (!Screen.fullScreen) {
                 using (var unityClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
                 using (var activity = unityClass.GetStatic<AndroidJavaObject>("currentActivity"))
                 using (var player = activity.Get<AndroidJavaObject>("mUnityPlayer"))
                 using (var view = player.Call<AndroidJavaObject>("getView"))
-                using (var rect = new AndroidJavaObject("android.graphics.Rect"))
-                {
+                using (var rect = new AndroidJavaObject("android.graphics.Rect")) {
                     view.Call("getDrawingRect", rect);
                     iw = rect.Call<int>("width");
                     ih = rect.Call<int>("height");
@@ -942,8 +823,7 @@ public class WebViewObject : MonoBehaviour
             && mt == mMarginTopComputed
             && mr == mMarginRightComputed
             && mb == mMarginBottomComputed
-            && r == mMarginRelativeComputed)
-        {
+            && r == mMarginRelativeComputed) {
             return;
         }
         mMarginLeftComputed = ml;
@@ -975,16 +855,13 @@ public class WebViewObject : MonoBehaviour
     /// Shows or hides the WebView while keeping its state intact.
     /// </summary>
     /// <param name="v"><c>true</c> to make the WebView visible; otherwise <c>false</c>.</param>
-    public void SetVisibility(bool v)
-    {
+    public void SetVisibility(bool v) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        if (bg != null)
-        {
-            bg.gameObject.active = v;
+        if (bg != null) {
+            bg.gameObject.SetActive(v);
         }
 #endif
-        if (GetVisibility() && !v)
-        {
+        if (GetVisibility() && !v) {
             EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
         }
 #if UNITY_WEBGL
@@ -1015,8 +892,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Gets the last visibility flag applied to the WebView.
     /// </summary>
-    public bool GetVisibility()
-    {
+    public bool GetVisibility() {
         return visibility;
     }
 
@@ -1024,8 +900,7 @@ public class WebViewObject : MonoBehaviour
     /// Toggles native scroll bar rendering where supported.
     /// </summary>
     /// <param name="v"><c>true</c> to show scroll bars; otherwise <c>false</c>.</param>
-    public void SetScrollbarsVisibility(bool v)
-    {
+    public void SetScrollbarsVisibility(bool v) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1046,7 +921,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="enabled">Whether debugging should be enabled.</param>
     public void EnableWebviewDebugging(bool enabled) {
-#if UNITY_ANDROID && !(UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX)
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null) {
             return;
         }
@@ -1061,8 +936,7 @@ public class WebViewObject : MonoBehaviour
     /// Enables or disables user interaction with the WebView surface.
     /// </summary>
     /// <param name="enabled">Whether touch input is forwarded to the WebView.</param>
-    public void SetInteractionEnabled(bool enabled)
-    {
+    public void SetInteractionEnabled(bool enabled) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1082,8 +956,7 @@ public class WebViewObject : MonoBehaviour
     /// Controls whether JavaScript alert/confirm/prompt dialogs are permitted.
     /// </summary>
     /// <param name="e"><c>true</c> to allow dialogs; otherwise <c>false</c>.</param>
-    public void SetAlertDialogEnabled(bool e)
-    {
+    public void SetAlertDialogEnabled(bool e) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1103,8 +976,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Gets the cached alert dialog enable flag.
     /// </summary>
-    public bool GetAlertDialogEnabled()
-    {
+    public bool GetAlertDialogEnabled() {
         return alertDialogEnabled;
     }
 
@@ -1112,8 +984,7 @@ public class WebViewObject : MonoBehaviour
     /// Toggles bouncing/elastic scrolling on supported platforms.
     /// </summary>
     /// <param name="e"><c>true</c> to enable bouncing, otherwise <c>false</c>.</param>
-    public void SetScrollBounceEnabled(bool e)
-    {
+    public void SetScrollBounceEnabled(bool e) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1131,8 +1002,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Gets the cached bounce/elastic scrolling flag.
     /// </summary>
-    public bool GetScrollBounceEnabled()
-    {
+    public bool GetScrollBounceEnabled() {
         return scrollBounceEnabled;
     }
 
@@ -1140,8 +1010,7 @@ public class WebViewObject : MonoBehaviour
     /// Grants or revokes camera access for WebRTC and file input elements.
     /// </summary>
     /// <param name="allowed">Whether the WebView should expose camera capture to web content.</param>
-    public void SetCameraAccess(bool allowed)
-    {
+    public void SetCameraAccess(bool allowed) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1159,8 +1028,7 @@ public class WebViewObject : MonoBehaviour
     /// Grants or revokes microphone access for WebRTC and audio capture flows.
     /// </summary>
     /// <param name="allowed">Whether the WebView should expose microphone capture to web content.</param>
-    public void SetMicrophoneAccess(bool allowed)
-    {
+    public void SetMicrophoneAccess(bool allowed) {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         // TODO: UNSUPPORTED
 #elif UNITY_IPHONE
@@ -1177,24 +1045,22 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Forces the Android plugin to request audio focus back for Unity's audio subsystem.
     /// </summary>
-    public void RequestUnityAudioFocus()
-    {
+    public void RequestUnityAudioFocus() {
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
-        webView.Call("RequestUnityAudioFocus");
+        webView.Call("requestUnityAudioFocus");
 #endif
     }
 
     /// <summary>
     /// Relinquishes Unity's audio focus so WebView media can take control.
     /// </summary>
-    public void AbandonUnityAudioFocus()
-    {
+    public void AbandonUnityAudioFocus() {
 #if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
-        webView.Call("AbandonUnityAudioFocus");
+        webView.Call("abandonUnityAudioFocus");
 #endif
     }
 
@@ -1205,8 +1071,7 @@ public class WebViewObject : MonoBehaviour
     /// <param name="denyPattern">Regex pattern for URLs that should be blocked.</param>
     /// <param name="hookPattern">Regex pattern that triggers hook callbacks.</param>
     /// <returns><c>true</c> if the operation is supported on the current platform.</returns>
-    public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern)
-    {
+    public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return false;
@@ -1228,8 +1093,7 @@ public class WebViewObject : MonoBehaviour
     /// Navigates the WebView to the specified URL.
     /// </summary>
     /// <param name="url">Absolute or relative URL to load.</param>
-    public void LoadURL(string url)
-    {
+    public void LoadURL(string url) {
         if (string.IsNullOrEmpty(url))
             return;
 #if UNITY_WEBGL
@@ -1256,8 +1120,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="html">HTML markup to display.</param>
     /// <param name="baseUrl">Base URL used for resolving relative paths.</param>
-    public void LoadHTML(string html, string baseUrl)
-    {
+    public void LoadHTML(string html, string baseUrl) {
         if (string.IsNullOrEmpty(html))
             return;
         if (string.IsNullOrEmpty(baseUrl))
@@ -1281,8 +1144,7 @@ public class WebViewObject : MonoBehaviour
     /// Evaluates JavaScript inside the current WebView context.
     /// </summary>
     /// <param name="js">Script source to execute.</param>
-    public void EvaluateJS(string js)
-    {
+    public void EvaluateJS(string js) {
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_evaluateJS(name, js);
@@ -1305,8 +1167,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Returns the current navigation progress percentage where supported.
     /// </summary>
-    public int Progress()
-    {
+    public int Progress() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return 0;
@@ -1327,8 +1188,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Returns whether the WebView has a previous page in its navigation history.
     /// </summary>
-    public bool CanGoBack()
-    {
+    public bool CanGoBack() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return false;
@@ -1349,8 +1209,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Returns whether the WebView can navigate forward in its history stack.
     /// </summary>
-    public bool CanGoForward()
-    {
+    public bool CanGoForward() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return false;
@@ -1371,8 +1230,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Navigates to the previous entry in the WebView history if available.
     /// </summary>
-    public void GoBack()
-    {
+    public void GoBack() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1391,8 +1249,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Navigates to the next entry in the WebView history if available.
     /// </summary>
-    public void GoForward()
-    {
+    public void GoForward() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1411,8 +1268,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Reloads the current WebView page.
     /// </summary>
-    public void Reload()
-    {
+    public void Reload() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1428,62 +1284,184 @@ public class WebViewObject : MonoBehaviour
 #endif
     }
 
+    #region Thread-Safe Event Queue
+
+    /// <summary>
+    /// Checks if the current thread is the Unity main thread.
+    /// </summary>
+    /// <returns>True if executing on the main thread, false otherwise.</returns>
+    private bool IsMainThread() {
+        if (_mainThreadId == -1)
+            return false; // Defensive: queue if main thread ID not yet captured
+        return Thread.CurrentThread.ManagedThreadId == _mainThreadId;
+    }
+
+    /// <summary>
+    /// Processes all queued events on the main thread.
+    /// Called from Update(), LateUpdate(), and lifecycle hooks.
+    /// Safe to call multiple times (idempotent).
+    /// </summary>
+    private void ProcessEventQueue() {
+        if (paused)
+            return;
+
+        WebViewEvent evt;
+        while (_eventQueue.TryDequeue(out evt)) {
+            try
+            {
+                DispatchEvent(evt);
+            }
+            catch (Exception ex) {
+                Debug.LogError($"WebView event handler exception for {evt.Type}: {ex}");
+                // Continue processing remaining events
+            }
+        }
+    }
+
+    /// <summary>
+    /// Dispatches a single event to the appropriate callback.
+    /// </summary>
+    /// <param name="evt">The event to dispatch.</param>
+    private void DispatchEvent(WebViewEvent evt) {
+        switch (evt.Type) {
+            case WebViewEvent.EventType.Message:
+                CallFromJS(evt.Payload);
+                break;
+            case WebViewEvent.EventType.Error:
+                CallOnError(evt.Payload);
+                break;
+            case WebViewEvent.EventType.HttpError:
+                CallOnHttpError(evt.Payload);
+                break;
+            case WebViewEvent.EventType.Started:
+                CallOnStarted(evt.Payload);
+                break;
+            case WebViewEvent.EventType.Loaded:
+                CallOnLoaded(evt.Payload);
+                break;
+            case WebViewEvent.EventType.Hooked:
+                CallOnHooked(evt.Payload);
+                break;
+            case WebViewEvent.EventType.Cookies:
+                CallOnCookies(evt.Payload);
+                break;
+            case WebViewEvent.EventType.AudioFocusChanged:
+                CallOnAudioFocusChanged(evt.Payload);
+                break;
+            case WebViewEvent.EventType.KeyboardHeightChanged:
+                SetKeyboardVisible(evt.Payload);
+                break;
+            case WebViewEvent.EventType.FileChooserPermissions:
+                RequestFileChooserPermissions();
+                break;
+            case WebViewEvent.EventType.Unknown:
+                Debug.LogWarning($"Unknown WebView event received: {evt.Payload}");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Enqueues an event from a native bridge message string.
+    /// Thread-safe - can be called from any thread.
+    /// </summary>
+    /// <param name="message">The raw message in "Type:Payload" format.</param>
+    public void EnqueueEvent(string message) {
+        var evt = WebViewEvent.FromNativeMessage(message);
+        if (evt != null) {
+            _eventQueue.Enqueue(evt);
+        }
+    }
+
+    /// <summary>
+    /// Enqueues a WebViewEvent directly.
+    /// Thread-safe - can be called from any thread.
+    /// </summary>
+    /// <param name="evt">The event to enqueue.</param>
+    public void EnqueueEvent(WebViewEvent evt) {
+        if (evt != null) {
+            _eventQueue.Enqueue(evt);
+        }
+    }
+
+    /// <summary>
+    /// Gets the current number of events in the queue.
+    /// Useful for debugging and performance monitoring.
+    /// </summary>
+    public int EventQueueCount => _eventQueue.Count;
+
+    #endregion
+
     /// <summary>
     /// Invokes the registered error callback with the supplied message.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="error">Descriptive error message.</param>
-    public void CallOnError(string error)
-    {
-        if (onError != null)
-        {
+    public void CallOnError(string error) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Error(error));
+            return;
+        }
+        if (onError != null) {
             onError(error);
         }
     }
 
     /// <summary>
     /// Invokes the registered HTTP error callback for the given status information.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="error">HTTP error payload (status code or detail string).</param>
-    public void CallOnHttpError(string error)
-    {
-        if (onHttpError != null)
-        {
+    public void CallOnHttpError(string error) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.HttpError(error));
+            return;
+        }
+        if (onHttpError != null) {
             onHttpError(error);
         }
     }
 
     /// <summary>
     /// Forwards navigation-start notifications to the Unity listener.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="url">URL that began loading.</param>
-    public void CallOnStarted(string url)
-    {
-        if (onStarted != null)
-        {
+    public void CallOnStarted(string url) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Started(url));
+            return;
+        }
+        if (onStarted != null) {
             onStarted(url);
         }
     }
 
     /// <summary>
     /// Forwards navigation-complete notifications to the Unity listener.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="url">URL that finished loading.</param>
-    public void CallOnLoaded(string url)
-    {
-        if (onLoaded != null)
-        {
+    public void CallOnLoaded(string url) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Loaded(url));
+            return;
+        }
+        if (onLoaded != null) {
             onLoaded(url);
         }
     }
 
     /// <summary>
     /// Dispatches JavaScript messages received from the native bridge to managed listeners.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="message">Message payload supplied by the page.</param>
-    public void CallFromJS(string message)
-    {
-        if (onJS != null)
-        {
+    public void CallFromJS(string message) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Message(message));
+            return;
+        }
+        if (onJS != null) {
 #if !UNITY_ANDROID
 #if UNITY_2018_4_OR_NEWER
             message = UnityWebRequest.UnEscapeURL(message);
@@ -1497,12 +1475,15 @@ public class WebViewObject : MonoBehaviour
 
     /// <summary>
     /// Dispatches URL-hook notifications to managed listeners.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="message">Hooked URL reported by the native layer.</param>
-    public void CallOnHooked(string message)
-    {
-        if (onHooked != null)
-        {
+    public void CallOnHooked(string message) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Hooked(message));
+            return;
+        }
+        if (onHooked != null) {
 #if !UNITY_ANDROID
 #if UNITY_2018_4_OR_NEWER
             message = UnityWebRequest.UnEscapeURL(message);
@@ -1516,34 +1497,138 @@ public class WebViewObject : MonoBehaviour
 
     /// <summary>
     /// Delivers cookie information retrieved from the WebView.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="cookies">Cookie string in standard HTTP header format.</param>
-    public void CallOnCookies(string cookies)
-    {
-        if (onCookies != null)
-        {
+    public void CallOnCookies(string cookies) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.Cookies(cookies));
+            return;
+        }
+        if (onCookies != null) {
             onCookies(cookies);
         }
     }
 
     /// <summary>
     /// Dispatches audio focus state transitions emitted by the Android plugin.
+    /// Thread-safe: if called from a background thread, the event is queued for main thread processing.
     /// </summary>
     /// <param name="state">State identifier such as <c>webview-start</c> or <c>unity-gain</c>.</param>
-    public void CallOnAudioFocusChanged(string state)
-    {
-        if (onAudioFocusChanged != null)
-        {
+    public void CallOnAudioFocusChanged(string state) {
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.AudioFocusChanged(state));
+            return;
+        }
+        if (onAudioFocusChanged != null) {
             onAudioFocusChanged(state);
         }
+    }
+
+    /// <summary>
+    /// Updates the tracked keyboard height when the native plugin reports visibility changes.
+    /// </summary>
+    /// <param name="keyboardVisibleHeight">Keyboard height, in pixels, supplied by the Android plugin.</param>
+    public void SetKeyboardVisible(string keyboardVisibleHeight) {
+#if !UNITY_ANDROID || UNITY_EDITOR || UNITY_STANDALONE
+        return;
+#else
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.KeyboardHeightChanged(keyboardVisibleHeight));
+            return;
+        }
+        if (BottomAdjustmentDisabled()) {
+            return;
+        }
+        var keyboardVisibleHeight0 = mKeyboardVisibleHeight;
+        var keyboardVisibleHeight1 = Int32.Parse(keyboardVisibleHeight);
+        if (keyboardVisibleHeight0 != keyboardVisibleHeight1) {
+            mKeyboardVisibleHeight = keyboardVisibleHeight1;
+            SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative);
+        }
+#endif
+    }
+
+    /// <summary>
+    /// Requests runtime storage permissions required by the Android file chooser implementation.
+    /// </summary>
+    public void RequestFileChooserPermissions() {
+#if !UNITY_ANDROID || UNITY_EDITOR || UNITY_STANDALONE
+        return;
+#else
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.FileChooserPermissions());
+            return;
+        }
+        var permissions = new List<string>();
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION")) {
+            if (version.GetStatic<int>("SDK_INT") >= 33) {
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_IMAGES")) {
+                    permissions.Add("android.permission.READ_MEDIA_IMAGES");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_VIDEO")) {
+                    permissions.Add("android.permission.READ_MEDIA_VIDEO");
+                }
+                if (!Permission.HasUserAuthorizedPermission("android.permission.READ_MEDIA_AUDIO")) {
+                    permissions.Add("android.permission.READ_MEDIA_AUDIO");
+                }
+            }
+            else
+            {
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageRead)) {
+                    permissions.Add(Permission.ExternalStorageRead);
+                }
+                if (!Permission.HasUserAuthorizedPermission(Permission.ExternalStorageWrite)) {
+                    permissions.Add(Permission.ExternalStorageWrite);
+                }
+            }
+        }
+        if (!Permission.HasUserAuthorizedPermission(Permission.Camera)) {
+            permissions.Add(Permission.Camera);
+        }
+        if (permissions.Count > 0) {
+#if UNITY_2020_2_OR_NEWER
+            var grantedCount = 0;
+            var deniedCount = 0;
+            var callbacks = new PermissionCallbacks();
+            callbacks.PermissionGranted += (permission) =>
+            {
+                grantedCount++;
+                if (grantedCount + deniedCount == permissions.Count) {
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
+                }
+            };
+            callbacks.PermissionDenied += (permission) =>
+            {
+                deniedCount++;
+                if (grantedCount + deniedCount == permissions.Count) {
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
+                }
+            };
+            callbacks.PermissionDeniedAndDontAskAgain += (permission) =>
+            {
+                deniedCount++;
+                if (grantedCount + deniedCount == permissions.Count) {
+                    StartCoroutine(CallOnRequestFileChooserPermissionsResult(grantedCount == permissions.Count));
+                }
+            };
+            Permission.RequestUserPermissions(permissions.ToArray(), callbacks);
+#else
+            StartCoroutine(RequestFileChooserPermissionsCoroutine(permissions.ToArray()));
+#endif
+        }
+        else
+        {
+            StartCoroutine(CallOnRequestFileChooserPermissionsResult(true));
+        }
+#endif
     }
 
     /// <summary>
     /// Overrides the audio focus change callback at runtime.
     /// </summary>
     /// <param name="cb">Callback invoked for audio focus transitions.</param>
-    public void SetOnAudioFocusChanged(Callback cb)
-    {
+    public void SetOnAudioFocusChanged(Callback cb) {
         onAudioFocusChanged = cb;
     }
 
@@ -1552,8 +1637,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="headerKey">HTTP header key.</param>
     /// <param name="headerValue">Header value.</param>
-    public void AddCustomHeader(string headerKey, string headerValue)
-    {
+    public void AddCustomHeader(string headerKey, string headerValue) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1574,8 +1658,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="headerKey">HTTP header key to query.</param>
     /// <returns>The stored header value or <c>null</c> if none is found.</returns>
-    public string GetCustomHeaderValue(string headerKey)
-    {
+    public string GetCustomHeaderValue(string headerKey) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
         return null;
@@ -1597,8 +1680,7 @@ public class WebViewObject : MonoBehaviour
     /// Removes a custom header so it is no longer appended to web requests.
     /// </summary>
     /// <param name="headerKey">HTTP header key to remove.</param>
-    public void RemoveCustomHeader(string headerKey)
-    {
+    public void RemoveCustomHeader(string headerKey) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
 #elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
@@ -1615,8 +1697,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Clears all previously added custom headers.
     /// </summary>
-    public void ClearCustomHeader()
-    {
+    public void ClearCustomHeader() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1635,8 +1716,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Deletes persistent WebView cookies where supported.
     /// </summary>
-    public void ClearCookies()
-    {
+    public void ClearCookies() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1656,8 +1736,7 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Flushes the in-memory cookie store to disk.
     /// </summary>
-    public void SaveCookies()
-    {
+    public void SaveCookies() {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1678,8 +1757,7 @@ public class WebViewObject : MonoBehaviour
     /// Requests the cookie string for a given URL. Result is returned via <see cref="CallOnCookies"/>.
     /// </summary>
     /// <param name="url">URL whose cookies should be retrieved.</param>
-    public void GetCookies(string url)
-    {
+    public void GetCookies(string url) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1702,8 +1780,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="userName">HTTP basic auth user name.</param>
     /// <param name="password">HTTP basic auth password.</param>
-    public void SetBasicAuthInfo(string userName, string password)
-    {
+    public void SetBasicAuthInfo(string userName, string password) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1725,8 +1802,7 @@ public class WebViewObject : MonoBehaviour
     /// Clears the WebView cache, optionally including disk-backed resources.
     /// </summary>
     /// <param name="includeDiskFiles">When <c>true</c>, disk cache entries are also removed.</param>
-    public void ClearCache(bool includeDiskFiles)
-    {
+    public void ClearCache(bool includeDiskFiles) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1747,8 +1823,7 @@ public class WebViewObject : MonoBehaviour
     /// Adjusts the Android text zoom scaling factor (100 is default size).
     /// </summary>
     /// <param name="textZoom">Text zoom percentage.</param>
-    public void SetTextZoom(int textZoom)
-    {
+    public void SetTextZoom(int textZoom) {
 #if UNITY_WEBPLAYER || UNITY_WEBGL
         //TODO: UNSUPPORTED
 #elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
@@ -1763,18 +1838,14 @@ public class WebViewObject : MonoBehaviour
     }
 
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-    void OnApplicationFocus(bool focus)
-    {
-        if (!focus)
-        {
+    void OnApplicationFocus(bool focus) {
+        if (!focus) {
             hasFocus = false;
         }
     }
 
-    void Start()
-    {
-        if (canvas != null)
-        {
+    void Start() {
+        if (canvas != null) {
             var g = new GameObject(gameObject.name + "BG");
             g.transform.parent = canvas.transform;
             bg = g.AddComponent<Image>();
@@ -1782,8 +1853,7 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
-    void Update()
-    {
+    void Update() {
         if (bg != null) {
             bg.transform.SetAsLastSibling();
         }
@@ -1823,6 +1893,10 @@ public class WebViewObject : MonoBehaviour
                 break;
             }
         }
+
+        // Process any events queued from background threads
+        ProcessEventQueue();
+
         if (webView == IntPtr.Zero || !visibility)
             return;
         bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
@@ -1849,8 +1923,7 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
-    void UpdateBGTransform()
-    {
+    void UpdateBGTransform() {
         if (bg != null) {
             bg.rectTransform.anchorMin = Vector2.zero;
             bg.rectTransform.anchorMax = Vector2.zero;
@@ -1871,8 +1944,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     public int devicePixelRatio = 1;
 
-    void OnGUI()
-    {
+    void OnGUI() {
         if (webView == IntPtr.Zero || !visibility)
             return;
         switch (Event.current.type) {
