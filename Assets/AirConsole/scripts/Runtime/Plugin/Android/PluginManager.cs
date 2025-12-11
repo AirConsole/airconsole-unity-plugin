@@ -56,6 +56,11 @@ namespace NDream.AirConsole.Android.Plugin {
                     onAudioFocusChangeCallback);
 
             _airConsole = airConsole;
+            if (!_airConsole.IsAutomotive()) {
+                _airConsole.UnityPause += AbandonAudioFocus;
+                _airConsole.UnityResume += ResumeAudioFocus;
+            }
+
             _airConsole.UnityDestroy += OnDestroy;
             
             AirConsoleLogger.LogDevelopment(() => $"{nameof(PluginManager)} created.");
@@ -66,6 +71,8 @@ namespace NDream.AirConsole.Android.Plugin {
 
             _service.Call("reportPlatformReady");
         }
+
+        private void ResumeAudioFocus() => RequestAudioFocus();
 
         internal bool RequestAudioFocus() {
             AirConsoleLogger.LogDevelopment(() => "RequestAudioFocus called.");
@@ -101,6 +108,8 @@ namespace NDream.AirConsole.Android.Plugin {
         }
 
         private void OnDestroy() {
+            _airConsole.UnityPause -= AbandonAudioFocus;
+            _airConsole.UnityResume -= ResumeAudioFocus;
             _airConsole.UnityDestroy -= OnDestroy;
             AirConsoleLogger.LogDevelopment(() => "OnDestroy called.");
 

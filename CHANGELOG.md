@@ -17,7 +17,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Changed
 
-- **Android Support**: Better dependency handling through gradle processor integration. Removal of included files where possible.
+- **Android Support**: Better dependency handling through Gradle processor integration. Removal of included files where possible.
 - **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
 - **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
 - **Code Style**: Examples and scripts have been aligned on style.
