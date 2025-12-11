@@ -17,6 +17,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Changed
 
+- **Android Support**: Better dependency handling through gradle processor integration. Removal of included files where possible.
 - **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
 - **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
 - **Code Style**: Examples and scripts have been aligned on style.
@@ -26,6 +27,9 @@ This includes security related updates like requiring fixed Unity versions and i
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
 - **Android:** After the last device disconnects, the webview is reset along the game state.
 - **Android:** Add support to override the game version used in a previously built android game through intent extras with adb.
+- **Android:** The support for native game sizing is communicated
+- **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive.
+- **Android Audio Focus:** Drive maximum volume based on Android system requirements to avoid pausing when losing audio focus.
 
 ### Removed
 
@@ -161,15 +165,15 @@ For completeness as this is a 2.5.0 rerelease, the 2.5.0 release notes are repea
   #71)
 - Added :gift_heart:: Partner specific highscore
   - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
   - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-    partner environment (e.g. car brand).
+      partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
   - Support for Player Silencing in the AirConsole component. For more information visit
-    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.
@@ -202,15 +206,15 @@ Gameplay rounds are controlled through AirConsole's setActivePlayers API.
 
 - Added :gift_heart:: Partner specific highscore
   - New rank `partner` for `RequestHighScores` that will limit the response to highscores the player has achieve on the same partner. See
-    the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
+      the [partner specific high score section of the high score guide](https://developers.airconsole.com/#!/guides/highscore#partner)
 - Added :gift_heart:: Multi-screen multiplayer
   API [see Multi-screen multiplayer guide](https://developers.airconsole.com/#!/guides/multiplayer)
   - provides information to enable online multiplayer matchmaking against screens in the same car as well screens in the same type of
-    partner environment (e.g. car brand).
+      partner environment (e.g. car brand).
 - Added :gift_heart:: New capability: Player
   Silencing [see Handling Players connecting guide](https://developers.airconsole.com/#!/guides/player_silencing)
   - Support for Player Silencing in the AirConsole component. For more information visit
-    the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
+      the [AirConsole Player Silencing Guide](https://developers.airconsole.com/#!/guides/player_silencing).
 - Added :gift_heart:: Support for EMSDK_PYTHON when building for WebGL in Unity 2019 which requires python2 that needs to be manually
   installed on OSX Ventura / Sonoma. If your python2 is not in `/usr/local/bin/python2` you can update the path in the AirConsole Settings
   window.
