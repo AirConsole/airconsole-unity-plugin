@@ -659,8 +659,9 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
-        /// Returns the platform capability configuration.
-        /// Use this to branch on capabilities instead of platform or partner names.
+        /// Returns the platform capability configuration delivered in the ready event.
+        /// Use this to branch on device capabilities instead of platform or partner
+        /// names.  Only available on the screen; controllers receive null.
         /// Can only be called after OnReady.
         /// </summary>
         /// <returns>
@@ -669,7 +670,7 @@ namespace NDream.AirConsole {
         ///   transparentVideoSupported (bool)
         ///   unityVideoSupported (bool)
         ///   graphicsQualityTier (string) - "low", "medium", or "high"
-        /// Returns null if not yet received.
+        /// Returns null if not yet received or on controllers.
         /// </returns>
         public JToken GetConfiguration() {
             if (!IsAirConsoleUnityPluginReady()) {
