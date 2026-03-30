@@ -82,6 +82,50 @@ namespace NDream.AirConsole.EditMode.Tests {
             yield return null;
         }
 
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_AfterReady_ReturnsConfiguration() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            JObject configuration = JObject.FromObject(new {
+                supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
+                transparentVideoSupported = true,
+                unityVideoSupported = true,
+                graphicsQualityTier = "high"
+            });
+            JObject readyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                JToken result = target.GetConfiguration();
+                Assert.IsNotNull(result, "Configuration should not be null after ready");
+                Assert.AreEqual("high", (string)result["graphicsQualityTier"]);
+                Assert.AreEqual(true, (bool)result["transparentVideoSupported"]);
+                Assert.AreEqual(true, (bool)result["unityVideoSupported"]);
+                var formats = result["supportedVideoFormats"].ToObject<string[]>();
+                Assert.AreEqual(new[] { "vp9", "h264", "vp8" }, formats);
+                testIsDone = true;
+            };
+            target.Initialize();
+
+            target.SimulateReady(readyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
         public class AirConsoleTestRunner : AirConsole, IMonoBehaviourTest {
             private int frameCount;
 
@@ -109,6 +153,13 @@ namespace NDream.AirConsole.EditMode.Tests {
 
             internal new void SetSafeArea(JObject message) {
                 base.SetSafeArea(message);
+            }
+
+            internal void SimulateReady(JObject message) {
+                // Use reflection to invoke the private OnReady method
+                var method = typeof(AirConsole).GetMethod("OnReady",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                method.Invoke(this, new object[] { message });
             }
 
             internal void Initialize() {

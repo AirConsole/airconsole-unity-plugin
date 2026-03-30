@@ -659,6 +659,27 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
+        /// Returns the platform capability configuration.
+        /// Use this to branch on capabilities instead of platform or partner names.
+        /// Can only be called after OnReady.
+        /// </summary>
+        /// <returns>
+        /// A JToken containing:
+        ///   supportedVideoFormats (string[]) - e.g. ["vp9","h264","vp8"]
+        ///   transparentVideoSupported (bool)
+        ///   unityVideoSupported (bool)
+        ///   graphicsQualityTier (string) - "low", "medium", or "high"
+        /// Returns null if not yet received.
+        /// </returns>
+        public JToken GetConfiguration() {
+            if (!IsAirConsoleUnityPluginReady()) {
+                throw new NotReadyException();
+            }
+
+            return _configuration;
+        }
+
+        /// <summary>
         /// Request that all devices return to the AirConsole store.
         /// </summary>
         public void NavigateHome() {
@@ -1533,6 +1554,9 @@ namespace NDream.AirConsole {
                     _devices.Add(assign);
                 }
 
+                // parse configuration
+                _configuration = msg["configuration"];
+
                 _receivedReady = true;
 
                 if (onReady != null) {
@@ -1629,6 +1653,7 @@ namespace NDream.AirConsole {
             _server_time_offset = 0;
             _location = null;
             _translations = null;
+            _configuration = null;
             _receivedReady = false;
 
             // Reset safe area
@@ -1990,6 +2015,7 @@ namespace NDream.AirConsole {
         private int _server_time_offset;
         private string _location;
         private Dictionary<string, string> _translations;
+        private JToken _configuration;
         private readonly List<int> _players = new();
         private readonly Queue<Action> eventQueue = new();
         private bool _safeAreaWasSet;
