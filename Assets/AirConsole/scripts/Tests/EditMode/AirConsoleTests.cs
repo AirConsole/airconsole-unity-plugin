@@ -126,6 +126,97 @@ namespace NDream.AirConsole.EditMode.Tests {
             }
         }
 
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_BeforeReady_ThrowsNotReadyException() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.Initialize();
+
+            // GetConfiguration() must throw before the READY message has been received.
+            Assert.Throws<AirConsole.NotReadyException>(() => target.GetConfiguration());
+
+            yield return null;
+        }
+
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_AfterResetCaches_ReturnsNull() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            JObject configuration = JObject.FromObject(new {
+                supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
+                transparentVideoSupported = true,
+                unityVideoSupported = true,
+                graphicsQualityTier = "high"
+            });
+            JObject readyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                Assert.IsNotNull(target.GetConfiguration(), "Should have config after ready");
+                // Simulate a reconnect / reload that clears caches — the field must be null
+                // (not stale) before the subsequent ready message arrives.
+                target.SimulateResetCaches();
+                Assert.Throws<AirConsole.NotReadyException>(() => target.GetConfiguration());
+                testIsDone = true;
+            };
+            target.Initialize();
+
+            target.SimulateReady(readyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsNull() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            // Ready message without a "configuration" key — server may omit the field.
+            JObject readyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } }
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                JToken result = target.GetConfiguration();
+                Assert.IsNull(result, "Configuration should be null when not present in ready data");
+                testIsDone = true;
+            };
+            target.Initialize();
+
+            target.SimulateReady(readyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
         public class AirConsoleTestRunner : AirConsole, IMonoBehaviourTest {
             private int frameCount;
 
@@ -160,6 +251,14 @@ namespace NDream.AirConsole.EditMode.Tests {
                 var method = typeof(AirConsole).GetMethod("OnReady",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 method.Invoke(this, new object[] { message });
+            }
+
+            internal void SimulateResetCaches() {
+                // Use reflection to invoke the private ResetCaches method.
+                // Passes a no-op action because we do not need the post-clear callback in tests.
+                var method = typeof(AirConsole).GetMethod("ResetCaches",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                method.Invoke(this, new object[] { (System.Action)(() => { }) });
             }
 
             internal void Initialize() {
