@@ -1,5 +1,6 @@
 #if !DISABLE_AIRCONSOLE
 using System.Collections;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEditor;
@@ -205,6 +206,136 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.onReady += _ => {
                 JToken result = target.GetConfiguration();
                 Assert.IsNull(result, "Configuration should be null when not present in ready data");
+                testIsDone = true;
+            };
+            target.Initialize();
+
+            target.SimulateReady(readyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            JObject configuration = JObject.FromObject(new { });
+            JObject readyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                JToken result = target.GetConfiguration();
+                Assert.IsNotNull(result, "Configuration should not be null");
+                Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
+                Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
+                testIsDone = true;
+            };
+            target.Initialize();
+
+            target.SimulateReady(readyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            int readyCount = 0;
+            JObject firstConfiguration = JObject.FromObject(new {
+                graphicsQualityTier = "low"
+            });
+            JObject firstReadyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration = firstConfiguration
+            });
+            JObject secondConfiguration = JObject.FromObject(new {
+                graphicsQualityTier = "high"
+            });
+            JObject secondReadyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration = secondConfiguration
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                readyCount++;
+                JToken result = target.GetConfiguration();
+                if (readyCount == 1) {
+                    Assert.AreEqual("low", (string)result["graphicsQualityTier"], "First ready should have low quality");
+                    target.SimulateReady(secondReadyMessage);
+                    target.Update();
+                } else {
+                    Assert.AreEqual("high", (string)result["graphicsQualityTier"], "Second ready should have high quality");
+                    testIsDone = true;
+                }
+            };
+            target.Initialize();
+
+            target.SimulateReady(firstReadyMessage);
+            target.Update();
+
+            while (!testIsDone) {
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        [Timeout(300)]
+        public IEnumerator GetConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
+            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
+                Assert.Inconclusive("This test requires an Android build target");
+            }
+
+            bool testIsDone = false;
+            JObject configuration = JObject.FromObject(new {
+                graphicsQualityTier = "medium"
+            });
+            JObject readyMessage = JObject.FromObject(new {
+                action = "ready",
+                code = "test123",
+                device_id = 0,
+                server_time_offset = 0,
+                location = "http://test.airconsole.com",
+                devices = new object[] { new { location = "http://test.airconsole.com" } },
+                configuration
+            });
+            target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
+            target.onReady += _ => {
+                JToken result = target.GetConfiguration();
+                Assert.AreEqual("medium", (string)result["graphicsQualityTier"], "Should have graphicsQualityTier");
+                Assert.IsNull(result["supportedVideoFormats"], "supportedVideoFormats should be absent");
+                Assert.IsNull(result["transparentVideoSupported"], "transparentVideoSupported should be absent");
                 testIsDone = true;
             };
             target.Initialize();
