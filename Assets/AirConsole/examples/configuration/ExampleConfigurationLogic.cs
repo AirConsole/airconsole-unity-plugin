@@ -1,10 +1,9 @@
 namespace NDream.AirConsole.Examples {
     using UnityEngine;
-    using UnityEngine.UI;
     using Newtonsoft.Json.Linq;
 
     public class ExampleConfigurationLogic : MonoBehaviour {
-        public Text logWindow;
+        public TMPro.TMP_Text logWindow;
 
 #if !DISABLE_AIRCONSOLE
         private void Awake() {
