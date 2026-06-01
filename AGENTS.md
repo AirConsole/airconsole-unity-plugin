@@ -11,7 +11,7 @@ Old pattern: polling through `GetMessage()`.
 New pattern: queue based event delivery.
 Prefer queue based delivery for new Android bridge behavior.
 ## ENTRY POINT
-Main SDK entry: `Assets/AirConsole/AirConsole.cs`.
+Main SDK entry: `Assets/AirConsole/scripts/Runtime/AirConsole.cs`.
 `AirConsole.cs` owns the singleton.
 The singleton is the main public API surface.
 Unity scenes call this API for connection state, messages, device data, and platform actions.
@@ -36,7 +36,7 @@ WebGL message path:
 2. Runtime JS binds Unity calls to AirConsole browser API calls.
 3. Browser callbacks route back into Unity.
 ## ANDROID BRIDGE
-Android bridge code lives under `Assets/AirConsole/Plugins/Android/`.
+Android bridge code lives under `Assets/AirConsole/plugins/Android/`.
 `PluginManager` initializes native bridge state.
 `PluginManager` connects Unity runtime and Android plugin code.
 `AndroidJavaProxy` handles messages from native code.
@@ -56,15 +56,15 @@ Browser events route back into Unity objects.
 Change the generator or C# source instead of hand editing generated JS.
 ## STRUCTURE
 `Assets/AirConsole/` contains the main SDK.
-`Assets/AirConsole/AirConsole.cs` contains the singleton and main public API.
-`Assets/AirConsole/Plugins/Android/` contains native bridge code and Android plugin assets.
-`Assets/AirConsole/Editor/` contains editor tooling and build postprocessing.
-`Assets/AirConsole/Editor/PostprocessBuild` is the build generation area.
+`Assets/AirConsole/scripts/Runtime/AirConsole.cs` contains the singleton and main public API.
+`Assets/AirConsole/plugins/Android/` contains native bridge code and Android plugin assets.
+`Assets/AirConsole/scripts/Editor/` contains editor tooling and build postprocessing.
+`Assets/AirConsole/scripts/Editor/BuildAutomation/` is the build generation area.
 Sample scenes live under the AirConsole assets tree.
 ## WHERE TO LOOK
-Main SDK: `Assets/AirConsole/AirConsole.cs`.
-Android bridge: `Assets/AirConsole/Plugins/Android/`.
-Build generation: `Assets/AirConsole/Editor/PostprocessBuild`.
+Main SDK: `Assets/AirConsole/scripts/Runtime/AirConsole.cs`.
+Android bridge: `Assets/AirConsole/plugins/Android/`.
+Build generation: `Assets/AirConsole/scripts/Editor/BuildAutomation/`.
 Generated WebGL interface and sample integration: `airconsole-unity-plugin.js`, sample scenes.
 ## BUILD POSTPROCESSING
 Unity build postprocess auto runs after supported builds.
@@ -94,7 +94,7 @@ Export package: use Unity export package workflow for `.unitypackage`.
 Run tests: use Unity Test Runner for EditMode and PlayMode suites.
 ## FORBIDDEN
 NEVER hardcode device IDs.
-NO platform specific code outside `Plugins/`.
+NO platform specific code outside `plugins/`.
 Do not bypass the main thread queue for Android callbacks.
 Do not call Unity APIs directly from Android background callbacks.
 Do not edit generated WebGL JS when generator changes are required.

@@ -299,6 +299,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="to">The device ID to send the message to.</param>
         /// <param name="data">The data to send.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void Message(int to, object data) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -316,6 +317,7 @@ namespace NDream.AirConsole {
         /// Sends a message to all devices.
         /// </summary>
         /// <param name="data">The message to send.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void Broadcast(object data) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -351,6 +353,7 @@ namespace NDream.AirConsole {
         /// http:// developers.airconsole.com/#/guides/device_ids_and_states
         /// </summary>
         /// <returns>The device identifier.</returns>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public int GetDeviceId() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -376,6 +379,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="max_players">The maximum number of controllers that should
         /// get a player number assigned.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void SetActivePlayers(int max_players = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -427,6 +431,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <returns>The UID.</returns>
         /// <param name="device_id">The device id for which you want the uid. Default is this device.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public string GetUID(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -449,6 +454,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="device_id">The device ID of which you want the custom state. Default is this device.</param>
         /// <returns> The custom data previously set by the device.</returns>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public JToken GetCustomDeviceState(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -481,6 +487,7 @@ namespace NDream.AirConsole {
         /// Returns the nickname of a user.
         /// </summary>
         /// <param name="device_id">The device id for which you want the nickname. Default is this device. Screens don't have nicknames.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public string GetNickname(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -513,6 +520,7 @@ namespace NDream.AirConsole {
         /// Returns the current IETF language tag of a device e.g. "en" or "en-US"
         /// </summary>
         /// <param name="device_id">The device id for which you want the language. Default is this device.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public string GetLanguage(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -572,6 +580,7 @@ namespace NDream.AirConsole {
         /// Translates an array of UI Text or TextMesh Components. The existing text in the UI Text or Text Mesh has to contain a string ID within double curly brackets. {{example}}
         /// </summary>
         /// <param name="elements">The Array of elements that should be translated.</param>
+        /// <exception cref="Exception">Thrown if an element is not a <see cref="UnityEngine.UI.Text"/> or <see cref="TextMesh"/> component.</exception>
         public void TranslateUIElements(object[] elements) {
             for (int i = 0; i < elements.Length; ++i) {
                 string id = null;
@@ -616,6 +625,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="device_id">The device id for which you want a profile picture. Defaults to this device. Screens don't have profile pictures.</param>
         /// <param name="size">The size of in pixels of the picture. Default is 64.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public string GetProfilePicture(int device_id = -1, int size = 64) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -650,6 +660,7 @@ namespace NDream.AirConsole {
         /// This allows you to have a synchronized clock: You can send the servertime in a message to know exactly at what point something happened on a device.
         /// </summary>
         /// <returns> Timestamp in milliseconds.</returns>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public long GetServerTime() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -662,7 +673,6 @@ namespace NDream.AirConsole {
         /// Returns the platform capability configuration delivered in the ready event.
         /// Use this to branch on device capabilities instead of platform or partner
         /// names.  Only available on the screen; controllers receive null.
-        /// Can only be called after OnReady.
         /// </summary>
         /// <returns>
         /// A JToken containing:
@@ -670,8 +680,9 @@ namespace NDream.AirConsole {
         ///   transparentVideoSupported (bool)
         ///   unityVideoSupported (bool)
         ///   graphicsQualityTier (string) - "low", "medium", or "high"
-        /// Returns null if not yet received or on controllers.
+        /// Returns null if the ready event contained no configuration payload, or when called on a controller.
         /// </returns>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public JToken GetConfiguration() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -683,6 +694,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Request that all devices return to the AirConsole store.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void NavigateHome() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -698,6 +710,7 @@ namespace NDream.AirConsole {
         /// Request that all devices load a game by url. Note that the custom DeviceStates are preserved.
         /// If you don't want that, override SetCustomDeviceState(null) on every device before calling this function.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void NavigateTo(string url) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -714,6 +727,7 @@ namespace NDream.AirConsole {
         /// Sets the custom DeviceState of this device.
         /// </summary>
         /// <param name="data">The custom data to set.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void SetCustomDeviceState(object data) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -738,6 +752,7 @@ namespace NDream.AirConsole {
         /// </summary>
         /// <param name="key">The property name.</param>
         /// <param name="value">The property value.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void SetCustomDeviceStateProperty(string key, object value) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -772,6 +787,7 @@ namespace NDream.AirConsole {
         /// onAdComplete is called on all connected devices when the
         /// advertisement is complete or no advertisement was shown.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void ShowAd() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -786,6 +802,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Returns the device ID of the master controller. Premium devices are prioritized.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public int GetMasterControllerDeviceId() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -807,6 +824,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Returns all controller device ids that have loaded your game.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public List<int> GetControllerDeviceIds() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -827,6 +845,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Returns true if a user is logged in.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public bool IsUserLoggedIn(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -861,6 +880,7 @@ namespace NDream.AirConsole {
         /// <param name="ranks">An array of high score rank types. High score rank types can include data from across the world, only a specific area or a users friends. Valid array entries are "world",  "country",  "region", "city", "friends", "partner". Default is ["world"].</param>
         /// <param name="total">Amount of high scores to return per rank type. Default is 8.</param>
         /// <param name="top">Amount of top high scores to return per rank type. top is part of total. Default is 5.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void RequestHighScores(string level_name, string level_version, List<string> uids = null, List<string> ranks = null,
             int total = -1, int top = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
@@ -912,6 +932,7 @@ namespace NDream.AirConsole {
         /// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
         /// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void StoreHighScore(string level_name, string level_version, float score, string uid, JObject data = null,
             string score_string = null) {
             List<string> uids = new();
@@ -930,6 +951,7 @@ namespace NDream.AirConsole {
         /// <param name="data">Custom high score data (e.g. can be used to implement Ghost modes or include data to verify that it is not a fake high score).</param>
         /// <param name="score_string">A short human readable representation of the score. (e.g. "4 points in 3s"). Defaults to "X points" where x is the score converted to an integer.</param>
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void StoreHighScore(string level_name, string level_version, float score, List<string> uids, JObject data = null,
             string score_string = null) {
             if (!IsAirConsoleUnityPluginReady()) {
@@ -962,7 +984,7 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
-        /// Gets thrown when you call an API method before OnReady was called.
+        /// The exception thrown when an AirConsole API method is called before OnReady has been invoked.
         /// </summary>
         public class NotReadyException : SystemException { }
 
@@ -971,6 +993,9 @@ namespace NDream.AirConsole {
         /// Will call onPersistentDataLoaded when data was received.
         /// </summary>
         /// <param name="uids">The uids for which you would like to request the persistent data.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uids"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if <paramref name="uids"/> contains no elements.</exception>
         public void RequestPersistentData(List<string> uids) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -1008,6 +1033,8 @@ namespace NDream.AirConsole {
         /// <param name="key">The key of the data entry.</param>
         /// <param name="value">The value of the data entry.</param>
         /// <param name="uid">The uid for which the data should be stored.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if <paramref name="uid"/> is null or empty.</exception>
         public void StorePersistentData(string key, JToken value, string uid) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -1030,6 +1057,7 @@ namespace NDream.AirConsole {
         /// Returns true if the device is premium
         /// </summary>
         /// <param name="device_id">The device_id that should be checked. Only controllers can be premium. Default is this device.</param>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public bool IsPremium(int device_id = -1) {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
@@ -1061,6 +1089,7 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Returns all device Ids that are premium.
         /// </summary>
+        /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public List<int> GetPremiumDeviceIds() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();

@@ -83,14 +83,9 @@ namespace NDream.AirConsole.EditMode.Tests {
             yield return null;
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_AfterReady_ReturnsConfiguration() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
+        public void GetConfiguration_AfterReady_ReturnsConfiguration() {
             JObject configuration = JObject.FromObject(new {
                 supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
                 transparentVideoSupported = true,
@@ -107,50 +102,33 @@ namespace NDream.AirConsole.EditMode.Tests {
                 configuration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                JToken result = target.GetConfiguration();
-                Assert.IsNotNull(result, "Configuration should not be null after ready");
-                Assert.AreEqual("high", (string)result["graphicsQualityTier"]);
-                Assert.AreEqual(true, (bool)result["transparentVideoSupported"]);
-                Assert.AreEqual(true, (bool)result["unityVideoSupported"]);
-                var formats = result["supportedVideoFormats"].ToObject<string[]>();
-                Assert.AreEqual(new[] { "vp9", "h264", "vp8" }, formats);
-                testIsDone = true;
-            };
             target.Initialize();
 
             target.SimulateReady(readyMessage);
             target.Update();
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            JToken result = target.GetConfiguration();
+            Assert.IsNotNull(result, "Configuration should not be null after ready");
+            Assert.AreEqual("high", (string)result["graphicsQualityTier"]);
+            Assert.AreEqual(true, (bool)result["transparentVideoSupported"]);
+            Assert.AreEqual(true, (bool)result["unityVideoSupported"]);
+            string[] formats = result["supportedVideoFormats"].ToObject<string[]>();
+            Assert.AreEqual(new[] { "vp9", "h264", "vp8" }, formats);
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_BeforeReady_ThrowsNotReadyException() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
+        public void GetConfiguration_BeforeReady_ThrowsNotReadyException() {
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
 
             // GetConfiguration() must throw before the READY message has been received.
             Assert.Throws<AirConsole.NotReadyException>(() => target.GetConfiguration());
-
-            yield return null;
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_AfterResetCaches_ReturnsNull() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
+        public void GetConfiguration_AfterResetCaches_ReturnsNull() {
             JObject configuration = JObject.FromObject(new {
                 supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
                 transparentVideoSupported = true,
@@ -167,32 +145,21 @@ namespace NDream.AirConsole.EditMode.Tests {
                 configuration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                Assert.IsNotNull(target.GetConfiguration(), "Should have config after ready");
-                // Simulate a reconnect / reload that clears caches — the field must be null
-                // (not stale) before the subsequent ready message arrives.
-                target.SimulateResetCaches();
-                Assert.Throws<AirConsole.NotReadyException>(() => target.GetConfiguration());
-                testIsDone = true;
-            };
             target.Initialize();
 
             target.SimulateReady(readyMessage);
             target.Update();
+            Assert.IsNotNull(target.GetConfiguration(), "Should have config after ready");
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            // Simulate a reconnect / reload that clears caches — the field must be null
+            // (not stale) before the subsequent ready message arrives.
+            target.SimulateResetCaches();
+            Assert.IsNull(target.GetConfiguration(), "Configuration should be null after cache reset");
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsNull() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
+        public void GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsNull() {
             // Ready message without a "configuration" key — server may omit the field.
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -203,29 +170,17 @@ namespace NDream.AirConsole.EditMode.Tests {
                 devices = new object[] { new { location = "http://test.airconsole.com" } }
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                JToken result = target.GetConfiguration();
-                Assert.IsNull(result, "Configuration should be null when not present in ready data");
-                testIsDone = true;
-            };
             target.Initialize();
 
             target.SimulateReady(readyMessage);
             target.Update();
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            Assert.IsNull(target.GetConfiguration(), "Configuration should be null when not present in ready data");
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
+        public void GetConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
             JObject configuration = JObject.FromObject(new { });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -237,32 +192,20 @@ namespace NDream.AirConsole.EditMode.Tests {
                 configuration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                JToken result = target.GetConfiguration();
-                Assert.IsNotNull(result, "Configuration should not be null");
-                Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
-                Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
-                testIsDone = true;
-            };
             target.Initialize();
 
             target.SimulateReady(readyMessage);
             target.Update();
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            JToken result = target.GetConfiguration();
+            Assert.IsNotNull(result, "Configuration should not be null");
+            Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
+            Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
-            int readyCount = 0;
+        public void GetConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
             JObject firstConfiguration = JObject.FromObject(new {
                 graphicsQualityTier = "low"
             });
@@ -288,36 +231,20 @@ namespace NDream.AirConsole.EditMode.Tests {
                 configuration = secondConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                readyCount++;
-                JToken result = target.GetConfiguration();
-                if (readyCount == 1) {
-                    Assert.AreEqual("low", (string)result["graphicsQualityTier"], "First ready should have low quality");
-                    target.SimulateReady(secondReadyMessage);
-                    target.Update();
-                } else {
-                    Assert.AreEqual("high", (string)result["graphicsQualityTier"], "Second ready should have high quality");
-                    testIsDone = true;
-                }
-            };
             target.Initialize();
 
             target.SimulateReady(firstReadyMessage);
             target.Update();
+            Assert.AreEqual("low", (string)target.GetConfiguration()["graphicsQualityTier"], "First ready should have low quality");
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            target.SimulateReady(secondReadyMessage);
+            target.Update();
+            Assert.AreEqual("high", (string)target.GetConfiguration()["graphicsQualityTier"], "Second ready should have high quality");
         }
 
-        [UnityTest]
+        [Test]
         [Timeout(300)]
-        public IEnumerator GetConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
-            if (EditorUserBuildSettings.activeBuildTarget != BuildTarget.Android) {
-                Assert.Inconclusive("This test requires an Android build target");
-            }
-
-            bool testIsDone = false;
+        public void GetConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
             JObject configuration = JObject.FromObject(new {
                 graphicsQualityTier = "medium"
             });
@@ -331,21 +258,15 @@ namespace NDream.AirConsole.EditMode.Tests {
                 configuration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
-            target.onReady += _ => {
-                JToken result = target.GetConfiguration();
-                Assert.AreEqual("medium", (string)result["graphicsQualityTier"], "Should have graphicsQualityTier");
-                Assert.IsNull(result["supportedVideoFormats"], "supportedVideoFormats should be absent");
-                Assert.IsNull(result["transparentVideoSupported"], "transparentVideoSupported should be absent");
-                testIsDone = true;
-            };
             target.Initialize();
 
             target.SimulateReady(readyMessage);
             target.Update();
 
-            while (!testIsDone) {
-                yield return null;
-            }
+            JToken result = target.GetConfiguration();
+            Assert.AreEqual("medium", (string)result["graphicsQualityTier"], "Should have graphicsQualityTier");
+            Assert.IsNull(result["supportedVideoFormats"], "supportedVideoFormats should be absent");
+            Assert.IsNull(result["transparentVideoSupported"], "transparentVideoSupported should be absent");
         }
 
         public class AirConsoleTestRunner : AirConsole, IMonoBehaviourTest {
@@ -378,9 +299,21 @@ namespace NDream.AirConsole.EditMode.Tests {
             }
 
             internal void SimulateReady(JObject message) {
+                // Set wsListener._isReady so IsAirConsoleUnityPluginReady() returns true,
+                // matching what WebsocketListener.ProcessMessage() does when receiving "onReady".
+                var wsListenerField = typeof(AirConsole).GetField("wsListener",
+                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var wsListenerInstance = wsListenerField?.GetValue(this);
+                if (wsListenerInstance != null) {
+                    var isReadyField = wsListenerInstance.GetType().GetField("_isReady",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    isReadyField?.SetValue(wsListenerInstance, true);
+                }
+
                 // Use reflection to invoke the private OnReady method
                 var method = typeof(AirConsole).GetMethod("OnReady",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(method, "AirConsole.OnReady private method not found; update SimulateReady if the method was renamed.");
                 method.Invoke(this, new object[] { message });
             }
 
@@ -389,6 +322,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 // Passes a no-op action because we do not need the post-clear callback in tests.
                 var method = typeof(AirConsole).GetMethod("ResetCaches",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                Assert.IsNotNull(method, "AirConsole.ResetCaches private method not found; update SimulateResetCaches if the method was renamed.");
                 method.Invoke(this, new object[] { (System.Action)(() => { }) });
             }
 
