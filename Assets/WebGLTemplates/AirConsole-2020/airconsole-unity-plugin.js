@@ -197,7 +197,7 @@ App.prototype.initAirConsole = function() {
             "location": document.location.href,
             "translations": me.airconsole.translations,
             "gameSafeArea": me.airconsole.gameSafeArea,
-            "configuration": me.airconsole.configuration
+            "gameConfiguration": me.airconsole.gameConfiguration
         });
     };
 

@@ -15,7 +15,7 @@ namespace NDream.AirConsole.Examples {
         private void OnReady(string code) {
             logWindow.text = "AirConsole ready!\n\n";
 
-            JToken config = AirConsole.instance.GetConfiguration();
+            JToken config = AirConsole.instance.GetGameConfiguration();
             if (config == null) {
                 logWindow.text += "Configuration: not provided by platform\n";
                 return;

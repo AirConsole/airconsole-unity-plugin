@@ -107,7 +107,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.SimulateReady(readyMessage);
             target.Update();
 
-            JToken result = target.GetConfiguration();
+            JToken result = target.GetGameConfiguration();
             Assert.IsNotNull(result, "Configuration should not be null after ready");
             Assert.AreEqual("high", (string)result["graphicsQualityTier"]);
             Assert.AreEqual(true, (bool)result["transparentVideoSupported"]);
@@ -123,7 +123,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.Initialize();
 
             // GetConfiguration() must throw before the READY message has been received.
-            Assert.Throws<AirConsole.NotReadyException>(() => target.GetConfiguration());
+            Assert.Throws<AirConsole.NotReadyException>(() => target.GetGameConfiguration());
         }
 
         [Test]
@@ -149,12 +149,12 @@ namespace NDream.AirConsole.EditMode.Tests {
 
             target.SimulateReady(readyMessage);
             target.Update();
-            Assert.IsNotNull(target.GetConfiguration(), "Should have config after ready");
+            Assert.IsNotNull(target.GetGameConfiguration(), "Should have config after ready");
 
             // Simulate a reconnect / reload that clears caches — the field must be null
             // (not stale) before the subsequent ready message arrives.
             target.SimulateResetCaches();
-            Assert.IsNull(target.GetConfiguration(), "Configuration should be null after cache reset");
+            Assert.IsNull(target.GetGameConfiguration(), "Configuration should be null after cache reset");
         }
 
         [Test]
@@ -175,7 +175,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.SimulateReady(readyMessage);
             target.Update();
 
-            Assert.IsNull(target.GetConfiguration(), "Configuration should be null when not present in ready data");
+            Assert.IsNull(target.GetGameConfiguration(), "Configuration should be null when not present in ready data");
         }
 
         [Test]
@@ -197,7 +197,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.SimulateReady(readyMessage);
             target.Update();
 
-            JToken result = target.GetConfiguration();
+            JToken result = target.GetGameConfiguration();
             Assert.IsNotNull(result, "Configuration should not be null");
             Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
             Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
@@ -235,11 +235,11 @@ namespace NDream.AirConsole.EditMode.Tests {
 
             target.SimulateReady(firstReadyMessage);
             target.Update();
-            Assert.AreEqual("low", (string)target.GetConfiguration()["graphicsQualityTier"], "First ready should have low quality");
+            Assert.AreEqual("low", (string)target.GetGameConfiguration()["graphicsQualityTier"], "First ready should have low quality");
 
             target.SimulateReady(secondReadyMessage);
             target.Update();
-            Assert.AreEqual("high", (string)target.GetConfiguration()["graphicsQualityTier"], "Second ready should have high quality");
+            Assert.AreEqual("high", (string)target.GetGameConfiguration()["graphicsQualityTier"], "Second ready should have high quality");
         }
 
         [Test]
@@ -263,7 +263,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.SimulateReady(readyMessage);
             target.Update();
 
-            JToken result = target.GetConfiguration();
+            JToken result = target.GetGameConfiguration();
             Assert.AreEqual("medium", (string)result["graphicsQualityTier"], "Should have graphicsQualityTier");
             Assert.IsNull(result["supportedVideoFormats"], "supportedVideoFormats should be absent");
             Assert.IsNull(result["transparentVideoSupported"], "transparentVideoSupported should be absent");

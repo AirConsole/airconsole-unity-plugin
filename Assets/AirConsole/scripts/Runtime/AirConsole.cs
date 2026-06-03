@@ -672,23 +672,20 @@ namespace NDream.AirConsole {
         /// <summary>
         /// Returns the platform capability configuration delivered in the ready event.
         /// Use this to branch on device capabilities instead of platform or partner
-        /// names.  Only available on the screen; controllers receive null.
+        /// names.
         /// </summary>
         /// <returns>
         /// A JToken containing:
-        ///   supportedVideoFormats (string[]) - e.g. ["vp9","h264","vp8"]
-        ///   transparentVideoSupported (bool)
-        ///   unityVideoSupported (bool)
-        ///   graphicsQualityTier (string) - "low", "medium", or "high"
-        /// Returns null if the ready event contained no configuration payload, or when called on a controller.
+        ///   transparentVideoSupport (bool) - True, if the current environment supports videos with transparency?
+        ///   unityVideoSupport (bool) - True, if the current video allows unity based games to play videos.
         /// </returns>
         /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
-        public JToken GetConfiguration() {
+        public JToken GetGameConfiguration() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
             }
 
-            return _configuration;
+            return _gameConfiguration;
         }
 
         /// <summary>
@@ -1584,8 +1581,7 @@ namespace NDream.AirConsole {
                     _devices.Add(assign);
                 }
 
-                // parse configuration
-                _configuration = msg["configuration"];
+                _gameConfiguration = msg["gameConfiguration"];
 
                 _receivedReady = true;
 
@@ -1683,7 +1679,7 @@ namespace NDream.AirConsole {
             _server_time_offset = 0;
             _location = null;
             _translations = null;
-            _configuration = null;
+            _gameConfiguration = null;
             _receivedReady = false;
 
             // Reset safe area
@@ -2045,7 +2041,7 @@ namespace NDream.AirConsole {
         private int _server_time_offset;
         private string _location;
         private Dictionary<string, string> _translations;
-        private JToken _configuration;
+        private JToken _gameConfiguration;
         private readonly List<int> _players = new();
         private readonly Queue<Action> eventQueue = new();
         private bool _safeAreaWasSet;
