@@ -685,7 +685,7 @@ namespace NDream.AirConsole {
                 throw new NotReadyException();
             }
 
-            return _gameConfiguration;
+            return _gameConfiguration ?? new JObject();
         }
 
         /// <summary>

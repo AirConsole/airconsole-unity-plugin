@@ -8,6 +8,8 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace NDream.AirConsole.EditMode.Tests {
+    using System.Reflection;
+
     internal static class RectTestHelper {
         public static void AreRectsEqual(Rect expected, Rect target, string message) {
             Assert.IsTrue(Mathf.Approximately(expected.x, target.x),
@@ -86,11 +88,9 @@ namespace NDream.AirConsole.EditMode.Tests {
         [Test]
         [Timeout(300)]
         public void GetConfiguration_AfterReady_ReturnsConfiguration() {
-            JObject configuration = JObject.FromObject(new {
-                supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
-                transparentVideoSupported = true,
-                unityVideoSupported = true,
-                graphicsQualityTier = "high"
+            JObject gameConfiguration = JObject.FromObject(new {
+                transparentVideoSupport = true,
+                unityVideoSupport = true,
             });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -99,7 +99,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration
+                gameConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
@@ -109,11 +109,8 @@ namespace NDream.AirConsole.EditMode.Tests {
 
             JToken result = target.GetGameConfiguration();
             Assert.IsNotNull(result, "Configuration should not be null after ready");
-            Assert.AreEqual("high", (string)result["graphicsQualityTier"]);
-            Assert.AreEqual(true, (bool)result["transparentVideoSupported"]);
-            Assert.AreEqual(true, (bool)result["unityVideoSupported"]);
-            string[] formats = result["supportedVideoFormats"].ToObject<string[]>();
-            Assert.AreEqual(new[] { "vp9", "h264", "vp8" }, formats);
+            Assert.AreEqual(true, (bool)result["transparentVideoSupport"]);
+            Assert.AreEqual(true, (bool)result["unityVideoSupport"]);
         }
 
         [Test]
@@ -128,12 +125,10 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_AfterResetCaches_ReturnsNull() {
-            JObject configuration = JObject.FromObject(new {
-                supportedVideoFormats = new[] { "vp9", "h264", "vp8" },
-                transparentVideoSupported = true,
-                unityVideoSupported = true,
-                graphicsQualityTier = "high"
+        public void GetConfiguration_AfterResetCaches_ReturnsEmpty() {
+            JObject gameConfiguration = JObject.FromObject(new {
+                transparentVideoSupport = true,
+                unityVideoSupport = true,
             });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -142,7 +137,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration
+                gameConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
@@ -154,12 +149,16 @@ namespace NDream.AirConsole.EditMode.Tests {
             // Simulate a reconnect / reload that clears caches — the field must be null
             // (not stale) before the subsequent ready message arrives.
             target.SimulateResetCaches();
-            Assert.IsNull(target.GetGameConfiguration(), "Configuration should be null after cache reset");
+           
+            JToken result = target.GetGameConfiguration(); 
+            Assert.IsNotNull(result, "Configuration should not be null");
+            Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
+            Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
         }
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsNull() {
+        public void GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsEmpty() {
             // Ready message without a "configuration" key — server may omit the field.
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -175,13 +174,17 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.SimulateReady(readyMessage);
             target.Update();
 
-            Assert.IsNull(target.GetGameConfiguration(), "Configuration should be null when not present in ready data");
+            JToken result = target.GetGameConfiguration();
+            
+            Assert.IsNotNull(result, "Configuration should not be null");
+            Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
+            Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
         }
 
         [Test]
         [Timeout(300)]
         public void GetConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
-            JObject configuration = JObject.FromObject(new { });
+            JObject gameConfiguration = JObject.FromObject(new { });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
                 code = "test123",
@@ -189,7 +192,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration
+                gameConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
@@ -198,6 +201,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.Update();
 
             JToken result = target.GetGameConfiguration();
+            
             Assert.IsNotNull(result, "Configuration should not be null");
             Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
             Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
@@ -207,7 +211,7 @@ namespace NDream.AirConsole.EditMode.Tests {
         [Timeout(300)]
         public void GetConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
             JObject firstConfiguration = JObject.FromObject(new {
-                graphicsQualityTier = "low"
+                unityVideoSupport = true,
             });
             JObject firstReadyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -216,10 +220,10 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration = firstConfiguration
+                gameConfiguration = firstConfiguration
             });
             JObject secondConfiguration = JObject.FromObject(new {
-                graphicsQualityTier = "high"
+                unityVideoSupport = false,
             });
             JObject secondReadyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -228,25 +232,25 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration = secondConfiguration
+                gameConfiguration = secondConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
 
             target.SimulateReady(firstReadyMessage);
             target.Update();
-            Assert.AreEqual("low", (string)target.GetGameConfiguration()["graphicsQualityTier"], "First ready should have low quality");
+            Assert.AreEqual(true, (bool)target.GetGameConfiguration()["unityVideoSupport"], "First ready should support unity video");
 
             target.SimulateReady(secondReadyMessage);
             target.Update();
-            Assert.AreEqual("high", (string)target.GetGameConfiguration()["graphicsQualityTier"], "Second ready should have high quality");
+            Assert.AreEqual(false, (bool)target.GetGameConfiguration()["unityVideoSupport"], "Second ready should not support unity video");
         }
 
         [Test]
         [Timeout(300)]
         public void GetConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
-            JObject configuration = JObject.FromObject(new {
-                graphicsQualityTier = "medium"
+            JObject gameConfiguration = JObject.FromObject(new {
+                unityVideoSupport = true,
             });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -255,7 +259,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 server_time_offset = 0,
                 location = "http://test.airconsole.com",
                 devices = new object[] { new { location = "http://test.airconsole.com" } },
-                configuration
+                gameConfiguration
             });
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
@@ -264,9 +268,8 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.Update();
 
             JToken result = target.GetGameConfiguration();
-            Assert.AreEqual("medium", (string)result["graphicsQualityTier"], "Should have graphicsQualityTier");
-            Assert.IsNull(result["supportedVideoFormats"], "supportedVideoFormats should be absent");
-            Assert.IsNull(result["transparentVideoSupported"], "transparentVideoSupported should be absent");
+            Assert.AreEqual(true, (bool)result["unityVideoSupport"], "Should have unityVideoSupport");
+            Assert.IsNull(result["transparentVideoSupport"], "transparentVideoSupport should be absent");
         }
 
         public class AirConsoleTestRunner : AirConsole, IMonoBehaviourTest {
@@ -301,9 +304,9 @@ namespace NDream.AirConsole.EditMode.Tests {
             internal void SimulateReady(JObject message) {
                 // Set wsListener._isReady so IsAirConsoleUnityPluginReady() returns true,
                 // matching what WebsocketListener.ProcessMessage() does when receiving "onReady".
-                var wsListenerField = typeof(AirConsole).GetField("wsListener",
+                FieldInfo wsListenerField = typeof(AirConsole).GetField("wsListener",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var wsListenerInstance = wsListenerField?.GetValue(this);
+                object wsListenerInstance = wsListenerField?.GetValue(this);
                 if (wsListenerInstance != null) {
                     var isReadyField = wsListenerInstance.GetType().GetField("_isReady",
                         System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -311,7 +314,7 @@ namespace NDream.AirConsole.EditMode.Tests {
                 }
 
                 // Use reflection to invoke the private OnReady method
-                var method = typeof(AirConsole).GetMethod("OnReady",
+                MethodInfo method = typeof(AirConsole).GetMethod("OnReady",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 Assert.IsNotNull(method, "AirConsole.OnReady private method not found; update SimulateReady if the method was renamed.");
                 method.Invoke(this, new object[] { message });

@@ -23,27 +23,15 @@ namespace NDream.AirConsole.Examples {
 
             logWindow.text += "=== Platform Configuration ===\n";
 
-            // Video format support
-            JToken formats = config["supportedVideoFormats"];
-            if (formats != null) {
-                logWindow.text += "Video Formats: " + formats + "\n";
-            }
-
-            // Graphics quality tier
-            JToken tier = config["graphicsQualityTier"];
-            if (tier != null) {
-                logWindow.text += "Graphics Tier: " + (string)tier + "\n";
-            }
-
             // Video capability flags
-            JToken transparent = config["transparentVideoSupported"];
-            if (transparent != null) {
-                logWindow.text += "Transparent Video: " + (bool)transparent + "\n";
+            JToken transparentVideoSupport = config["transparentVideoSupport"];
+            if (transparentVideoSupport != null) {
+                logWindow.text += "Supports transparent video: " + (bool)transparentVideoSupport + "\n";
             }
 
-            JToken unityVideo = config["unityVideoSupported"];
-            if (unityVideo != null) {
-                logWindow.text += "Unity Video: " + (bool)unityVideo + "\n";
+            JToken unityVideoSupport = config["unityVideoSupport"];
+            if (unityVideoSupport != null) {
+                logWindow.text += "Supports video playback in Unity: " + (bool)unityVideoSupport + "\n";
             }
 
             // Demonstrate safe access for future/optional fields
