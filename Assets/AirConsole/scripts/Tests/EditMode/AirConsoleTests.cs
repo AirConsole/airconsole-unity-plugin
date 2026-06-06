@@ -87,7 +87,7 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_AfterReady_ReturnsConfiguration() {
+        public void GetGameConfiguration_AfterReady_ReturnsConfiguration() {
             JObject gameConfiguration = JObject.FromObject(new {
                 transparentVideoSupport = true,
                 unityVideoSupport = true,
@@ -115,17 +115,17 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_BeforeReady_ThrowsNotReadyException() {
+        public void GetGameConfiguration_BeforeReady_ThrowsNotReadyException() {
             target = new GameObject("Target").AddComponent<AirConsoleTestRunner>();
             target.Initialize();
 
-            // GetConfiguration() must throw before the READY message has been received.
+            // GetGameConfiguration() must throw before the READY message has been received.
             Assert.Throws<AirConsole.NotReadyException>(() => target.GetGameConfiguration());
         }
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_AfterResetCaches_ReturnsEmpty() {
+        public void GetGameConfiguration_AfterResetCaches_ReturnsEmpty() {
             JObject gameConfiguration = JObject.FromObject(new {
                 transparentVideoSupport = true,
                 unityVideoSupport = true,
@@ -149,8 +149,8 @@ namespace NDream.AirConsole.EditMode.Tests {
             // Simulate a reconnect / reload that clears caches — the field must be null
             // (not stale) before the subsequent ready message arrives.
             target.SimulateResetCaches();
-           
-            JToken result = target.GetGameConfiguration(); 
+
+            JToken result = target.GetGameConfiguration();
             Assert.IsNotNull(result, "Configuration should not be null");
             Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
             Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
@@ -158,7 +158,7 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_WhenReadyDataLacksConfiguration_ReturnsEmpty() {
+        public void GetGameConfiguration_WhenReadyDataLacksConfiguration_ReturnsEmpty() {
             // Ready message without a "configuration" key — server may omit the field.
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -175,7 +175,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.Update();
 
             JToken result = target.GetGameConfiguration();
-            
+
             Assert.IsNotNull(result, "Configuration should not be null");
             Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
             Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
@@ -183,7 +183,7 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
+        public void GetGameConfiguration_WithEmptyConfigObject_ReturnsEmptyJToken() {
             JObject gameConfiguration = JObject.FromObject(new { });
             JObject readyMessage = JObject.FromObject(new {
                 action = "ready",
@@ -201,7 +201,7 @@ namespace NDream.AirConsole.EditMode.Tests {
             target.Update();
 
             JToken result = target.GetGameConfiguration();
-            
+
             Assert.IsNotNull(result, "Configuration should not be null");
             Assert.AreEqual(JTokenType.Object, result.Type, "Configuration should be a JObject");
             Assert.AreEqual(0, result.Children().Count(), "Empty configuration should have no children");
@@ -209,7 +209,7 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
+        public void GetGameConfiguration_AfterSecondReady_ReturnsUpdatedConfiguration() {
             JObject firstConfiguration = JObject.FromObject(new {
                 unityVideoSupport = true,
             });
@@ -248,7 +248,7 @@ namespace NDream.AirConsole.EditMode.Tests {
 
         [Test]
         [Timeout(300)]
-        public void GetConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
+        public void GetGameConfiguration_WithPartialFields_ReturnsOnlyProvidedFields() {
             JObject gameConfiguration = JObject.FromObject(new {
                 unityVideoSupport = true,
             });
@@ -292,10 +292,10 @@ namespace NDream.AirConsole.EditMode.Tests {
                 frameCount++;
                 base.Update();
             }
-            
+
             internal new void FixedUpdate() => base.FixedUpdate();
             internal new void LateUpdate() => base.LateUpdate();
-            
+
 
             internal new void SetSafeArea(JObject message) {
                 base.SetSafeArea(message);
