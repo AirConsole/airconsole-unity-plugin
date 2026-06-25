@@ -11,6 +11,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Fixed
 
+- **Android:** WebView renderer process recovery: when the Android WebView render process is killed or crashes, the plugin automatically recreates the WebView, replays all configured state, and reloads the last URL.
 - **Android:** Platform overlay resizes correctly on Android TV
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
 - **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
