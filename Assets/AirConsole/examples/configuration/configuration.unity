@@ -199,7 +199,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controllerHtml: {fileID: 4900000, guid: 2c64a934739fb451987dd00162fe35f8, type: 3}
   autoScaleCanvas: 1
-  androidGameVersion: 2025-10-14-07-07-52
+  androidGameVersion: 2026-06-30-23-25-34
   androidUIResizeMode: 0
   webViewLoadingSprite: {fileID: 0}
   nativeGameSizingSupported: 0

@@ -2277,6 +2277,9 @@ namespace NDream.AirConsole {
                 LoadAndroidWebviewUrl(url);
 
                 _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
+                #if AIRCONSOLE_DEVELOPMENT
+                _logPlatformMessages = true;
+                #endif
                 InitWebSockets();
             }
         }
