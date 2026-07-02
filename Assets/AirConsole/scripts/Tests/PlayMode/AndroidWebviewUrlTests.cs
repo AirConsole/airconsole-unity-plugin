@@ -9,7 +9,10 @@ namespace NDream.AirConsole.PlayMode.Tests {
     /// </summary>
     public class AndroidWebviewUrlTests {
         private const string BaseUrl = "https://www.airconsole.com/";
-        private const string ConnectionUrl = "?id=5";
+
+        // Mirrors the real connection URL built in AirConsole.InitWebView: a path plus its own query start,
+        // e.g. "client?id=androidunity-2.62&runtimePlatform=android". The '?' is mid-string, not leading.
+        private const string ConnectionUrl = "client?id=androidunity-2.62&runtimePlatform=android";
         private const string AppVersion = "1.2.3";
         private const int BundleVersionCode = 42;
         private const string GameId = "com.example.game";
@@ -73,8 +76,8 @@ namespace NDream.AirConsole.PlayMode.Tests {
             string url = AirConsole.BuildWebviewUrl(BaseUrl, ConnectionUrl, isAndroidRuntime, BundleVersionCode,
                 AppVersion, GameId, GameVersion, UnityVersion, true);
 
-            Assert.AreEqual(BaseUrl.Length, url.IndexOf('?'), "URL must contain exactly the connection-url query start.");
-            Assert.AreEqual(1, url.Split('?').Length - 1, "URL must contain exactly one '?'.");
+            StringAssert.StartsWith(BaseUrl + ConnectionUrl, url, "URL must begin with the base and connection URL unchanged.");
+            Assert.AreEqual(1, url.Split('?').Length - 1, "URL must contain exactly one '?' (the connection URL query start).");
             Assert.IsFalse(url.Contains("&&"), "URL must not contain empty parameters (&&).");
             Assert.IsFalse(url.Contains("=&"), "URL must not contain dangling parameters (=&).");
             Assert.IsFalse(url.EndsWith("="), "URL must not end with a dangling '='.");
