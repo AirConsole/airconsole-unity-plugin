@@ -2248,27 +2248,22 @@ namespace NDream.AirConsole {
                     _pluginManager.InitializeOfflineCheck();
                 }
 
-                string url;
+                string baseUrl;
                 if (IsAndroidRuntime) {
                     string urlOverride = AndroidIntentUtils.GetIntentExtraString("base_url", string.Empty);
-                    url = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
+                    baseUrl = !string.IsNullOrEmpty(urlOverride) ? urlOverride : Settings.AIRCONSOLE_BASE_URL;
                     AirConsoleLogger.LogDevelopment(() => $"BaseURL Override: {urlOverride}");
                 } else {
-                    url = Settings.AIRCONSOLE_BASE_URL;
-                }
-
-                url += connectionUrl;
-                if (IsAndroidRuntime) {
-                    url += $"&bundle-version={GetAndroidBundleVersionCode()}";
+                    baseUrl = Settings.AIRCONSOLE_BASE_URL;
                 }
 
                 androidGameVersion = AndroidIntentUtils.GetIntentExtraString("game_version", androidGameVersion);
-
-                url += "&game-id=" + Application.identifier;
-                url += "&game-version=" + androidGameVersion;
-                url += "&unity-version=" + Application.unityVersion;
                 bool nativeSizingSupported = ResolveNativeGameSizingSupport(nativeGameSizingSupported);
-                url += nativeSizingSupported ? "&supportsNativeGameSizing=true" : "&supportsNativeGameSizing=false";
+
+                string url = BuildWebviewUrl(
+                    baseUrl, connectionUrl, IsAndroidRuntime,
+                    IsAndroidRuntime ? GetAndroidBundleVersionCode() : 0, Application.version,
+                    Application.identifier, androidGameVersion, Application.unityVersion, nativeSizingSupported);
 
                 defaultScreenHeight = Screen.height;
                 _webViewOriginalUrl = url;
@@ -2305,6 +2300,28 @@ namespace NDream.AirConsole {
         private static bool ResolveNativeGameSizingSupport(bool fallback) {
             AirconsoleRuntimeSettings settings = Resources.Load<AirconsoleRuntimeSettings>(AirconsoleRuntimeSettings.ResourceName);
             return settings ? settings.NativeGameSizingSupported : fallback;
+        }
+
+        /// <summary>
+        /// Assembles the query string appended to the AirConsole webview URL.
+        /// Pure and free of device dependencies so both the Android and Web paths are unit-testable:
+        /// the caller passes device-derived values (bundle version code, app version, ...).
+        /// The <c>bundle-version</c> and <c>androidAppVersion</c> parameters are only added on the Android runtime.
+        /// </summary>
+        internal static string BuildWebviewUrl(string baseUrl, string connectionUrl, bool isAndroidRuntime,
+            int bundleVersionCode, string appVersion, string gameId, string gameVersion, string unityVersion,
+            bool nativeSizingSupported) {
+            string url = baseUrl + connectionUrl;
+            if (isAndroidRuntime) {
+                url += $"&bundle-version={bundleVersionCode}";
+                url += $"&androidAppVersion={appVersion}";
+            }
+
+            url += "&game-id=" + gameId;
+            url += "&game-version=" + gameVersion;
+            url += "&unity-version=" + unityVersion;
+            url += nativeSizingSupported ? "&supportsNativeGameSizing=true" : "&supportsNativeGameSizing=false";
+            return url;
         }
 
         private static int GetAndroidBundleVersionCode() {
