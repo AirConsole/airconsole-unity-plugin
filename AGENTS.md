@@ -61,6 +61,7 @@ Change the generator or C# source instead of hand editing generated JS.
 `Assets/AirConsole/scripts/Editor/` contains editor tooling and build postprocessing.
 `Assets/AirConsole/scripts/Editor/BuildAutomation/` is the build generation area.
 Sample scenes live under the AirConsole assets tree.
+`.compound-engineering/solutions/` contains documented solutions to past problems, organized by category with YAML frontmatter (module, tags, problem_type).
 ## WHERE TO LOOK
 Main SDK: `Assets/AirConsole/scripts/Runtime/AirConsole.cs`.
 Android bridge: `Assets/AirConsole/plugins/Android/`.
