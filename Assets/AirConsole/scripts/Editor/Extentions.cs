@@ -76,21 +76,34 @@ namespace NDream.AirConsole.Editor {
             EditorPrefs.SetInt("webSocketPort", Settings.webSocketPort);
         }
 
+        /// <summary>
+        /// Copies the AirConsole component's linked controller HTML asset into the active
+        /// WebGL template directory as "controller.html", overwriting any existing file.
+        /// Returns false without throwing if controller.html cannot be generated because
+        /// no controllerHtml is linked, or the controller is null/disabled.
+        /// </summary>
+        internal static bool TryCopyControllerHtmlToTemplate(AirConsole controller) {
+            if (controller == null || !controller.enabled || controller.controllerHtml == null) {
+                return false;
+            }
+
+            string sourcePath = Path.Combine(Directory.GetCurrentDirectory(),
+                AssetDatabase.GetAssetPath(controller.controllerHtml));
+            string targetPath = Path.Combine(Directory.GetCurrentDirectory(),
+                "Assets" + Settings.WEBTEMPLATE_PATH + "/controller.html");
+
+            // rename index.html to screen.html
+            File.Copy(sourcePath, targetPath, true);
+            return true;
+        }
+
         public static void OpenBrowser(AirConsole controller, string startUpPath) {
             // set the root path for webserver
             webserver.SetPath(startUpPath);
             webserver.Start();
 
             if (controller != null && controller.enabled) {
-                if (controller.controllerHtml != null) {
-                    string sourcePath = Path.Combine(Directory.GetCurrentDirectory(),
-                        AssetDatabase.GetAssetPath(controller.controllerHtml));
-                    string targetPath = Path.Combine(Directory.GetCurrentDirectory(),
-                        "Assets" + Settings.WEBTEMPLATE_PATH + "/controller.html");
-
-                    // rename index.html to screen.html
-                    File.Copy(sourcePath, targetPath, true);
-
+                if (TryCopyControllerHtmlToTemplate(controller)) {
                     if (controller.browserStartMode != StartMode.NoBrowserStart) {
                         string url = AirConsole.GetUrl(controller.browserStartMode) + GetLocalAddress() + "/";
 
