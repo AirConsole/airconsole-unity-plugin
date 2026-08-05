@@ -36,6 +36,16 @@ ehthumbs.db
 Thumbs.db
 
 # ============ #
+# Backup / merge artifacts (defense-in-depth: keep proprietary source that
+# leaks into *.orig/*.bak/*~ from being staged by `git add -A`). The guard
+# in scripts/check-proprietary-source.sh is the enforced backstop.
+# ============ #
+*.orig
+*.rej
+*.bak
+*~
+
+# ============ #
 # Visual Studio Code generated #
 # ============ #
 /.vs

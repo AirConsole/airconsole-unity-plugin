@@ -1,0 +1,37 @@
+name: No proprietary source
+
+# Fail-closed gate: keeps native (Java/Kotlin) source, the private Gradle
+# build system, and the private build pipeline out of this public repo.
+# Native code ships only as compiled .aar / .unitypackage / .bundle artifacts.
+# See scripts/check-proprietary-source.sh for the denylist and rationale.
+#
+# Runs on every push to ANY branch (the repo is public, so a pushed branch is
+# world-visible even without a PR) and on every PR.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: ['**']
+
+jobs:
+  no-proprietary-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan tracked files for proprietary source
+        run: bash scripts/check-proprietary-source.sh
+        shell: bash
+
+      - name: Reject submodule gitlinks
+        run: |
+          gitlinks=$(git ls-files -s | awk '$1 == "160000" { print $4 }')
+          if [ -n "$gitlinks" ]; then
+            echo "ERROR: submodule gitlink(s) found — the private repos must not be" >&2
+            echo "referenced as submodules in this public repo:" >&2
+            echo "$gitlinks" | sed 's/^/  - /' >&2
+            exit 1
+          fi
+        shell: bash

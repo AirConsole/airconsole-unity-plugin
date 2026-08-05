@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# pre-commit: block proprietary source from entering this public repo.
+# Enable with:  git config core.hooksPath .githooks
+#
+# Checks only the staged (added/copied/modified) files for speed.
+# POSIX bash 3.2 compatible (stock macOS).
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+checker="$repo_root/scripts/check-proprietary-source.sh"
+
+if [ ! -x "$checker" ]; then
+  echo "pre-commit: $checker missing or not executable; skipping guard." >&2
+  exit 0
+fi
+
+staged=()
+while IFS= read -r f; do
+  [ -n "$f" ] && staged+=("$f")
+done < <(git diff --cached --name-only --diff-filter=ACM)
+
+if [ "${#staged[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+"$checker" "${staged[@]}"
