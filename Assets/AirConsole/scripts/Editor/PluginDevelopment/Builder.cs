@@ -15,10 +15,10 @@ namespace NDream.Unity {
     ///
     /// Unlike <see cref="NDream.AirConsole.Editor.BuildHelper"/>, these methods:
     ///   - take NO parameters, so Unity's <c>-executeMethod</c> resolves them reliably,
-    ///   - never mutate the git repository (no auto-commit), and
+    ///   - never auto-commit or push (the ProjectConfigurationCheck pre-build hook does
+    ///     still rewrite ProjectSettings.asset, so expect a dirty tree after a build), and
     ///   - never open the built player (no <c>BuildOptions.ShowBuiltPlayer</c>),
-    /// which makes them safe to drive from the cross-repo build orchestrator
-    /// (airconsole-platform/scripts/unity-stack.sh) and from CI.
+    /// which makes them safe to drive from a headless build orchestrator and from CI.
     ///
     /// Project configuration validation (ProjectConfigurationCheck) and platform
     /// post-processing (Android manifest/gradle, WebGL JS generation) run
@@ -41,10 +41,26 @@ namespace NDream.Unity {
         public static void BuildAndroid() => Run(BuildTarget.Android, Path.Combine(BasePath, "Android"), isApk: true);
 
         private static void Run(BuildTarget target, string outputDirectory, bool isApk) {
+            // Some pre-build hooks read EditorUserBuildSettings.activeBuildTarget rather than the target
+            // being built, so switch explicitly instead of relying on -buildTarget having been passed.
+            if (EditorUserBuildSettings.activeBuildTarget != target) {
+                EditorUserBuildSettings.SwitchActiveBuildTarget(BuildPipeline.GetBuildTargetGroup(target), target);
+            }
+
             AssetDatabase.SaveAssets();
 
-            string buildName = ArgValue("buildName")
-                ?? $"{DateTime.Now:yyyyMMdd-HHmm}-{PlayerSettings.applicationIdentifier}";
+            string requestedName = ArgValue("buildName");
+            string buildName;
+            if (string.IsNullOrEmpty(requestedName)) {
+                buildName = $"{DateTime.Now:yyyyMMdd-HHmm}-{PlayerSettings.applicationIdentifier}";
+            } else {
+                // Strip any directory part so a caller supplied name cannot escape outputDirectory.
+                buildName = Path.GetFileName(requestedName.TrimEnd('/', '\\'));
+                if (string.IsNullOrEmpty(buildName) || buildName == "." || buildName == "..") {
+                    throw new BuildFailedException($"Invalid buildName '{requestedName}'.");
+                }
+            }
+
             Directory.CreateDirectory(outputDirectory);
             string outputPath = isApk
                 ? Path.Combine(outputDirectory, buildName + ".apk")
