@@ -14,6 +14,11 @@
 #   - WebViewPlugin-*.aar.tmpl        (webview native, compiled)
 #   - *.unitypackage / *.bundle       (compiled)
 #
+# ONE EXCEPTION, already in the tree: Assets/AirConsole/unity-webview/Plugins/
+# iOS/*.mm is third-party upstream (GREE / Keijiro Takahashi, zlib licence) and
+# is public by licence, not by mistake. That is why *.mm is not on the denylist.
+# AirConsole-authored native code must NEVER be added as *.mm.
+#
 # Source languages (*.java, *.kt), the Gradle build system, and the private
 # build pipeline (shell/Rake scripts, version catalogs) reveal the internal
 # technology and MUST NOT be committed here. A leak is effectively
@@ -64,6 +69,8 @@ DENY_PATTERN=(
   "(^|/)\.gitmodules$S"
   "(^|/)AndroidManifest\.xml$S"
   "(^|/)src/main/res/"
+  "\.iml$S"
+  "(^|/)\.idea/(modules|misc|gradle)\.xml$S"
 )
 DENY_REASON=(
   'native source (Java/Kotlin) — ships as a compiled .aar, never as source'
@@ -79,6 +86,8 @@ DENY_REASON=(
   'submodule reference — would disclose a private repository URL'
   'native Android manifest — declares internal components/permissions'
   'native Android resources — belong to the private library'
+  'IntelliJ/Android Studio module file — reveals the private dependency stack'
+  'IntelliJ/Android Studio project config — reveals the private module layout'
 )
 
 # --- Allowlist: the ONLY exceptions to the denylist above --------------------

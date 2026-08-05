@@ -94,9 +94,9 @@ PostprocessBuild auto runs during Unity build.
 Export package: use Unity export package workflow for `.unitypackage`.
 Run tests: use Unity Test Runner for EditMode and PlayMode suites.
 ## PROPRIETARY-SOURCE GUARD
-This repo is PUBLIC. Native Android and webview source is PRIVATE and ships here only as compiled artifacts.
-NEVER commit native source or the private build system: `*.java`, `*.kt`, Gradle files, `*.sh`/`Rakefile`/`*.rake` build scripts, `*.toml` version catalogs, `AndroidManifest.xml`, `src/main/res/`.
-Only compiled artifacts (`.aar`, `.unitypackage`, `.bundle`) and glue (`.cs`, `.jslib`, `.mm`) belong here.
+This repo is PUBLIC. AirConsole-authored native Android and webview source is PRIVATE and ships here only as compiled artifacts.
+NEVER commit native source or the private build system: `*.java`, `*.kt`, Gradle files, `*.sh`/`Rakefile`/`*.rake` build scripts, `*.toml` version catalogs, `AndroidManifest.xml`, `src/main/res/`, `*.iml`/`.idea/` project files.
+Only compiled artifacts (`.aar`, `.unitypackage`, `.bundle`) and glue (`.cs`, `.jslib`) belong here. The sole `.mm` exception is `Assets/AirConsole/unity-webview/Plugins/iOS/*.mm` — third-party upstream (GREE / Takahashi, zlib), public by licence. Never add AirConsole-authored native code as `.mm`.
 `scripts/check-proprietary-source.sh` is the shared denylist check.
 CI `.github/workflows/no-proprietary-source.yml` is the authoritative gate; it scans every push (any branch) and PR.
 Enable the fast local pre-commit guard once per clone: `git config core.hooksPath .githooks`.

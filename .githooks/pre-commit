@@ -10,9 +10,9 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 checker="$repo_root/scripts/check-proprietary-source.sh"
 
-if [ ! -x "$checker" ]; then
-  echo "pre-commit: $checker missing or not executable; skipping guard." >&2
-  exit 0
+if [ ! -f "$checker" ]; then
+  echo "pre-commit: $checker is missing — refusing to commit without the guard." >&2
+  exit 1
 fi
 
 staged=()
@@ -24,4 +24,4 @@ if [ "${#staged[@]}" -eq 0 ]; then
   exit 0
 fi
 
-"$checker" "${staged[@]}"
+bash "$checker" "${staged[@]}"

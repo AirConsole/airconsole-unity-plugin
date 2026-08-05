@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#
+# pre-merge-commit: git does NOT run pre-commit for merge commits, so a
+# `git merge` that brings in proprietary source would otherwise slip past the
+# local guard entirely. This repo vendors third-party sources (unity-webview),
+# which makes merging an upstream branch a routine operation — exactly the case
+# that needs covering. Delegates to the same check as pre-commit.
+#
+# Enable with:  git config core.hooksPath .githooks
+set -euo pipefail
+
+exec bash "$(git rev-parse --show-toplevel)/.githooks/pre-commit"

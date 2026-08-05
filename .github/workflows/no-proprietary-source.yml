@@ -17,6 +17,10 @@ on:
 jobs:
   no-proprietary-source:
     runs-on: ubuntu-latest
+    # Read-only gate: it only ever scans the tree, so it must not be able to
+    # write to it. Do not widen without a concrete reason.
+    permissions:
+      contents: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
