@@ -24,6 +24,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Added
 
+- **Editor:** `NDream.Unity.Builder` provides a zero-argument headless build entry point for CI, without the git auto-commit and player launch that make `BuildHelper` unsuitable for build agents.
 - **Unity API:** `GetGameConfiguration` function to request the runtime configuration information for this game and platform.
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
 - **Android:** After the last device disconnects, the webview is reset along the game state.
