@@ -11,12 +11,14 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Fixed
 
+- **Android:** On automotive, media transport keys (play, pause, play/pause, stop, next, previous, fast forward, rewind, skip forward, skip backward, headset hook) are no longer consumed by the game and reach the active media session again, so steering wheel and head unit media buttons control the car's media playback while a game is running (ENG-2926)
 - **Android:** Platform overlay resizes correctly on Android TV
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
 - **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
 
 ### Changed
 
+- **Android:** On automotive, the Android media transport keycodes are no longer delivered to Unity input. Games needing those buttons must use AirConsole controller input instead.
 - **Android Support**: Better dependency handling through Gradle processor integration. Removal of included files where possible.
 - **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
 - **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
