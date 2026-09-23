@@ -2234,14 +2234,17 @@ namespace NDream.AirConsole {
 
                 webViewObject.SetOnAudioFocusChanged(HandleWebViewAudioFocusChanged);
 
-                webViewObject.Init(ProcessJS,
-                    err => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView error: {err}"),
-                    httpError => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView HttpError: {httpError}"),
-                    loadedUrl => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView Loaded URL {loadedUrl}"),
-                    started => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView started: {started}"),
-                    hooked => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView hooked: {hooked}"),
-                    cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
-                    true, false);
+                if (Application.isEditor) {
+                    // The Editor has no native webview: unity-webview 1.1.8 removed its macOS build, and
+                    // on an Android build target Init would call JNI with no JVM. The WebViewObject stays
+                    // headless on purpose. WebViewManager and every WebViewObject call below return when
+                    // the native handle is null, so the rest of this method runs unchanged. The Init
+                    // callbacks (ProcessJS, ...) stay null; the Editor gets its messages from the
+                    // websocket listener, not from a webview.
+                    AirConsoleLogger.LogDevelopment(() => "Editor: running the Android flow without a native webview.");
+                } else {
+                    InitNativeWebview();
+                }
 
                 if (IsAndroidRuntime && _pluginManager != null) {
                     _pluginManager.OnReloadWebview += () => webViewObject.Reload();
@@ -2274,6 +2277,21 @@ namespace NDream.AirConsole {
                 _logPlatformMessages = AndroidIntentUtils.GetIntentExtraBool("log_platform_messages", false);
                 InitWebSockets();
             }
+        }
+
+        /// <summary>
+        /// Creates the native webview behind <see cref="webViewObject"/>. Only a player calls this;
+        /// the Editor keeps the WebViewObject headless, see <see cref="CreateAndroidWebview"/>.
+        /// </summary>
+        private void InitNativeWebview() {
+            webViewObject.Init(ProcessJS,
+                err => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView error: {err}"),
+                httpError => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView HttpError: {httpError}"),
+                loadedUrl => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView Loaded URL {loadedUrl}"),
+                started => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView started: {started}"),
+                hooked => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView hooked: {hooked}"),
+                cookies => AirConsoleLogger.LogDevelopment(() => $"AirConsole WebView cookies: {cookies}"),
+                true, false);
         }
 
         private void LoadAndroidWebviewUrl(string url) {

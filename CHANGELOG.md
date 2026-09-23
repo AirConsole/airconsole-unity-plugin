@@ -14,6 +14,7 @@ This includes security related updates like requiring fixed Unity versions and i
 - **Android Automotive:** Steering wheel media buttons (skip, play/pause, etc.) now control the active media source (Bluetooth, radio) instead of being swallowed by the game while a native game is running.
 - **Android:** Platform overlay resizes correctly on Android TV
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
+- **Editor:** The Android flow no longer initializes a native WebView inside the Editor. There is no Editor WebView implementation since unity-webview dropped macOS support, and on an Android build target the attempt failed with a JNI exception in `Start()`.
 - **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
 
 ### Changed
