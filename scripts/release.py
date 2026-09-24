@@ -7,7 +7,7 @@ the Release Log sheet.
 
 Usage:
   scripts/release.py --dry-run   # validate and print everything, change nothing
-  scripts/release.py             # needs `gh` auth and GOOGLE_ACCESS_TOKEN
+  scripts/release.py             # needs `gh` auth and GOOGLE_ACCESS_TOKEN (CI runs this when the release PR merges)
 """
 import argparse
 import json
@@ -88,10 +88,15 @@ def insert_sheet_row(token: str, year: str, row: list[dict]) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="validate and print, create nothing")
-    dry_run = parser.parse_args().dry_run
+    parser.add_argument("--notes-only", action="store_true", help="print only the release notes")
+    args = parser.parse_args()
+    dry_run = args.dry_run
 
     version = read_version(SETTINGS.read_text())
     tag = f"v{version}"
+    if args.notes_only:
+        print(release_notes(CHANGELOG.read_text(), version))
+        return
     if git("ls-remote", "--tags", "origin", f"refs/tags/{tag}"):
         print(f"{tag} is already tagged on origin. Nothing to release.")
         return
@@ -102,7 +107,8 @@ def main() -> None:
 
     notes = release_notes(CHANGELOG.read_text(), version)
     now = datetime.now(TIMEZONE)
-    owner = git("log", "-1", "--format=%an").split(" ")[0]
+    # CI passes the name of whoever merged the release PR; a squash merge commit may be authored by the bot.
+    owner = (os.environ.get("RELEASE_OWNER") or git("log", "-1", "--format=%an")).split(" ")[0]
     release_url = f"{REPO_URL}/releases/tag/{tag}"
     # ponytail: owner is the release commit author's first name, not snapped to the sheet's Owner dropdown.
     row = [{"userEnteredValue": {"stringValue": value}}
