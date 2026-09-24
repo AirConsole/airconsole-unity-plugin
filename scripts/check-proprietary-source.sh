@@ -96,7 +96,9 @@ DENY_REASON=(
 # 3. *.meta — Unity import sidecars are content-free (GUID + import settings);
 #    they never contain source, so a Foo.java.meta / mainTemplate.gradle.meta
 #    is safe even though its base name trips a deny pattern.
-ALLOW_PATTERN='(^|/)(mainTemplate|launcherTemplate|baseProjectTemplate|settingsTemplate)\.gradle$|(^|/)gradleTemplate\.properties$|(^|/)scripts/check-proprietary-source\.sh$|\.meta$'
+# 4. dev-scripts/test-apks.sh — manual release smoke test: adb install/launch of
+#    the public app ID only. Allowed by exact path; a new dev script needs review.
+ALLOW_PATTERN='(^|/)(mainTemplate|launcherTemplate|baseProjectTemplate|settingsTemplate)\.gradle$|(^|/)gradleTemplate\.properties$|(^|/)scripts/check-proprietary-source\.sh$|^dev-scripts/test-apks\.sh$|\.meta$'
 
 # --- Combined deny regex for one fast first-pass grep ------------------------
 combined=""
