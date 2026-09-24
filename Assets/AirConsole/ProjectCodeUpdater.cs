@@ -79,6 +79,7 @@ namespace NDream.Unity {
                 AssetDatabase.DeleteAsset("Assets/AirConsole/unity-webview");
             }
 
+            ClearConsole();
             SessionState.SetBool(IMPORT_PENDING_KEY, true);
             AssetDatabase.ImportPackage(CodePackagePath, false);
         }
@@ -104,6 +105,16 @@ namespace NDream.Unity {
             SessionState.EraseBool(IMPORT_PENDING_KEY);
             Debug.LogError($"AirConsole: importing {CodePackagePath} failed: {errorMessage}. The project does not compile until "
                            + "it is imported: import it now with Assets > Import Package > Custom Package, before you restart Unity.");
+        }
+
+        // Errors logged before the import come from the old plugin code and are stale once the code package is in. Unity has no
+        // public API to clear the Console, so call the internal LogEntries.Clear. A failed clear must not stop the import.
+        private static void ClearConsole() {
+            try {
+                typeof(SceneView).Assembly.GetType("UnityEditor.LogEntries")?.GetMethod("Clear")?.Invoke(null, null);
+            } catch (System.Exception) {
+                // Clearing the Console is cosmetic.
+            }
         }
 
         private static bool RequiresStructureCleanup() {
