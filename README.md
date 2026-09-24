@@ -13,12 +13,12 @@ Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
 ## Releasing (maintainers)
 
-1. Update `VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs`.
-2. Run **Tools > AirConsole > Package Plugin**. It exports `Builds/airconsole-unity-plugin-v{VERSION}.unitypackage`, renames `## [Unreleased]` in `CHANGELOG.md` to `## [{VERSION}] - yyyy-MM-dd`, and stages both.
-3. Check the release locally: `scripts/release.py --dry-run`. It creates nothing.
-4. Commit as `Release v{VERSION}`, open the PR, and merge it after approval.
-   The `Create Release` workflow then creates the GitHub release and the Release Log sheet row.
-5. Manual steps:
+`VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs` already holds the next version (it is updated during development) and `CHANGELOG.md` has its `## [Unreleased]` section.
+
+1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. It test-builds WebGL, exports the `.unitypackage`, dates `## [Unreleased]` as `## [{VERSION}] - yyyy-MM-dd`, validates the release notes, and uploads the package as a workflow artifact. It creates nothing.
+2. Run it again with `dry_run` off. It opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
+3. Merge the PR. The workflow then creates the `v{VERSION}` tag, the GitHub release with the package, and the Release Log sheet row.
+4. Manual steps:
    - Unity Asset Store: make a draft of the current package, add the release notes and version, and upload the `.unitypackage` with the Asset Store Tools. In the additional information, write: "We include unity webgl templates because webgl games deployed to our platform require a specific setup."
    - AppEngine: accept the new plugin version.
    - After Unity accepts the version, announce it in the Discord Unity channel.
