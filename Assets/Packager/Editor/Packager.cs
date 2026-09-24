@@ -178,8 +178,9 @@ namespace NDream.Unity {
         private static string ChangelogPath => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "CHANGELOG.md"));
 
         /// <summary>
-        /// Renames the "## [Unreleased]" heading of CHANGELOG.md to "## [VERSION] - yyyy-MM-dd".
-        /// scripts/release.py reads that dated section as the release notes.
+        /// Renames the "## [Unreleased]" heading of CHANGELOG.md to "## [VERSION] - yyyy-MM-dd" and adds a new, empty
+        /// "## [Unreleased]" section with "### Added" above it for the next version.
+        /// scripts/release.py reads the dated section as the release notes.
         /// </summary>
         private static void StampChangelog() {
             string changelog = File.ReadAllText(ChangelogPath);
@@ -193,7 +194,8 @@ namespace NDream.Unity {
                 return;
             }
 
-            File.WriteAllText(ChangelogPath, unreleased.Replace(changelog, $"## [{Settings.VERSION}] - {DateTime.Now:yyyy-MM-dd}", 1));
+            string released = $"## [Unreleased]\n\n### Added\n\n## [{Settings.VERSION}] - {DateTime.Now:yyyy-MM-dd}";
+            File.WriteAllText(ChangelogPath, unreleased.Replace(changelog, released, 1));
         }
 
         private static void AddToGit(params string[] paths) {

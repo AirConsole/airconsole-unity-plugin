@@ -4,6 +4,10 @@
 
 Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/) format.
 
+## [Unreleased]
+
+### Added
+
 ## [2.6.2] - 2026-09-24
 
 With version 2.6.2, we are targeting Android TV and Android Automotive related issues impacting or blocking game releases.
@@ -16,7 +20,7 @@ This includes security related updates like requiring fixed Unity versions and i
 - **Android:** Platform overlay resizes correctly on Android TV
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
 - **Editor:** The Android flow no longer initializes a native WebView inside the Editor. There is no Editor WebView implementation since unity-webview dropped macOS support, and on an Android build target the attempt failed with a JNI exception in `Start()`.
-- **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
+- **Editor:** Project configuration checks index.html directly when validating API version usage. This prevents the index.html from becoming empty.
 
 ### Changed
 
@@ -34,13 +38,12 @@ This includes security related updates like requiring fixed Unity versions and i
 - **Android:** After the last device disconnects, the webview is reset along the game state.
 - **Android:** Add support to override the game version used in a previously built android game through intent extras with adb.
 - **Android:** The Android application version is now reported to the platform through the webview URL.
-- **Android:** The support for native game sizing is communicated
+- **Android:** Support for native game sizing, enabling web overlays with cutouts for the game camera.
 - **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive.
 - **Android Audio Focus:** Drive maximum volume based on Android system requirements to avoid pausing when losing audio focus.
 
 ### Removed
 
-- **Android**: The android library no longer manages Audio Focus or overriding the usage from USAGE_GAME.
 - **unity-webview:** The unsupported iOS (`Plugins/iOS/*.mm`) and macOS (`Plugins/WebView.bundle`) native files were removed. unity-webview v1.1.9 no longer ships them.
 
 ## [2.6.1] - 2025-09-02
