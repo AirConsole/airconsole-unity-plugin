@@ -1,146 +1,40 @@
 name: Create Release
+
+# Publishes v{Settings.VERSION} when a version bump lands on master: GitHub release with the
+# committed Builds/*.unitypackage and CHANGELOG notes, plus a Release Log sheet row.
+# Local dry run of the same steps: scripts/release.py --dry-run
 on:
+  push:
+    branches: [master]
+    paths: [Assets/AirConsole/scripts/Runtime/Settings.cs]
   workflow_dispatch:
-    branches:
-      - master
+
+concurrency:
+  group: create-release
+  cancel-in-progress: false
 
 jobs:
-  build:
+  release:
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      max-parallel: 1
-      matrix:
-        unityVersion:
-          - 2022.3.62f1
-          # - 6000.0.50f1
-        platform:
-          - WebGL
-          # - Android
-
+    permissions:
+      contents: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        lfs: true
+      - uses: actions/checkout@v4
 
-    - name: Extract Version from C# File
-      id: extract_version
-      run: |
-        version=$(grep -oP 'public const string VERSION = "\K[^"]+' Assets/AirConsole/scripts/Runtime/Settings.cs)
-        echo "Extracted version: $version"
-        echo "version=$version" >> $GITHUB_ENV
+      - name: Validate release (dry run)
+        run: python3 scripts/release.py --dry-run
 
-    - name: Validate Version
-      run: |
-        if [[ ! "${{ env.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "Invalid version format. Must be MAJOR.MINOR.PATCH"
-          exit 1
-        fi
+      - name: Auth to Google Sheets
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.RELEASE_LOG_SA_KEY }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/spreadsheets
 
-    - name: Check GitHub Releases
-      id: check_release
-      run: |
-        # Fetch releases from GitHub API
-        releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/airconsole/airconsole-unity-plugin/releases")
-
-        # Check if a release with the extracted version exists
-        exists=$(echo "$releases" | jq -r --arg version "v${{ env.version }}" '.[] | select(.tag_name == $version) | .tag_name')
-
-        if [[ -n "$exists" ]]; then
-          echo "Release with version v${{ env.version }} already exists."
-          exit 1
-        else
-          echo "No release with version v${{ env.version }} found."
-        fi
-
-    # - uses: actions/cache@v3
-    #   with:
-    #     path: Library
-    #     key: Library-AUP-${{ matrix.platform }}
-    #     restore-keys: |
-    #       Library-AUP-
-    #       Library-
-    #
-    # - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
-    #   uses: game-ci/unity-builder@v4
-    #   env:
-    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-    #   with:
-    #     unityVersion: ${{ matrix.unityVersion }}
-    #     targetPlatform: ${{ matrix.platform }}
-    #     buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
-    #     allowDirtyBuild: true
-
-    # - name: Validate Build
-    #   run: |
-    #     filepath="Builds/${{ matrix.platform }}/release-${{ matrix.unityVersion }}-v${{ env.version }}"
-    #     if [ "${{ matrix.platform }}" == "Android" ]; then
-    #       filepath+=".apk"
-    #     elif [ "${{ matrix.platform }}" == "WebGL" ]; then
-    #       filepath+=".zip"
-    #     fi
-    #     if [ ! -f "$filepath" ]; then
-    #       echo "Build validation failed for ${{ matrix.platform }}"
-    #       exit 1
-    #     fi
-
-    - name: Extract release notes
-      id: extract-release-notes
-      uses: ffurrer2/extract-release-notes@v2
-      with:
-        # prerelease: true
-        changelog_file: CHANGELOG.md
-
-    - name: Log Release Notes
-      run: echo "Release Notes are ${{ steps.extract-release-notes.outputs.release_notes }}"
-
-    # - name: Generate unitypackage release
-    #   uses: game-ci/unity-builder@v4
-    #   env:
-    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-    #   if: matrix.platform == 'WebGL' && matrix.unityVersion == '2022.3.61f1'
-    #   with:
-    #     unityVersion: ${{ matrix.unityVersion }}
-    #     targetPlatform: ${{ matrix.platform }}
-    #     buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
-    #     allowDirtyBuild: true
-    #
-    # - name: Generate Release unity package
-    #   run: |
-    #     unity -quit -batchmode -executeMethod NDream.Unity.Packager.Export -projectPath . # -outputPath Builds/release-${{ github.event.inputs.version }}.unitypackage
-    #
-    # Return License
-    # - name: Return license
-    #   uses: game-ci/unity-return-license@v2
-    #   if: always()
-    #
-    # - name: Validate release package
-    #   if: matrix.platform == 'WebGL' && matrix.unityVersion == '2022.3.61f1'
-    #   run: |
-    #     filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
-    #     if [ ! -f "$filepath" ]; then
-    #       echo "Build validation of airconsole-unity-plugin-v${{ env.version }} unitypackage failed"
-    #       exit 1
-    #     fi
-
-    # - name: Commit and Push
-    #   run: |
-    #     git config user.name "GitHub Actions"
-    #     git config user.email "github-actions@github.com"
-    #     git commit -m "e: Update Release package to v${{ env.version }}"
-    #     git push
-
-    # - name: Create GitHub Release
-    #   uses: softprops/action-gh-release@v1
-    #   if: startsWith(github.ref, 'refs/tags/')
-    #   with:
-    #     files: Builds/airconsole-unity-plugin-v${{ github.event.inputs.version }}.unitypackage
-    #     body: ${{ steps.extract-release-notes.outputs.release_notes }}
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+        run: python3 scripts/release.py
