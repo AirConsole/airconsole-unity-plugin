@@ -14,10 +14,10 @@
 #   - WebViewPlugin-*.aar.tmpl        (webview native, compiled)
 #   - *.unitypackage / *.bundle       (compiled)
 #
-# ONE EXCEPTION, already in the tree: Assets/AirConsole/unity-webview/Plugins/
-# iOS/*.mm is third-party upstream (GREE / Keijiro Takahashi, zlib licence) and
-# is public by licence, not by mistake. That is why *.mm is not on the denylist.
-# AirConsole-authored native code must NEVER be added as *.mm.
+# No *.mm ships here: unity-webview dropped iOS in v1.1.9, which removed the
+# third-party upstream iOS/*.mm (GREE / Keijiro Takahashi, zlib licence).
+# *.mm is not on the denylist, but AirConsole-authored native code must NEVER
+# be added as *.mm.
 #
 # Source languages (*.java, *.kt), the Gradle build system, and the private
 # build pipeline (shell/Rake scripts, version catalogs) reveal the internal
