@@ -11,6 +11,18 @@ You don't need to install any other webserver or services.
 
 Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
+## Releasing (maintainers)
+
+1. Update `VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs`.
+2. Run **Tools > AirConsole > Package Plugin**. It exports `Builds/airconsole-unity-plugin-v{VERSION}.unitypackage`, renames `## [Unreleased]` in `CHANGELOG.md` to `## [{VERSION}] - yyyy-MM-dd`, and stages both.
+3. Check the release locally: `scripts/release.py --dry-run`. It creates nothing.
+4. Commit as `Release v{VERSION}`, open the PR, and merge it after approval.
+   The `Create Release` workflow then creates the GitHub release and the Release Log sheet row.
+5. Manual steps:
+   - Unity Asset Store: make a draft of the current package, add the release notes and version, and upload the `.unitypackage` with the Asset Store Tools. In the additional information, write: "We include unity webgl templates because webgl games deployed to our platform require a specific setup."
+   - AppEngine: accept the new plugin version.
+   - After Unity accepts the version, announce it in the Discord Unity channel.
+
 ## Upgrading your installation
 
 The upgrade instructions can be found in <https://github.com/AirConsole/airconsole-unity-plugin/wiki/Upgrading-the-Unity-Plugin-to-a-newer-version>
