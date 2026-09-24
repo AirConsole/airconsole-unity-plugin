@@ -159,22 +159,9 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        branch="release/v${{ env.version }}"
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git switch -c "$branch"
-        # Builds/ also carries the deletion of the previous version's package.
-        git add -A Builds CHANGELOG.md
-        git commit -m "Release v${{ env.version }}"
-        git push origin "$branch"
-        {
-          python3 scripts/release.py --notes-only
-          echo
-          echo "---"
-          echo "Merging this PR creates the v${{ env.version }} tag, the GitHub release and the Release Log sheet row."
-          echo "This PR was opened with the workflow token, so the required checks do not start by themselves: close and reopen it to run them."
-        } > "$RUNNER_TEMP/pr-body.md"
-        gh pr create --base master --head "$branch" --title "Release v${{ env.version }}" --body-file "$RUNNER_TEMP/pr-body.md"
+        python3 scripts/release.py --open-pr
 
   publish:
     if: >-

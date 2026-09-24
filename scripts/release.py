@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Publish the plugin release for the version in Settings.cs.
+"""Release steps for the version in Settings.cs, shared by CI and scripts/release_local.py.
 
-Creates the GitHub release v{VERSION} with the committed .unitypackage and the
-CHANGELOG.md section as notes, then inserts a row at the top of the year tab of
-the Release Log sheet.
+Publish (default): create the GitHub release and tag v{VERSION} for HEAD with the
+committed .unitypackage and the CHANGELOG.md section as notes, then insert a row at
+the top of the year tab of the Release Log sheet.
+--open-pr: commit the exported package and dated CHANGELOG to release/v{VERSION}
+and open the "Release v{VERSION}" PR.
 
 Usage:
-  scripts/release.py --dry-run   # validate and print everything, change nothing
-  scripts/release.py             # needs `gh` auth and GOOGLE_ACCESS_TOKEN (CI runs this when the release PR merges)
+  scripts/release.py --dry-run             # validate and print the commands, change nothing
+  scripts/release.py                       # needs `gh` auth and GOOGLE_ACCESS_TOKEN (CI runs this when the release PR merges)
+  scripts/release.py --open-pr [--dry-run]
 """
 import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
+import tempfile
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -85,23 +90,55 @@ def insert_sheet_row(token: str, year: str, row: list[dict]) -> None:
     ]})
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--dry-run", action="store_true", help="validate and print, create nothing")
-    parser.add_argument("--notes-only", action="store_true", help="print only the release notes")
-    args = parser.parse_args()
-    dry_run = args.dry_run
+def run(cmd: list[str], dry_run: bool) -> None:
+    """Run a command that changes git or GitHub. A dry run only prints it."""
+    print(("would run: " if dry_run else "+ ") + shlex.join(cmd))
+    if not dry_run:
+        subprocess.run(cmd, cwd=ROOT, check=True)
 
+
+def write_temp(text: str) -> str:
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as file:
+        file.write(text)
+    return file.name
+
+
+def tag_on_origin(tag: str) -> bool:
+    return bool(git("ls-remote", "--tags", "origin", f"refs/tags/{tag}"))
+
+
+def package_path(tag: str) -> Path:
+    return ROOT / "Builds" / f"airconsole-unity-plugin-{tag}.unitypackage"
+
+
+def open_release_pr(dry_run: bool) -> None:
+    """Commit the exported package and dated CHANGELOG to release/v{VERSION} and open the release PR."""
     version = read_version(SETTINGS.read_text())
     tag = f"v{version}"
-    if args.notes_only:
-        print(release_notes(CHANGELOG.read_text(), version))
-        return
-    if git("ls-remote", "--tags", "origin", f"refs/tags/{tag}"):
+    branch = f"release/{tag}"
+    body = (f"{release_notes(CHANGELOG.read_text(), version)}\n\n---\n"
+            f"Merging this PR creates the {tag} tag, the GitHub release and the Release Log sheet row.")
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        body += ("\nThis PR was opened with the workflow token, so the required checks do not start by themselves: "
+                 "close and reopen it to run them.")
+    run(["git", "switch", "-c", branch], dry_run)
+    # Builds/ also carries the deletion of the previous version's package.
+    run(["git", "add", "-A", "Builds", "CHANGELOG.md"], dry_run)
+    run(["git", "commit", "-m", f"Release {tag}"], dry_run)
+    run(["git", "push", "origin", branch], dry_run)
+    run(["gh", "pr", "create", "--base", "master", "--head", branch, "--title", f"Release {tag}",
+         "--body-file", write_temp(body)], dry_run)
+
+
+def publish(dry_run: bool) -> None:
+    """Create the tag and GitHub release for HEAD and add the Release Log row."""
+    version = read_version(SETTINGS.read_text())
+    tag = f"v{version}"
+    if tag_on_origin(tag):
         print(f"{tag} is already tagged on origin. Nothing to release.")
         return
 
-    package = ROOT / "Builds" / f"airconsole-unity-plugin-{tag}.unitypackage"
+    package = package_path(tag)
     if not package.is_file():
         sys.exit(f"{package.relative_to(ROOT)} is missing. Run Tools > AirConsole > Package Plugin and commit it.")
 
@@ -117,18 +154,30 @@ def main() -> None:
 
     print(f"Release:  {tag} at {git('rev-parse', 'HEAD')}\nPackage:  {package.relative_to(ROOT)}")
     print(f"Sheet:    tab {now.year}: " + " | ".join(next(iter(c['userEnteredValue'].values())) for c in row))
-    print(f"Notes:\n{notes}")
-    if dry_run:
-        print("\nDry run: no tag, release or sheet row created.")
-        return
+    print(f"Notes:\n{notes}\n")
 
     token = os.environ.get("GOOGLE_ACCESS_TOKEN")
-    if not token:
+    if not dry_run and not token:
         sys.exit("GOOGLE_ACCESS_TOKEN is not set. It is needed to write the Release Log row.")
-    subprocess.run(["gh", "release", "create", tag, str(package), "--title", f"Release {version}",
-                    "--notes", notes, "--target", git("rev-parse", "HEAD")], cwd=ROOT, check=True)
+    # `gh release create` also creates and pushes the tag on --target.
+    run(["gh", "release", "create", tag, str(package.relative_to(ROOT)), "--title", f"Release {version}",
+         "--notes-file", write_temp(notes), "--target", git("rev-parse", "HEAD")], dry_run)
+    if dry_run:
+        print(f"would add the Release Log row above to tab {now.year}")
+        return
     insert_sheet_row(token, str(now.year), row)
     print(f"Released {release_url} and logged it in the Release Log sheet.")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--dry-run", action="store_true", help="validate and print the commands, change nothing")
+    parser.add_argument("--open-pr", action="store_true", help="open the release PR instead of publishing")
+    args = parser.parse_args()
+    if args.open_pr:
+        open_release_pr(args.dry_run)
+    else:
+        publish(args.dry_run)
 
 
 if __name__ == "__main__":
