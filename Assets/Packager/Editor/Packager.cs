@@ -150,8 +150,19 @@ namespace NDream.Unity {
         private static void CleanupCodePackage() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
 
-            if (File.Exists(unityPackagePath)) {
+            if (!File.Exists(unityPackagePath)) {
+                return;
+            }
+
+            // DeleteAsset, not File.Delete: PackageCode writes this package inside Assets/ and the
+            // following Refresh imports it, so Unity owns a .meta for it. File.Delete removes only
+            // the package and leaves airconsole-code.unitypackage.meta orphaned in the repository.
+            string assetPath = unityPackagePath.Replace(Application.dataPath, "Assets");
+            if (!AssetDatabase.DeleteAsset(assetPath)) {
                 File.Delete(unityPackagePath);
+                AirConsoleLogger.LogWarning(() =>
+                    $"Could not delete {assetPath} through the AssetDatabase; removed the file directly. "
+                    + "Check for a leftover .meta.");
             }
         }
 

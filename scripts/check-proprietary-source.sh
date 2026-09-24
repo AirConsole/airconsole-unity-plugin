@@ -14,10 +14,10 @@
 #   - WebViewPlugin-*.aar.tmpl        (webview native, compiled)
 #   - *.unitypackage / *.bundle       (compiled)
 #
-# ONE EXCEPTION, already in the tree: Assets/AirConsole/unity-webview/Plugins/
-# iOS/*.mm is third-party upstream (GREE / Keijiro Takahashi, zlib licence) and
-# is public by licence, not by mistake. That is why *.mm is not on the denylist.
-# AirConsole-authored native code must NEVER be added as *.mm.
+# No *.mm ships here: unity-webview dropped iOS in v1.1.9, which removed the
+# third-party upstream iOS/*.mm (GREE / Keijiro Takahashi, zlib licence).
+# *.mm is not on the denylist, but AirConsole-authored native code must NEVER
+# be added as *.mm.
 #
 # Source languages (*.java, *.kt), the Gradle build system, and the private
 # build pipeline (shell/Rake scripts, version catalogs) reveal the internal
@@ -96,7 +96,9 @@ DENY_REASON=(
 # 3. *.meta — Unity import sidecars are content-free (GUID + import settings);
 #    they never contain source, so a Foo.java.meta / mainTemplate.gradle.meta
 #    is safe even though its base name trips a deny pattern.
-ALLOW_PATTERN='(^|/)(mainTemplate|launcherTemplate|baseProjectTemplate|settingsTemplate)\.gradle$|(^|/)gradleTemplate\.properties$|(^|/)scripts/check-proprietary-source\.sh$|\.meta$'
+# 4. dev-scripts/test-apks.sh — manual release smoke test: adb install/launch of
+#    the public app ID only. Allowed by exact path; a new dev script needs review.
+ALLOW_PATTERN='(^|/)(mainTemplate|launcherTemplate|baseProjectTemplate|settingsTemplate)\.gradle$|(^|/)gradleTemplate\.properties$|(^|/)scripts/check-proprietary-source\.sh$|^dev-scripts/test-apks\.sh$|\.meta$'
 
 # --- Combined deny regex for one fast first-pass grep ------------------------
 combined=""

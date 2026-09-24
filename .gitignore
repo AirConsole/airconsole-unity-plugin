@@ -3,11 +3,20 @@
 # =============== #
 Temp/
 /Library/
+/Library_*/
+/TestBuilds/
 Logs/
 Temp/
 UserSettings/
 AssetStoreTools/
 AssetStoreTools.*
+
+# ==================== #
+# AirConsole generated #
+# ==================== #
+
+/Assets/WebGLTemplates/**/[Cc]ontroller.html*
+
 
 # ===================================== #
 # Visual Studio / MonoDevelop generated #

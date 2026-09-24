@@ -11,6 +11,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Fixed
 
+- **Android:** WebView renderer process recovery: when the Android WebView render process is killed or crashes, the plugin automatically recreates the WebView, replays all configured state, and reloads the last URL.
 - **Android Automotive:** Steering wheel media buttons (skip, play/pause, etc.) now control the active media source (Bluetooth, radio) instead of being swallowed by the game while a native game is running.
 - **Android:** Platform overlay resizes correctly on Android TV
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
@@ -19,6 +20,7 @@ This includes security related updates like requiring fixed Unity versions and i
 
 ### Changed
 
+- **unity-webview:** Updated to v1.1.9.
 - **Android Support**: Better dependency handling through Gradle processor integration. Removal of included files where possible.
 - **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
 - **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
@@ -39,6 +41,7 @@ This includes security related updates like requiring fixed Unity versions and i
 ### Removed
 
 - **Android**: The android library no longer manages Audio Focus or overriding the usage from USAGE_GAME.
+- **unity-webview:** The unsupported iOS (`Plugins/iOS/*.mm`) and macOS (`Plugins/WebView.bundle`) native files were removed. unity-webview v1.1.9 no longer ships them.
 
 ## [2.6.1] - 2025-09-02
 
