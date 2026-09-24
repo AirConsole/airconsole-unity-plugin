@@ -2,6 +2,7 @@
 
 namespace NDream.Unity {
     #region Imports
+    using System;
     using System.Collections.Generic;
     using AirConsole;
     using System.Diagnostics;
@@ -24,8 +25,9 @@ namespace NDream.Unity {
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             ExportPackage(outputPath);
             DeleteOldUnityPackages(outputPath, Settings.VERSION);
+            StampChangelog();
 
-            AddPackageToGit();
+            AddToGit(PackageGlob, ChangelogPath);
 
             OpenPath(outputPath);
         }
@@ -44,7 +46,7 @@ namespace NDream.Unity {
             string outputPath =
                 Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}-rc{rcVersion}.unitypackage"));
             ExportPackage(outputPath);
-            AddPackageToGit();
+            AddToGit(PackageGlob);
             OpenPath(outputPath);
         }
 
@@ -170,10 +172,34 @@ namespace NDream.Unity {
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
 
-        private static void AddPackageToGit() {
+        private static string PackageGlob =>
+            Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"));
+
+        private static string ChangelogPath => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "CHANGELOG.md"));
+
+        /// <summary>
+        /// Renames the "## [Unreleased]" heading of CHANGELOG.md to "## [VERSION] - yyyy-MM-dd".
+        /// scripts/release.py reads that dated section as the release notes.
+        /// </summary>
+        private static void StampChangelog() {
+            string changelog = File.ReadAllText(ChangelogPath);
+            if (changelog.Contains($"## [{Settings.VERSION}]")) {
+                return;
+            }
+
+            Regex unreleased = new(@"^## \[Unreleased\]", RegexOptions.Multiline);
+            if (!unreleased.IsMatch(changelog)) {
+                AirConsoleLogger.LogError(() => $"CHANGELOG.md has no '## [Unreleased]' heading to release as {Settings.VERSION}.");
+                return;
+            }
+
+            File.WriteAllText(ChangelogPath, unreleased.Replace(changelog, $"## [{Settings.VERSION}] - {DateTime.Now:yyyy-MM-dd}", 1));
+        }
+
+        private static void AddToGit(params string[] paths) {
             ProcessStartInfo startInfo = new() {
                 FileName = "git",
-                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}"
+                Arguments = "add " + string.Join(" ", paths)
             };
             Process proc = new() {
                 StartInfo = startInfo
