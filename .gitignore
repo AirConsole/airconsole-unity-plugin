@@ -102,3 +102,6 @@ ai-setup-backup-*.tar.gz
 .compound-engineering/
 .sisyphus/
 .planning/
+
+# Python bytecode from scripts/
+__pycache__/

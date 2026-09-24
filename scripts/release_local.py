@@ -73,8 +73,8 @@ def main() -> None:
     dry_run = parser.parse_args().dry_run
 
     # Clean start: the release commits only Builds/ and CHANGELOG.md, and the reset below may only undo this run.
-    if git("status", "--porcelain"):
-        sys.exit("Commit or stash your changes first.")
+    if git("status", "--porcelain", "--untracked-files=no"):
+        sys.exit("Commit or stash your changes to tracked files first.")
     try:
         release(dry_run)
     finally:

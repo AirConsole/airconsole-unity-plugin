@@ -18,6 +18,8 @@ Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. It test-builds WebGL, exports the `.unitypackage`, dates `## [Unreleased]` as `## [{VERSION}] - yyyy-MM-dd`, validates the release notes, and uploads the package as a workflow artifact. It creates nothing.
 2. Run it again with `dry_run` off. It opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
 3. Merge the PR. The workflow then creates the `v{VERSION}` tag, the GitHub release with the package, and the Release Log sheet row.
+
+To run the same steps locally with your Unity editor (close the project in the Editor first): `scripts/release_local.py --dry-run` builds and validates, prints the branch, commit, push, PR, tag and release commands without running them, and resets the files the export changed. Without `--dry-run`, on `master`, it opens the release PR.
 4. Manual steps:
    - Unity Asset Store: make a draft of the current package, add the release notes and version, and upload the `.unitypackage` with the Asset Store Tools. In the additional information, write: "We include unity webgl templates because webgl games deployed to our platform require a specific setup."
    - AppEngine: accept the new plugin version.
