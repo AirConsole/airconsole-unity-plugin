@@ -49,7 +49,7 @@ namespace NDream.Unity {
         }
 
         private static void RemoveControllersFromWebGlTemplates() => Directory
-            .GetFiles(Path.Combine(Application.dataPath, "WebGlTemplates"), "controller.html", SearchOption.AllDirectories)
+            .GetFiles(Path.Combine(Application.dataPath, "WebGLTemplates"), "controller.html", SearchOption.AllDirectories)
             .ToList()
             .ForEach(File.Delete);
 
