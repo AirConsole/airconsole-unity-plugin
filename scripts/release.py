@@ -4,13 +4,14 @@
 Publish (default): create the GitHub release and tag v{VERSION} for HEAD with the
 committed .unitypackage and the CHANGELOG.md section as notes, then insert a row at
 the top of the year tab of the Release Log sheet.
---open-pr: commit the exported package and dated CHANGELOG to release/v{VERSION}
-and open the "Release v{VERSION}" PR.
+--open-pr: date the '## [Unreleased]' CHANGELOG section as '## [VERSION] - yyyy-MM-dd', commit it
+with the exported package to release/v{VERSION} and open the "Release v{VERSION}" PR.
 
 Usage:
-  scripts/release.py --dry-run             # validate and print the commands, change nothing
+  scripts/release.py --open-pr --dry-run   # preview the notes, sheet row and PR on master, change nothing (no Unity needed)
+  scripts/release.py --open-pr             # CI runs this after the Unity export
+  scripts/release.py --dry-run             # preview the tag, release, notes and sheet row, change nothing (works on master)
   scripts/release.py                       # needs `gh` auth and GOOGLE_ACCESS_TOKEN (CI runs this when the release PR merges)
-  scripts/release.py --open-pr [--dry-run]
   scripts/release.py --check               # fail when the tag or the release branch is already on origin
 """
 import argparse
@@ -55,8 +56,14 @@ def release_notes(changelog: str, version: str) -> str:
     )
     if not match:
         sys.exit(f"CHANGELOG.md has no '## [{version}] - yyyy-MM-dd' section. "
-                 "Keep the notes under '## [Unreleased]'; the Create Release export dates them.")
+                 "Keep the notes under '## [Unreleased]'; the release PR (scripts/release.py --open-pr) dates them.")
     return match.group(1).strip()
+
+
+def stamp_changelog(changelog: str, version: str, date: str) -> str:
+    """Date '## [Unreleased]' as '## [version] - date' and open a new, empty Unreleased section above it."""
+    return re.sub(r"^## \[Unreleased\]", f"## [Unreleased]\n\n### Added\n\n## [{version}] - {date}", changelog,
+                  count=1, flags=re.MULTILINE)
 
 
 def summary(notes: str, version: str) -> str:
@@ -65,6 +72,18 @@ def summary(notes: str, version: str) -> str:
     if not first or first.startswith(("#", "-", "*")):
         return f"Releasing v{version}"
     return " ".join(first.split())
+
+
+def sheet_values(version: str, notes: str, now: datetime, owner: str) -> list[str]:
+    """The Release Log row: date, module, tag, owner, summary, and a link formula to the GitHub release."""
+    tag = f"v{version}"
+    link = f'=HYPERLINK("{REPO_URL}/releases/tag/{tag}","{tag}")'
+    # ponytail: owner is a first name, not snapped to the sheet's Owner dropdown.
+    return [now.strftime("%d.%m"), MODULE, tag, owner.split(" ")[0], summary(notes, version), link]
+
+
+def last_commit_author() -> str:
+    return git("log", "-1", "--format=%an")
 
 
 def git(*args: str) -> str:
@@ -120,8 +139,8 @@ def check_unreleased() -> None:
         sys.exit(f"{tag} is already tagged on origin. Bump Settings.VERSION.")
     if git("ls-remote", "--heads", "origin", f"refs/heads/{release_branch(tag)}"):
         sys.exit(f"{release_branch(tag)} is already on origin. Open or merge its PR, or close it and delete the branch.")
-    # The export does not stamp over an existing [VERSION] section (for example an unreverted failed release
-    # merge), and entries added since then under Unreleased would miss the notes.
+    # --open-pr must not date a second [VERSION] section (for example after an unreverted failed release merge),
+    # and entries added since then under Unreleased would miss the notes.
     changelog = CHANGELOG.read_text()
     if f"## [{version}]" in changelog:
         sys.exit(f"CHANGELOG.md already has a [{version}] section. Move its notes under '## [Unreleased]', "
@@ -139,18 +158,33 @@ def package_path(tag: str) -> Path:
 
 
 def open_release_pr(dry_run: bool) -> None:
-    """Commit the exported package and dated CHANGELOG to release/v{VERSION} and open the release PR."""
+    """Date the CHANGELOG, commit it with the exported package to release/v{VERSION} and open the release PR."""
+    check_unreleased()
     version = read_version()
     tag = f"v{version}"
     branch = release_branch(tag)
-    body = (f"{release_notes(CHANGELOG.read_text(), version)}\n\n---\n"
+    now = datetime.now(TIMEZONE)
+    changelog = stamp_changelog(CHANGELOG.read_text(), version, now.strftime("%Y-%m-%d"))
+    notes = release_notes(changelog, version)
+    body = (f"{notes}\n\n---\n"
             f"Merging this PR creates the {tag} tag, the GitHub release and the Release Log sheet row.\n"
             f"If master changes, do not update this branch: close this PR, delete {branch}, and run Create Release again.")
     if os.environ.get("GITHUB_ACTIONS") == "true":
         body += ("\nThis PR was opened with the workflow token, so the required checks do not start by themselves: "
                  "close and reopen it to run them.")
     base = git("rev-parse", "HEAD")
+    package = package_path(tag).relative_to(ROOT)
+    missing = "" if package_path(tag).is_file() else " (missing: the Unity export creates it before this step)"
+    print(f"Release:  {tag} from {base}\nPackage:  {package}{missing}")
+    print(f"Sheet:    tab {now.year}: " + " | ".join(sheet_values(version, notes, now, last_commit_author())))
+    print("          The owner is whoever merges the release PR. This preview uses the last commit author.")
+    print(f"PR body:\n{body}\n")
+
     run(["git", "switch", "-C", branch], dry_run)
+    if dry_run:
+        print(f"would date '## [Unreleased]' in CHANGELOG.md as '## [{version}] - {now:%Y-%m-%d}'")
+    else:
+        CHANGELOG.write_text(changelog)
     # The glob also stages the deletion of the previous version's package, and no other file in Builds/.
     run(["git", "add", "-A", "--", "Builds/airconsole-unity-plugin-v*.unitypackage", "CHANGELOG.md"], dry_run)
     # The publish job checks this line against the commit the release PR merges onto.
@@ -173,22 +207,29 @@ def publish(dry_run: bool) -> None:
                  "add it by hand.")
 
     package = package_path(tag)
+    missing = ""
     if not package.is_file():
-        sys.exit(f"{package.relative_to(ROOT)} is missing. Run the Create Release workflow to export it.")
+        if not dry_run:
+            sys.exit(f"{package.relative_to(ROOT)} is missing. Run the Create Release workflow to export it.")
+        missing = " (missing: the Create Release export creates it)"
 
-    notes = release_notes(CHANGELOG.read_text(), version)
     now = datetime.now(TIMEZONE)
+    changelog = CHANGELOG.read_text()
+    # A dry run before the release PR (on master) previews the section as --open-pr will date it.
+    if dry_run and f"## [{version}]" not in changelog:
+        print("CHANGELOG.md is not dated yet. This preview dates '## [Unreleased]' as the release PR will.")
+        changelog = stamp_changelog(changelog, version, now.strftime("%Y-%m-%d"))
+    notes = release_notes(changelog, version)
     # CI passes the name of whoever merged the release PR; a squash merge commit may be authored by the bot.
-    owner = (os.environ.get("RELEASE_OWNER") or git("log", "-1", "--format=%an")).split(" ")[0]
+    values = sheet_values(version, notes, now, os.environ.get("RELEASE_OWNER") or last_commit_author())
+    row = [{"userEnteredValue": {"stringValue": value}} for value in values[:-1]]
+    row.append({"userEnteredValue": {"formulaValue": values[-1]}})
     release_url = f"{REPO_URL}/releases/tag/{tag}"
-    # ponytail: owner is the release commit author's first name, not snapped to the sheet's Owner dropdown.
-    values = [now.strftime("%d.%m"), MODULE, tag, owner, summary(notes, version)]
-    link = f'=HYPERLINK("{release_url}","{tag}")'
-    row = [{"userEnteredValue": {"stringValue": value}} for value in values]
-    row.append({"userEnteredValue": {"formulaValue": link}})
 
-    print(f"Release:  {tag} at {git('rev-parse', 'HEAD')}\nPackage:  {package.relative_to(ROOT)}")
-    print(f"Sheet:    tab {now.year}: " + " | ".join([*values, link]))
+    print(f"Release:  {tag} at {git('rev-parse', 'HEAD')}\nPackage:  {package.relative_to(ROOT)}{missing}")
+    print(f"Sheet:    tab {now.year}: " + " | ".join(values))
+    if not os.environ.get("RELEASE_OWNER"):
+        print("          The owner is whoever merges the release PR. This preview uses the last commit author.")
     print(f"Notes:\n{notes}\n")
 
     token = os.environ.get("GOOGLE_ACCESS_TOKEN")

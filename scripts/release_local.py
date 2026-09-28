@@ -2,12 +2,13 @@
 """Run the Create Release workflow locally with the installed Unity editor.
 
 Same steps as .github/workflows/create-release.yaml: WebGL test build, package
-export (dates the CHANGELOG section), validation, the release PR, and a preview
-of what merging that PR publishes (tag, GitHub release, Release Log row).
+export, validation, and the release PR (dates the CHANGELOG section) with a
+preview of the notes and the Release Log row that merging it publishes.
+For that preview alone, without Unity: scripts/release.py --open-pr --dry-run
 
 Usage:
-  scripts/release_local.py --dry-run   # build and validate; only print the branch, commit, push, PR,
-                                       # tag and release commands; then reset the files the export changed
+  scripts/release_local.py --dry-run   # build and validate; only print the branch, commit, push and PR
+                                       # commands; then reset the files the build and export changed
   scripts/release_local.py             # on master: also create release/v{VERSION}, commit, push and open the PR
 
 Close the project in the Unity Editor first. Set UNITY or AC_UNITY_BIN to use another editor binary.
@@ -18,9 +19,9 @@ import re
 import subprocess
 import sys
 
-from release import ROOT, check_unreleased, git, open_release_pr, package_path, publish, read_version
+from release import ROOT, check_unreleased, git, open_release_pr, package_path, read_version
 
-# The files the WebGL build and the package export change. The final reset touches only these.
+# The files the WebGL build, the package export and the release PR change. The final reset touches only these.
 EXPORT_PATHS = ["Builds", "CHANGELOG.md", "ProjectSettings", "Assets/WebGLTemplates"]
 
 
@@ -59,12 +60,9 @@ def release(dry_run: bool) -> None:
         sys.exit(f"Build validation failed for WebGL: TestBuilds/Web/{build}/index.html is missing")
 
     package_path(tag).unlink(missing_ok=True)  # a failed export must not pass on an older file
-    unity("NDream.Unity.Packager.Export", "-stampChangelog")
+    unity("NDream.Unity.Packager.Export")
     if not package_path(tag).is_file():
         sys.exit(f"Build validation of airconsole-unity-plugin-{tag} unitypackage failed")
-
-    print("\n== Release preview (runs in CI when the release PR is merged)")
-    publish(dry_run=True)
 
     print("\n== Release PR")
     open_release_pr(dry_run)
@@ -73,7 +71,7 @@ def release(dry_run: bool) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
-                        help="build and validate; print the commit, push, PR, tag and release commands")
+                        help="build and validate; print the branch, commit, push and PR commands")
     dry_run = parser.parse_args().dry_run
 
     # Clean start: the release commits only Builds/ and CHANGELOG.md, and the reset below may only undo this run.

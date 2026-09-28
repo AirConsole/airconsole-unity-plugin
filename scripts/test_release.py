@@ -1,7 +1,7 @@
 """Self-check for release.py changelog parsing. Run: python3 scripts/test_release.py"""
 import os
 
-from release import publish, read_version, release_notes, summary
+from release import publish, read_version, release_notes, stamp_changelog, summary
 
 CHANGELOG = """# Releases
 
@@ -35,6 +35,13 @@ try:
 except SystemExit:
     pass
 assert read_version()
+
+# --open-pr dates the Unreleased section and opens a new, empty one above it.
+stamped = stamp_changelog(CHANGELOG.replace("## [Unreleased]\n\n## [2.7.0] - 2026-10-01\n\n", "## [Unreleased]\n\n"),
+                          "2.7.0", "2026-10-02")
+assert stamped.startswith("# Releases\n\n## [Unreleased]\n\n### Added\n\n## [2.7.0] - 2026-10-02\n\nIntro"), stamped
+assert release_notes(stamped, "2.7.0") == notes
+assert release_notes(stamped, "2.6.2") == "### Fixed\n\n- Older fix"
 
 # Only release/v{Settings.VERSION} may publish; this check runs before any git or network call.
 os.environ["RELEASE_BRANCH"] = "release/v0-docs"
