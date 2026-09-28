@@ -2,9 +2,11 @@
 
 namespace NDream.Unity {
     #region Imports
+    using System;
     using System.Collections.Generic;
     using AirConsole;
     using System.Diagnostics;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text.RegularExpressions;
@@ -24,10 +26,19 @@ namespace NDream.Unity {
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             ExportPackage(outputPath);
             DeleteOldUnityPackages(outputPath, Settings.VERSION);
+            // Only the Create Release runs (CI and scripts/release_local.py) pass -stampChangelog. The menu and
+            // unity-stack.sh package make test exports, which must not date the CHANGELOG.
+            if (Environment.GetCommandLineArgs().Contains("-stampChangelog")) {
+                StampChangelog();
+            }
 
-            AddPackageToGit();
-
-            OpenPath(outputPath);
+            // Batch mode stages nothing: in CI and scripts/release_local.py, scripts/release.py stages the files, and
+            // unity-stack.sh package is a test export. git in the root-run Unity container could also leave
+            // root-owned objects in .git.
+            if (!Application.isBatchMode) {
+                AddPackageToGit();
+                OpenPath(outputPath);
+            }
         }
 
         [MenuItem("Tools/AirConsole/Package Plugin Release Candidate")]
@@ -49,7 +60,7 @@ namespace NDream.Unity {
         }
 
         private static void RemoveControllersFromWebGlTemplates() => Directory
-            .GetFiles(Path.Combine(Application.dataPath, "WebGlTemplates"), "controller.html", SearchOption.AllDirectories)
+            .GetFiles(Path.Combine(Application.dataPath, "WebGLTemplates"), "controller.html", SearchOption.AllDirectories)
             .ToList()
             .ForEach(File.Delete);
 
@@ -170,10 +181,34 @@ namespace NDream.Unity {
             Application.OpenURL("file://" + Path.GetDirectoryName(Path.Combine(Application.dataPath, "..", outputPath)));
         }
 
+        private static string ChangelogPath => Path.GetFullPath(Path.Combine(Application.dataPath, "..", "CHANGELOG.md"));
+
+        /// <summary>
+        /// Renames the "## [Unreleased]" heading of CHANGELOG.md to "## [VERSION] - yyyy-MM-dd" and adds a new, empty
+        /// "## [Unreleased]" section with "### Added" above it for the next version.
+        /// scripts/release.py reads the dated section as the release notes. Does nothing when a "## [VERSION]" heading
+        /// already exists; scripts/release.py --check rejects that case before the export.
+        /// </summary>
+        private static void StampChangelog() {
+            string changelog = File.ReadAllText(ChangelogPath);
+            if (changelog.Contains($"## [{Settings.VERSION}]")) {
+                return;
+            }
+
+            Regex unreleased = new(@"^## \[Unreleased\]", RegexOptions.Multiline);
+            if (!unreleased.IsMatch(changelog)) {
+                AirConsoleLogger.LogError(() => $"CHANGELOG.md has no '## [Unreleased]' heading to release as {Settings.VERSION}.");
+                return;
+            }
+
+            string released = $"## [Unreleased]\n\n### Added\n\n## [{Settings.VERSION}] - {DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)}";
+            File.WriteAllText(ChangelogPath, unreleased.Replace(changelog, released, 1));
+        }
+
         private static void AddPackageToGit() {
             ProcessStartInfo startInfo = new() {
                 FileName = "git",
-                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}"
+                Arguments = $"add \"{Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}\""
             };
             Process proc = new() {
                 StartInfo = startInfo
