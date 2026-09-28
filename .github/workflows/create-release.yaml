@@ -3,9 +3,9 @@ name: Create Release
 # Manual release of v{Settings.VERSION}:
 # 1. Run this workflow (workflow_dispatch). It test-builds WebGL, exports the .unitypackage,
 #    dates the CHANGELOG section and opens the "Release v{VERSION}" PR from release/v{VERSION}.
-#    With dry_run (default) it stops after the checks and uploads the package as an artifact.
+#    With dry_run (default) it uploads the package as an artifact and only previews the PR in the run summary.
 # 2. Merging that PR creates the tag, the GitHub release and the Release Log sheet row.
-# Local check of step 2: scripts/release.py --dry-run
+# Local preview of step 1 without Unity: scripts/release.py --open-pr --dry-run
 on:
   workflow_dispatch:
     inputs:
@@ -127,7 +127,6 @@ jobs:
       if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
       run: rm -f "Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
 
-    # Exports the .unitypackage and, with -stampChangelog, dates the CHANGELOG section.
     - name: Generate Release unity package
       if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
       uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4.8.2
@@ -139,7 +138,6 @@ jobs:
         unityVersion: ${{ matrix.unityVersion }}
         targetPlatform: ${{ matrix.platform }}
         buildMethod: NDream.Unity.Packager.Export
-        customParameters: -stampChangelog
         versioning: None
         allowDirtyBuild: true
 
@@ -151,8 +149,6 @@ jobs:
           echo "Build validation of airconsole-unity-plugin-v${{ env.version }} unitypackage failed"
           exit 1
         fi
-        # Checks the dated CHANGELOG section and prints the release notes and sheet row.
-        python3 scripts/release.py --dry-run
 
     - name: Upload release package
       if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
@@ -161,14 +157,20 @@ jobs:
         name: airconsole-unity-plugin-v${{ env.version }}
         path: Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage
 
+    # Dates the CHANGELOG section and opens the release PR. With dry_run it only prints them.
+    # The notes, the Release Log row and the PR go to the run summary.
     - name: Open release PR
-      if: ${{ !inputs.dry_run && matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION }}
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
       env:
         GH_TOKEN: ${{ github.token }}
+        DRY_RUN: ${{ inputs.dry_run }}
       run: |
+        set -o pipefail
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        python3 scripts/release.py --open-pr
+        args=(--open-pr)
+        if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+        { echo '```'; python3 -u scripts/release.py "${args[@]}"; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
 
   publish:
     if: >-
