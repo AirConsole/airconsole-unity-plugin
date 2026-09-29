@@ -6,6 +6,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+## [2.6.2] - 2026-09-29
+
 With version 2.6.2, we are targeting Android TV and Android Automotive related issues impacting or blocking game releases.
 This includes security related updates like requiring fixed Unity versions and increasing Android Target SDK version.
 
