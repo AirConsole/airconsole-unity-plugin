@@ -15,11 +15,11 @@ Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
 `VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs` already holds the next version (it is updated during development) and `CHANGELOG.md` has its `## [Unreleased]` section.
 
-1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. It test-builds WebGL, exports the `.unitypackage`, and uploads the package as a workflow artifact. The run summary shows the release notes (`## [Unreleased]` dated as `## [{VERSION}] - yyyy-MM-dd`), the Release Log row, and the release PR commands and body. It creates nothing.
+1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. It test-builds WebGL, exports the `.unitypackage`, and uploads the package as a workflow artifact. The run summary shows the release notes (`## [Unreleased]` dated as `## [{VERSION}] - yyyy-MM-dd`) and the release PR commands and body. It creates nothing.
 2. Run it again with `dry_run` off. It dates the CHANGELOG and opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
-3. Merge the PR. The workflow then creates the `v{VERSION}` tag, the GitHub release with the package, and the Release Log sheet row.
+3. Merge the PR. The workflow then creates the `v{VERSION}` tag and the GitHub release with the package.
 
-To preview the release without Unity, on `master`: `scripts/release.py --dry-run` prints the tag, the GitHub release command, the notes and the Release Log row, and `scripts/release.py --open-pr --dry-run` prints the release PR. Neither changes anything.
+To preview the release without Unity, on `master`: `scripts/release.py --dry-run` prints the tag, the GitHub release command and the notes, and `scripts/release.py --open-pr --dry-run` prints the release PR. Neither changes anything.
 
 To run the same steps locally with your Unity editor (close the project in the Editor first, and run `mise install` once for the Python 3.12 that CI uses): `scripts/release_local.py --dry-run` builds and validates, prints the branch, commit, push, PR, tag and release commands without running them, and resets the files the build and the export changed. Without `--dry-run`, on `master`, it opens the release PR.
 4. Manual steps:

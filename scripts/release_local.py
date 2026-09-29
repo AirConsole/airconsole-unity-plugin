@@ -3,7 +3,7 @@
 
 Same steps as .github/workflows/create-release.yaml: WebGL test build, package
 export, validation, and the release PR (dates the CHANGELOG section) with a
-preview of the notes and the Release Log row that merging it publishes.
+preview of the notes that merging it publishes.
 For that preview alone, without Unity: scripts/release.py --open-pr --dry-run
 
 Usage:
