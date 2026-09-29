@@ -4,7 +4,7 @@ name: Create Release
 # 1. Run this workflow (workflow_dispatch). It test-builds WebGL, exports the .unitypackage,
 #    dates the CHANGELOG section and opens the "Release v{VERSION}" PR from release/v{VERSION}.
 #    With dry_run (default) it uploads the package as an artifact and only previews the PR in the run summary.
-# 2. Merging that PR creates the tag, the GitHub release and the Release Log sheet row.
+# 2. Merging that PR creates the tag and the GitHub release.
 # Local preview of step 1 without Unity: scripts/release.py --open-pr --dry-run
 on:
   workflow_dispatch:
@@ -49,16 +49,6 @@ jobs:
       run: |
         echo "A release must run on master. Use dry_run to check another branch."
         exit 1
-
-    - name: The release needs the Release Log key
-      if: ${{ !inputs.dry_run }}
-      env:
-        RELEASE_LOG_SA_KEY: ${{ secrets.RELEASE_LOG_SA_KEY }}
-      run: |
-        if [ -z "$RELEASE_LOG_SA_KEY" ]; then
-          echo "The RELEASE_LOG_SA_KEY secret is not available to this repository. Give it access first."
-          exit 1
-        fi
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -158,7 +148,7 @@ jobs:
         path: Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage
 
     # Dates the CHANGELOG section and opens the release PR. With dry_run it only prints them.
-    # The notes, the Release Log row and the PR go to the run summary.
+    # The notes and the PR go to the run summary.
     - name: Open release PR
       if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
       env:
@@ -216,22 +206,7 @@ jobs:
             exit 1
           fi
 
-      - name: Auth to Google Sheets
-        id: auth
-        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2.1.13
-        with:
-          credentials_json: ${{ secrets.RELEASE_LOG_SA_KEY }}
-          create_credentials_file: false
-          export_environment_variables: false
-          token_format: access_token
-          access_token_scopes: https://www.googleapis.com/auth/spreadsheets
-
-      - name: Create GitHub Release and Release Log row
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-          GOOGLE_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
-          MERGED_BY: ${{ github.event.pull_request.merged_by.login }}
-        run: |
-          RELEASE_OWNER=$(gh api "users/$MERGED_BY" --jq '.name // .login')
-          export RELEASE_OWNER
-          python3 scripts/release.py
+        run: python3 scripts/release.py

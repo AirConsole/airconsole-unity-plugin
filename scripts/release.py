@@ -2,27 +2,24 @@
 """Release steps for the version in Settings.cs, shared by CI and scripts/release_local.py.
 
 Publish (default): create the GitHub release and tag v{VERSION} for HEAD with the
-committed .unitypackage and the CHANGELOG.md section as notes, then insert a row at
-the top of the year tab of the Release Log sheet.
+committed .unitypackage and the CHANGELOG.md section as notes.
 --open-pr: date the '## [Unreleased]' CHANGELOG section as '## [VERSION] - yyyy-MM-dd', commit it
 with the exported package to release/v{VERSION} and open the "Release v{VERSION}" PR.
 
 Usage:
-  scripts/release.py --open-pr --dry-run   # preview the notes, sheet row and PR on master, change nothing (no Unity needed)
+  scripts/release.py --open-pr --dry-run   # preview the notes and PR on master, change nothing (no Unity needed)
   scripts/release.py --open-pr             # CI runs this after the Unity export
-  scripts/release.py --dry-run             # preview the tag, release, notes and sheet row, change nothing (works on master)
-  scripts/release.py                       # needs `gh` auth and GOOGLE_ACCESS_TOKEN (CI runs this when the release PR merges)
+  scripts/release.py --dry-run             # preview the tag, release and notes, change nothing (works on master)
+  scripts/release.py                       # needs `gh` auth (CI runs this when the release PR merges)
   scripts/release.py --check               # fail when the tag or the release branch is already on origin
 """
 import argparse
-import json
 import os
 import re
 import shlex
 import subprocess
 import sys
 import tempfile
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -35,8 +32,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SETTINGS = ROOT / "Assets/AirConsole/scripts/Runtime/Settings.cs"
 CHANGELOG = ROOT / "CHANGELOG.md"
 REPO_URL = "https://github.com/AirConsole/airconsole-unity-plugin"
-SHEET_ID = "17Pf-JvrwkO03KmXkcHxd8CHg8_Q8vGyzR46Npz1JY0o"  # shared Release Log
-MODULE = "Unity plugin"
 TIMEZONE = ZoneInfo("Europe/Zurich")
 
 
@@ -66,52 +61,8 @@ def stamp_changelog(changelog: str, version: str, date: str) -> str:
                   count=1, flags=re.MULTILINE)
 
 
-def summary(notes: str, version: str) -> str:
-    """The intro paragraph of the notes, or a generic line when they start with a list or heading."""
-    first = notes.split("\n\n", 1)[0]
-    if not first or first.startswith(("#", "-", "*")):
-        return f"Releasing v{version}"
-    return " ".join(first.split())
-
-
-def sheet_values(version: str, notes: str, now: datetime, owner: str) -> list[str]:
-    """The Release Log row: date, module, tag, owner, summary, and a link formula to the GitHub release."""
-    tag = f"v{version}"
-    link = f'=HYPERLINK("{REPO_URL}/releases/tag/{tag}","{tag}")'
-    # ponytail: owner is a first name, not snapped to the sheet's Owner dropdown.
-    return [now.strftime("%d.%m"), MODULE, tag, owner.split(" ")[0], summary(notes, version), link]
-
-
-def last_commit_author() -> str:
-    return git("log", "-1", "--format=%an")
-
-
 def git(*args: str) -> str:
     return subprocess.run(["git", *args], cwd=ROOT, check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
-
-
-def sheets(token: str, path: str, body: dict | None = None) -> dict:
-    request = urllib.request.Request(
-        f"https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}{path}",
-        data=json.dumps(body).encode() if body is not None else None,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-    )
-    with urllib.request.urlopen(request) as response:
-        return json.load(response)
-
-
-def insert_sheet_row(token: str, year: str, row: list[dict]) -> None:
-    """Insert the row below the header of the year tab, as AirConsole/claude-plugins release-log.yml does."""
-    tabs = sheets(token, "?fields=sheets(properties(sheetId,title))")["sheets"]
-    tab_id = next((t["properties"]["sheetId"] for t in tabs if t["properties"]["title"] == year), None)
-    if tab_id is None:
-        sys.exit(f"Release Log sheet has no '{year}' tab. Create it, then add the row by hand.")
-    sheets(token, ":batchUpdate", {"requests": [
-        {"insertDimension": {"range": {"sheetId": tab_id, "dimension": "ROWS", "startIndex": 1, "endIndex": 2},
-                             "inheritFromBefore": False}},
-        {"updateCells": {"rows": [{"values": row}], "fields": "userEnteredValue",
-                         "start": {"sheetId": tab_id, "rowIndex": 1, "columnIndex": 0}}},
-    ]})
 
 
 def run(cmd: list[str], dry_run: bool) -> None:
@@ -167,7 +118,7 @@ def open_release_pr(dry_run: bool) -> None:
     changelog = stamp_changelog(CHANGELOG.read_text(), version, now.strftime("%Y-%m-%d"))
     notes = release_notes(changelog, version)
     body = (f"{notes}\n\n---\n"
-            f"Merging this PR creates the {tag} tag, the GitHub release and the Release Log sheet row.\n"
+            f"Merging this PR creates the {tag} tag and the GitHub release.\n"
             f"If master changes, do not update this branch: close this PR, delete {branch}, and run Create Release again.")
     if os.environ.get("GITHUB_ACTIONS") == "true":
         body += ("\nThis PR was opened with the workflow token, so the required checks do not start by themselves: "
@@ -176,8 +127,6 @@ def open_release_pr(dry_run: bool) -> None:
     package = package_path(tag).relative_to(ROOT)
     missing = "" if package_path(tag).is_file() else " (missing: the Unity export creates it before this step)"
     print(f"Release:  {tag} from {base}\nPackage:  {package}{missing}")
-    print(f"Sheet:    tab {now.year}: " + " | ".join(sheet_values(version, notes, now, last_commit_author())))
-    print("          The owner is whoever merges the release PR. This preview uses the last commit author.")
     print(f"PR body:\n{body}\n")
 
     run(["git", "switch", "-C", branch], dry_run)
@@ -195,7 +144,7 @@ def open_release_pr(dry_run: bool) -> None:
 
 
 def publish(dry_run: bool) -> None:
-    """Create the tag and GitHub release for HEAD and add the Release Log row."""
+    """Create the tag and GitHub release for HEAD."""
     version = read_version()
     tag = f"v{version}"
     branch = release_branch(tag)
@@ -203,8 +152,7 @@ def publish(dry_run: bool) -> None:
     if os.environ.get("RELEASE_BRANCH", branch) != branch:
         sys.exit(f"{os.environ['RELEASE_BRANCH']} is not {branch}. Nothing to release.")
     if tag_on_origin(tag):
-        sys.exit(f"{tag} is already tagged on origin. If the GitHub release or the Release Log row is missing, "
-                 "add it by hand.")
+        sys.exit(f"{tag} is already tagged on origin. If the GitHub release is missing, add it by hand.")
 
     package = package_path(tag)
     missing = ""
@@ -220,29 +168,15 @@ def publish(dry_run: bool) -> None:
         print("CHANGELOG.md is not dated yet. This preview dates '## [Unreleased]' as the release PR will.")
         changelog = stamp_changelog(changelog, version, now.strftime("%Y-%m-%d"))
     notes = release_notes(changelog, version)
-    # CI passes the name of whoever merged the release PR; a squash merge commit may be authored by the bot.
-    values = sheet_values(version, notes, now, os.environ.get("RELEASE_OWNER") or last_commit_author())
-    row = [{"userEnteredValue": {"stringValue": value}} for value in values[:-1]]
-    row.append({"userEnteredValue": {"formulaValue": values[-1]}})
-    release_url = f"{REPO_URL}/releases/tag/{tag}"
 
     print(f"Release:  {tag} at {git('rev-parse', 'HEAD')}\nPackage:  {package.relative_to(ROOT)}{missing}")
-    print(f"Sheet:    tab {now.year}: " + " | ".join(values))
-    if not os.environ.get("RELEASE_OWNER"):
-        print("          The owner is whoever merges the release PR. This preview uses the last commit author.")
     print(f"Notes:\n{notes}\n")
 
-    token = os.environ.get("GOOGLE_ACCESS_TOKEN")
-    if not dry_run and not token:
-        sys.exit("GOOGLE_ACCESS_TOKEN is not set. It is needed to write the Release Log row.")
     # `gh release create` also creates and pushes the tag on --target.
     run(["gh", "release", "create", tag, str(package.relative_to(ROOT)), "--title", f"Release {version}",
          "--notes-file", write_temp(notes), "--target", git("rev-parse", "HEAD")], dry_run)
-    if dry_run:
-        print(f"would add the Release Log row above to tab {now.year}")
-        return
-    insert_sheet_row(token, str(now.year), row)
-    print(f"Released {release_url} and logged it in the Release Log sheet.")
+    if not dry_run:
+        print(f"Released {REPO_URL}/releases/tag/{tag}")
 
 
 def main() -> None:
