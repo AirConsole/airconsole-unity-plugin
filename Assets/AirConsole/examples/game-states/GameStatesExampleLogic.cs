@@ -44,7 +44,13 @@
             AirConsole.instance.onResume += OnAirConsoleResume;
 
             // No device state can be set until AirConsole is ready, so I disable the buttons until then
+#if UNITY_6000_6_OR_NEWER
+            gameStateButtons = FindObjectsByType<Button>();
+#elif UNITY_6000_0_OR_NEWER
+            gameStateButtons = FindObjectsByType<Button>(FindObjectsSortMode.None);
+#else
             gameStateButtons = FindObjectsOfType<Button>();
+#endif
             foreach (Button t in gameStateButtons) {
                 t.interactable = false;
             }

@@ -81,7 +81,11 @@ namespace NDream.Unity {
 
             ClearConsole();
             SessionState.SetBool(IMPORT_PENDING_KEY, true);
+#if UNITY_6000_6_OR_NEWER
+            UnityEditor.AssetPackage.Package.Import(CodePackagePath, false);
+#else
             AssetDatabase.ImportPackage(CodePackagePath, false);
+#endif
         }
 
         // Keep this updater and the code package until the import has completed. An interrupted import runs again on the next load;

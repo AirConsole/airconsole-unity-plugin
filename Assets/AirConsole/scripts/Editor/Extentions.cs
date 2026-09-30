@@ -26,7 +26,7 @@ namespace NDream.AirConsole.Editor {
             } else {
                 EditorUtility.DisplayDialog("Already exists", "AirConsole object already exists in the current scene",
                     "ok");
-                EditorGUIUtility.PingObject(airConsole.GetInstanceID());
+                EditorGUIUtility.PingObject(airConsole);
             }
         }
 

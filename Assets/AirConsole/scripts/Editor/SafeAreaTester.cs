@@ -84,7 +84,12 @@ namespace NDream.AirConsole.Editor {
         private static void Ensure01FloatRange(FloatField field) {
             field.RegisterValueChangedCallback(evt => {
                 field.value = Mathf.Clamp01(evt.newValue);
+#if UNITY_6000_0_OR_NEWER
+                evt.StopPropagation();
+                field.focusController?.IgnoreEvent(evt);
+#else
                 evt.PreventDefault();
+#endif
             });
         }
 

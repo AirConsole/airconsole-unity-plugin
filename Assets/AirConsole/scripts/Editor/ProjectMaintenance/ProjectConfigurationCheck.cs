@@ -158,7 +158,11 @@ namespace NDream.AirConsole.Editor {
         private static void EnsureWebGLPlayerSettings() {
             VerifyWebGLTemplate();
 
+#if UNITY_6000_0_OR_NEWER
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.WebGL, ScriptingImplementation.IL2CPP);
+#else
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.WebGL, ScriptingImplementation.IL2CPP);
+#endif
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
             PlayerSettings.WebGL.nameFilesAsHashes
                 = false; // We upload into timestamp based folders. This is not necessary.
@@ -227,18 +231,30 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureAndroidPlayerSettings() {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+#if UNITY_6000_0_OR_NEWER
+            PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
+#else
             PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+#endif
             if (PlayerSettings.muteOtherAudioSources) {
                 AirConsoleLogger.Log(() =>
                     "AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
                 PlayerSettings.muteOtherAudioSources = false;
             }
 
+#if UNITY_6000_0_OR_NEWER
+            if (!PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android)) {
+#else
             if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
+#endif
                 AirConsoleLogger.LogWarning(() =>
                     "To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"
                     + "We are updating the Android settings now.");
+#if UNITY_6000_0_OR_NEWER
+                PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, true);
+#else
                 PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
+#endif
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
@@ -304,22 +320,43 @@ namespace NDream.AirConsole.Editor {
 
         private static void MaintainChallengingAndroidFeatures() {
             PlayerSettings.Android.ARCoreEnabled = false;
+#if UNITY_6000_0_OR_NEWER
+            // Unity 6 ignores androidTargetDevices and chromeosInputEmulation: ChromeOS is not supported.
+            PlayerSettings.Android.appCategory = "game";
+#else
             PlayerSettings.Android.androidTargetDevices = AndroidTargetDevices.PhonesTabletsAndTVDevicesOnly;
             PlayerSettings.Android.androidIsGame = true;
             PlayerSettings.Android.chromeosInputEmulation = false;
+#endif
 
 
             if (EditorPrefs.GetBool("customBuild", false) == true) {
                 PlayerSettings.Android.renderOutsideSafeArea = EditorPrefs.GetBool("renderOutsideSafeArea", false);
+#if UNITY_6000_0_OR_NEWER
+                PlayerSettings.Android.resizeableActivity = EditorPrefs.GetBool("resizableWindow", true);
+#else
                 PlayerSettings.Android.resizableWindow = EditorPrefs.GetBool("resizableWindow", true);
+#endif
                 PlayerSettings.Android.fullscreenMode = (FullScreenMode)EditorPrefs.GetInt("fullscreenMode", 1);
+#if UNITY_6000_6_OR_NEWER
+                if (EditorPrefs.GetBool("startInFullscreen", true)) {
+                    PlayerSettings.Android.requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
+                } else {
+                    PlayerSettings.Android.requestedVisibleInsets |= AndroidWindowInsetsType.NavigationBars;
+                }
+#else
                 PlayerSettings.Android.startInFullscreen = EditorPrefs.GetBool("startInFullscreen", true);
+#endif
             } else {
                 // This setting must be false. Otherwise the game will go full screen beyond the boundaries of the 3rd party safe area manager of BMW.
                 PlayerSettings.Android.renderOutsideSafeArea = false;
 
                 // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
+#if UNITY_6000_0_OR_NEWER
+                PlayerSettings.Android.resizeableActivity = true;
+#else
                 PlayerSettings.Android.resizableWindow = true;
+#endif
 
                 // Set fullscreenMode to FullScreenMode.FullScreenWindow
                 PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
@@ -327,7 +364,11 @@ namespace NDream.AirConsole.Editor {
                 // If we don't do this, the margin calculations for the webview will be wrong. The initial size when the webview is negatively
                 // impacted by the bottom bar that impacts the layout but is not visible.
                 // When the layout corrects, the webview does not resize.
+#if UNITY_6000_6_OR_NEWER
+                PlayerSettings.Android.requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
+#else
                 PlayerSettings.Android.startInFullscreen = true;
+#endif
             }
         }
 

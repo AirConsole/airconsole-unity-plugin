@@ -90,7 +90,12 @@ namespace NDream.Unity {
             string packagePath = PackageCode();
             AssetDatabase.Refresh();
             CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
+#if UNITY_6000_6_OR_NEWER
+            UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(
+                packageInclusionPaths.ToArray(), outputPath, "", ExportPackageOptions.Recurse));
+#else
             AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
+#endif
 
             CleanupCodePackage();
             
@@ -143,10 +148,18 @@ namespace NDream.Unity {
         private static string PackageCode() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
 
+#if UNITY_6000_6_OR_NEWER
+            UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(
+                new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
+                unityPackagePath,
+                "",
+                ExportPackageOptions.Recurse));
+#else
             AssetDatabase.ExportPackage(
                 new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
                 unityPackagePath,
                 ExportPackageOptions.Recurse);
+#endif
             return unityPackagePath.Replace(Application.dataPath, "Assets");
         }
 

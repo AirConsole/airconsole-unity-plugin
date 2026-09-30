@@ -46,7 +46,13 @@
             Time.timeScale = 1.0f;
 
             //Mark Buttons as Interactable as soon as AirConsole is ready
+#if UNITY_6000_6_OR_NEWER
+            Button[] allButtons = FindObjectsByType<Button>();
+#elif UNITY_6000_0_OR_NEWER
+            Button[] allButtons = FindObjectsByType<Button>(FindObjectsSortMode.None);
+#else
             Button[] allButtons = (Button[])FindObjectsOfType(typeof(Button));
+#endif
             foreach (Button button in allButtons) {
                 button.interactable = true;
             }
