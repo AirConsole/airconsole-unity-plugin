@@ -72,11 +72,19 @@
             int active_player = AirConsole.instance.ConvertDeviceIdToPlayerNumber(device_id);
             if (active_player != -1) {
                 if (active_player == 0) {
+#if UNITY_6000_0_OR_NEWER
+                    racketLeft.linearVelocity = Vector3.up * (float)data["move"];
+#else
                     racketLeft.velocity = Vector3.up * (float)data["move"];
+#endif
                 }
 
                 if (active_player == 1) {
+#if UNITY_6000_0_OR_NEWER
+                    racketRight.linearVelocity = Vector3.up * (float)data["move"];
+#else
                     racketRight.velocity = Vector3.up * (float)data["move"];
+#endif
                 }
             }
         }
@@ -166,8 +174,13 @@
             SetGameScreen(LOBBY);
             AirConsole.instance.SetActivePlayers(0);
             ResetBall(false);
+#if UNITY_6000_0_OR_NEWER
+            racketLeft.linearVelocity = Vector2.zero;
+            racketRight.linearVelocity = Vector2.zero;
+#else
             racketLeft.velocity = Vector2.zero;
             racketRight.velocity = Vector2.zero;
+#endif
             scoreRacketLeft = 0;
             scoreRacketRight = 0;
             CheckTwoPlayers();
@@ -180,9 +193,17 @@
             // push the ball in a random direction
             if (move) {
                 Vector3 startDir = new(Random.Range(-1, 1f), Random.Range(-0.1f, 0.1f), 0);
+#if UNITY_6000_0_OR_NEWER
+                ball.linearVelocity = startDir.normalized * ballSpeed;
+#else
                 ball.velocity = startDir.normalized * ballSpeed;
+#endif
             } else {
+#if UNITY_6000_0_OR_NEWER
+                ball.linearVelocity = Vector3.zero;
+#else
                 ball.velocity = Vector3.zero;
+#endif
             }
         }
 

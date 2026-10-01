@@ -18,7 +18,11 @@ namespace NDream.AirConsole.Examples {
                 }
 
                 Vector2 dir = new Vector2(hitDir, hitPos).normalized;
+#if UNITY_6000_0_OR_NEWER
+                col.gameObject.GetComponent<Rigidbody2D>().linearVelocity = dir * logic.ballSpeed;
+#else
                 col.gameObject.GetComponent<Rigidbody2D>().velocity = dir * logic.ballSpeed;
+#endif
             }
         }
     }
