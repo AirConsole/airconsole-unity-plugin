@@ -6,6 +6,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+## [2.6.3] - 2026-10-03
+
 ### Fixed
 
 - **Unity 6.6:** The plugin compiles in Unity 6000.6. On Unity 6 and newer, the plugin uses the replacement for each deprecated Unity API.
