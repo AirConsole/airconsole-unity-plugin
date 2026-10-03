@@ -6,8 +6,6 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-### Added
-
 ### Fixed
 
 - **Unity 6.6:** The plugin compiles in Unity 6000.6. On Unity 6 and newer, the plugin uses the replacement for each deprecated Unity API.
@@ -42,7 +40,8 @@ This includes security related updates like requiring fixed Unity versions and i
 - **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
 - **Editor:** The Android flow no longer initializes a native WebView inside the Editor. There is no Editor WebView implementation since unity-webview dropped macOS support, and on an Android build target the attempt failed with a JNI exception in `Start()`.
 - **Editor:** Project configuration checks index.html directly when validating API version usage. This prevents the index.html from becoming empty.
-- 
+-
+
 ### Removed
 
 - **unity-webview:** The unsupported iOS (`Plugins/iOS/*.mm`) and macOS (`Plugins/WebView.bundle`) native files were removed to focus energy on improved webview performance and resilience.

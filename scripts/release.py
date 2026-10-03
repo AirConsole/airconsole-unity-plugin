@@ -57,7 +57,7 @@ def release_notes(changelog: str, version: str) -> str:
 
 def stamp_changelog(changelog: str, version: str, date: str) -> str:
     """Date '## [Unreleased]' as '## [version] - date' and open a new, empty Unreleased section above it."""
-    return re.sub(r"^## \[Unreleased\]", f"## [Unreleased]\n\n### Added\n\n## [{version}] - {date}", changelog,
+    return re.sub(r"^## \[Unreleased\]", f"## [Unreleased]\n\n## [{version}] - {date}", changelog,
                   count=1, flags=re.MULTILINE)
 
 
@@ -110,9 +110,13 @@ def package_path(tag: str) -> Path:
 
 def open_release_pr(dry_run: bool) -> None:
     """Date the CHANGELOG, commit it with the exported package to release/v{VERSION} and open the release PR."""
-    check_unreleased()
     version = read_version()
     tag = f"v{version}"
+    package = package_path(tag).relative_to(ROOT)
+    missing = "" if package_path(tag).is_file() else " (missing: the Unity export creates it before this step)"
+    if missing and not dry_run:
+        sys.exit(f"{package} is missing. Run scripts/release_local.py or the Create Release workflow to export it.")
+    check_unreleased()
     branch = release_branch(tag)
     now = datetime.now(TIMEZONE)
     changelog = stamp_changelog(CHANGELOG.read_text(), version, now.strftime("%Y-%m-%d"))
@@ -124,8 +128,6 @@ def open_release_pr(dry_run: bool) -> None:
         body += ("\nThis PR was opened with the workflow token, so the required checks do not start by themselves: "
                  "close and reopen it to run them.")
     base = git("rev-parse", "HEAD")
-    package = package_path(tag).relative_to(ROOT)
-    missing = "" if package_path(tag).is_file() else " (missing: the Unity export creates it before this step)"
     print(f"Release:  {tag} from {base}\nPackage:  {package}{missing}")
     print(f"PR body:\n{body}\n")
 
