@@ -38,7 +38,7 @@ assert read_version()
 # --open-pr dates the Unreleased section and opens a new, empty one above it.
 stamped = stamp_changelog(CHANGELOG.replace("## [Unreleased]\n\n## [2.7.0] - 2026-10-01\n\n", "## [Unreleased]\n\n"),
                           "2.7.0", "2026-10-02")
-assert stamped.startswith("# Releases\n\n## [Unreleased]\n\n### Added\n\n## [2.7.0] - 2026-10-02\n\nIntro"), stamped
+assert stamped.startswith("# Releases\n\n## [Unreleased]\n\n## [2.7.0] - 2026-10-02\n\nIntro"), stamped
 assert release_notes(stamped, "2.7.0") == notes
 assert release_notes(stamped, "2.6.2") == "### Fixed\n\n- Older fix"
 

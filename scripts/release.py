@@ -57,7 +57,7 @@ def release_notes(changelog: str, version: str) -> str:
 
 def stamp_changelog(changelog: str, version: str, date: str) -> str:
     """Date '## [Unreleased]' as '## [version] - date' and open a new, empty Unreleased section above it."""
-    return re.sub(r"^## \[Unreleased\]", f"## [Unreleased]\n\n### Added\n\n## [{version}] - {date}", changelog,
+    return re.sub(r"^## \[Unreleased\]", f"## [Unreleased]\n\n## [{version}] - {date}", changelog,
                   count=1, flags=re.MULTILINE)
 
 
