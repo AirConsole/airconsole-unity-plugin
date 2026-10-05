@@ -286,6 +286,13 @@ App.prototype.initAirConsole = function() {
         });
     };
 
+    me.airconsole.onExitGamesAuth = function(ticket) {
+        me.postToUnity({
+            "action": "onExitGamesAuth",
+            "ticket": ticket
+        });
+    };
+
     me.airconsole.onPremium = function(device_id) {
         me.postToUnity({
             "action": "onPremium",
@@ -421,6 +428,8 @@ App.prototype.processUnityData = function (data) {
         this.airconsole.storeHighScore(data.level_name, data.level_version, data.score, data.uid, data.data, data.score_string);
     } else if (data.action == "requestPersistentData") {
         this.airconsole.requestPersistentData(data.uids);
+    } else if (data.action == "requestExitGamesAuth") {
+        this.airconsole.requestExitGamesAuth();
     } else if (data.action == "storePersistentData") {
         this.airconsole.storePersistentData(data.key, data.value, data.uid);
     } else if (data.action == "setImmersiveState") {
