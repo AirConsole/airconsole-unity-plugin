@@ -1,11 +1,11 @@
-﻿#if !DISABLE_AIRCONSOLE
+#if !DISABLE_AIRCONSOLE
 using UnityEngine;
 using System;
 
 namespace NDream.AirConsole {
     public static class Settings {
         public static readonly Version RequiredMinimumVersion = new(1, 12, 0);
-        public const string VERSION = "2.6.2";
+        public const string VERSION = "2.6.3";
 
         // ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
         public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";

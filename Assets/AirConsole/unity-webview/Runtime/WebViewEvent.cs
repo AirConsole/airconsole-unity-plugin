@@ -32,6 +32,8 @@ public class WebViewEvent
         KeyboardHeightChanged,
         /// <summary>File chooser permissions requested (RequestFileChooserPermissions).</summary>
         FileChooserPermissions,
+        /// <summary>Android render process gone (CallOnRenderProcessGone).</summary>
+        RenderProcessGone,
         /// <summary>Unknown or unrecognized event type.</summary>
         Unknown
     }
@@ -188,6 +190,16 @@ public class WebViewEvent
     }
 
     /// <summary>
+    /// Creates a renderer-death event.
+    /// </summary>
+    /// <param name="didCrash">String boolean reported by Android RenderProcessGoneDetail.didCrash().</param>
+    /// <returns>A new WebViewEvent of type RenderProcessGone.</returns>
+    public static WebViewEvent RenderProcessGone(string didCrash)
+    {
+        return new WebViewEvent(EventType.RenderProcessGone, didCrash);
+    }
+
+    /// <summary>
     /// Creates an event from a native bridge message string.
     /// Parses the "Type:Payload" format used by the Android bridge.
     /// </summary>
@@ -227,6 +239,8 @@ public class WebViewEvent
                 return KeyboardHeightChanged(payload);
             case "RequestFileChooserPermissions":
                 return FileChooserPermissions();
+            case "CallOnRenderProcessGone":
+                return RenderProcessGone(payload);
             default:
                 return new WebViewEvent(EventType.Unknown, message);
         }

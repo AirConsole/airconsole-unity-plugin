@@ -24,10 +24,13 @@ namespace NDream.Unity {
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             ExportPackage(outputPath);
             DeleteOldUnityPackages(outputPath, Settings.VERSION);
-
-            AddPackageToGit();
-
-            OpenPath(outputPath);
+            // Batch mode stages nothing: in CI and scripts/release_local.py, scripts/release.py stages the files, and
+            // unity-stack.sh package is a test export. git in the root-run Unity container could also leave
+            // root-owned objects in .git.
+            if (!Application.isBatchMode) {
+                AddPackageToGit();
+                OpenPath(outputPath);
+            }
         }
 
         [MenuItem("Tools/AirConsole/Package Plugin Release Candidate")]
@@ -49,7 +52,7 @@ namespace NDream.Unity {
         }
 
         private static void RemoveControllersFromWebGlTemplates() => Directory
-            .GetFiles(Path.Combine(Application.dataPath, "WebGlTemplates"), "controller.html", SearchOption.AllDirectories)
+            .GetFiles(Path.Combine(Application.dataPath, "WebGLTemplates"), "controller.html", SearchOption.AllDirectories)
             .ToList()
             .ForEach(File.Delete);
 
@@ -87,7 +90,12 @@ namespace NDream.Unity {
             string packagePath = PackageCode();
             AssetDatabase.Refresh();
             CollectPackageInclusionPaths(packagePath, out IEnumerable<string> packageInclusionPaths);
+#if UNITY_6000_6_OR_NEWER
+            UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(
+                packageInclusionPaths.ToArray(), outputPath, "", ExportPackageOptions.Recurse));
+#else
             AssetDatabase.ExportPackage(packageInclusionPaths.ToArray(), outputPath, ExportPackageOptions.Recurse);
+#endif
 
             CleanupCodePackage();
             
@@ -140,18 +148,37 @@ namespace NDream.Unity {
         private static string PackageCode() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
 
+#if UNITY_6000_6_OR_NEWER
+            UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(
+                new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
+                unityPackagePath,
+                "",
+                ExportPackageOptions.Recurse));
+#else
             AssetDatabase.ExportPackage(
                 new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
                 unityPackagePath,
                 ExportPackageOptions.Recurse);
+#endif
             return unityPackagePath.Replace(Application.dataPath, "Assets");
         }
 
         private static void CleanupCodePackage() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
 
-            if (File.Exists(unityPackagePath)) {
+            if (!File.Exists(unityPackagePath)) {
+                return;
+            }
+
+            // DeleteAsset, not File.Delete: PackageCode writes this package inside Assets/ and the
+            // following Refresh imports it, so Unity owns a .meta for it. File.Delete removes only
+            // the package and leaves airconsole-code.unitypackage.meta orphaned in the repository.
+            string assetPath = unityPackagePath.Replace(Application.dataPath, "Assets");
+            if (!AssetDatabase.DeleteAsset(assetPath)) {
                 File.Delete(unityPackagePath);
+                AirConsoleLogger.LogWarning(() =>
+                    $"Could not delete {assetPath} through the AssetDatabase; removed the file directly. "
+                    + "Check for a leftover .meta.");
             }
         }
 
@@ -162,7 +189,7 @@ namespace NDream.Unity {
         private static void AddPackageToGit() {
             ProcessStartInfo startInfo = new() {
                 FileName = "git",
-                Arguments = $"add {Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}"
+                Arguments = $"add \"{Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds", "airconsole-unity-plugin-v*"))}\""
             };
             Process proc = new() {
                 StartInfo = startInfo

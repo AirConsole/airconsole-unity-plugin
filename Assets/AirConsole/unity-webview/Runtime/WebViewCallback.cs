@@ -71,12 +71,30 @@ public class WebViewCallback : AndroidJavaProxy
     }
 
     /// <summary>
+    /// Called when Android reports the WebView render process is gone.
+    /// </summary>
+    // ReSharper disable once InconsistentNaming
+    public void onRenderProcessGone(string didCrash)
+    {
+        _webViewObject.CallOnRenderProcessGone(didCrash);
+    }
+
+    /// <summary>
     /// Called when a hooked URL pattern is matched.
     /// </summary>
     // ReSharper disable once InconsistentNaming
     public void onHooked(string url)
     {
         _webViewObject.CallOnHooked(url);
+    }
+
+    /// <summary>
+    /// Called when cookies are retrieved for a URL.
+    /// </summary>
+    // ReSharper disable once InconsistentNaming
+    public void onCookies(string cookies)
+    {
+        _webViewObject.CallOnCookies(cookies);
     }
 
     /// <summary>

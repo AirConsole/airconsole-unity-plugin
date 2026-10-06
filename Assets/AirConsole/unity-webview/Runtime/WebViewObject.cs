@@ -29,42 +29,30 @@ using System.Threading;
 #if UNITY_2018_4_OR_NEWER
 using UnityEngine.Networking;
 #endif
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-using System.IO;
-using System.Text.RegularExpressions;
-using UnityEngine.EventSystems;
-using UnityEngine.Rendering;
-using UnityEngine.UI;
-#endif
 #if UNITY_ANDROID
 using UnityEngine.Android;
 #endif
 
 using Callback = System.Action<string>;
 
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-/// <summary>
-/// Provides a Unity-compatible dispatcher that mimics <c>UnitySendMessage</c> behaviour in edit-time player builds.
-/// </summary>
-public class UnitySendMessageDispatcher
-{
-    /// <summary>
-    /// Invokes <paramref name="method"/> on the scene object named <paramref name="name"/> and forwards <paramref name="message"/>.
-    /// </summary>
-    /// <param name="name">Target GameObject name.</param>
-    /// <param name="method">Method to call on the GameObject.</param>
-    /// <param name="message">Message payload forwarded to the receiver.</param>
-    public static void Dispatch(string name, string method, string message) {
-        GameObject obj = GameObject.Find(name);
-        if (obj != null)
-            obj.SendMessage(method, message);
-    }
-}
-#endif
-
 /// <summary>
 /// High-level wrapper around the native unity-webview plugin, exposing platform-specific WebView features to Unity.
 /// </summary>
+/// <remarks>
+/// Supported platforms: Android (full) and WebGL (a subset: init, margins, visibility, load, evaluate, destroy).
+/// Every other target (Windows, Linux, macOS, and all editors) is an intentional no-op; methods that must return
+/// a value return a benign default. Per-method platform guards therefore use one shape: an Android arm, an
+/// optional `UNITY_WEBGL && !UNITY_EDITOR` arm where WebGL implements the call, and a trailing no-op `#else`.
+///
+/// Editor gating: Android state-caching setters (visibility, scrollbars, camera/microphone access, URL
+/// pattern, custom headers, basic auth, interaction, alert dialogs) run under `#if UNITY_ANDROID`
+/// INCLUDING the editor: each caches first, and the `webView == null` guard then makes only the native
+/// call a no-op. Two do not follow that shape -- SetMargins returns above its cache, and SetTextZoom is
+/// gated `#if UNITY_ANDROID && !UNITY_EDITOR` -- so the editor fills neither cache. None of that matters
+/// in the editor: Init never creates the view there, so webView is always null, and every reader of the
+/// cache (renderer-recovery replay, Update, SetKeyboardVisible) is device-only. Debugging, audio focus
+/// and cookies are gated `#if UNITY_ANDROID && !UNITY_EDITOR`.
+/// </remarks>
 public class WebViewObject : MonoBehaviour
 {
 #if UNITY_ANDROID
@@ -97,23 +85,44 @@ public class WebViewObject : MonoBehaviour
     float mMarginRightComputed;
     float mMarginBottomComputed;
     bool mMarginRelativeComputed;
-    /// <summary>
-    /// Optional canvas used by the macOS editor/player implementation to host background visuals behind the WebView.
-    /// </summary>
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-    public GameObject canvas;
-    Image bg;
-    IntPtr webView;
-    Rect rect;
-    Texture2D texture;
-    byte[] textureDataBuffer;
-    string inputString = "";
-    bool hasFocus;
-#elif UNITY_IPHONE
-    IntPtr webView;
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
     AndroidJavaObject webView;
 
+    bool mAndroidInitialized;
+    bool mAndroidTransparent;
+    bool mAndroidZoom = true;
+    string mAndroidUserAgent = "";
+    int mAndroidRadius;
+    int mAndroidForceDarkMode;
+    bool mDestroying;
+    bool mSuppressRenderProcessRecovery;
+    bool mRecoveringFromRenderProcessGone;
+    // Non-null while a renderer death is queued (suppressed during OnDisable/pause);
+    // doubles as the "pending" flag since didCrash is never null when queued.
+    string mPendingRenderProcessGoneDidCrash;
+    const int mAndroidRenderProcessGoneMaxReloadAttempts = 2;
+    string mLatestUrl;
+    int mAndroidRenderProcessGoneReloadAttempts;
+    bool mAndroidHasMargins;
+    bool mAndroidHasVisibility;
+    bool mAndroidDebuggingEnabled;
+    bool mAndroidHasScrollbarsVisibility;
+    bool mAndroidScrollbarsVisibility;
+    bool mAndroidInteractionEnabled = true;
+    bool mAndroidHasCameraAccess;
+    bool mAndroidCameraAccess;
+    bool mAndroidHasMicrophoneAccess;
+    bool mAndroidMicrophoneAccess;
+    bool mAndroidHasUrlPattern;
+    string mAndroidAllowPattern;
+    string mAndroidDenyPattern;
+    string mAndroidHookPattern;
+    readonly Dictionary<string, string> mAndroidCustomHeaders = new Dictionary<string, string>();
+    bool mAndroidHasBasicAuthInfo;
+    string mAndroidBasicAuthUserName;
+    string mAndroidBasicAuthPassword;
+    bool mAndroidHasTextZoom;
+    int mAndroidTextZoom = 100;
     bool mVisibility;
     int mKeyboardVisibleHeight;
     float mResumedTimestamp;
@@ -122,6 +131,149 @@ public class WebViewObject : MonoBehaviour
     float androidNetworkReachabilityCheckT0 = -1.0f;
     NetworkReachability? androidNetworkReachability0 = null;
 #endif
+
+    private void CreateAndroidWebView() {
+        webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
+#if UNITY_2021_1_OR_NEWER
+        webView.SetStatic<bool>("forceBringToFront", true);
+#endif
+        webView.Call("Init", name, mAndroidTransparent, mAndroidZoom, mAndroidForceDarkMode, mAndroidUserAgent, mAndroidRadius);
+        // Reassigning drops any previous proxy reference so its JNI global ref is
+        // released by the finalizer on GC. AndroidJavaProxy exposes no Dispose()
+        // on this Unity version, so dropping the managed reference is the only release.
+        callback = new (this);
+        webView.Call("SetCallback", callback);
+#if !UNITY_EDITOR
+        // Flush anything the native side queued before the callback was attached
+        // (the only window where Java falls back to its message queue). Once the
+        // callback is set it delivers every event directly, so there is no
+        // per-frame polling: draining here is a one-time catch-up.
+        DrainAndroidMessageQueue();
+#endif
+    }
+
+    private void RecoverFromRenderProcessGone(string didCrash) {
+        if (mDestroying || !mAndroidInitialized || mRecoveringFromRenderProcessGone) {
+            return;
+        }
+        if (mSuppressRenderProcessRecovery) {
+            // Coalesce to non-null: the field's non-null state is the "pending" flag.
+            mPendingRenderProcessGoneDidCrash = didCrash ?? "false";
+            return;
+        }
+
+        mRecoveringFromRenderProcessGone = true;
+        try {
+            if (webView != null) {
+                webView.Call("Destroy");
+                webView.Dispose();
+                webView = null;
+            }
+            CreateAndroidWebView();
+            ReplayAndroidStateAfterRecovery();
+            if (ShouldReloadAfterRenderProcessGone()) {
+                webView.Call("LoadURL", mLatestUrl);
+            } else {
+                Debug.LogWarning($"WebView render process gone (didCrash={didCrash}); automatic reload skipped.");
+            }
+        } catch (Exception ex) {
+            Debug.LogError($"WebView render process recovery failed: {ex}");
+            // Recreation failed, so webView is null and no further onRenderProcessGone
+            // can retrigger recovery. Mark the instance uninitialized so a later Init()
+            // rebuilds cleanly instead of every method silently no-opping forever.
+            mAndroidInitialized = false;
+        } finally {
+            mRecoveringFromRenderProcessGone = false;
+        }
+    }
+
+    private void ReplayAndroidStateAfterRecovery() {
+        if (webView == null) {
+            return;
+        }
+
+        // The recreated native WebView has no state. Re-apply everything the
+        // caller configured by re-invoking the PUBLIC setters with the values we
+        // already store, so the native call for each setting lives in exactly one
+        // place (the setter) and cannot drift from a duplicate replay copy. Only
+        // settings that were actually applied are replayed (the mAndroidHas*
+        // gates), matching the pre-recovery behaviour.
+
+        // SetMargins dedupes against the computed cache; clear it so the setter
+        // re-applies to the new native view instead of early-returning.
+        mMarginLeftComputed = mMarginTopComputed = mMarginRightComputed = mMarginBottomComputed = -9999;
+
+        if (mAndroidHasMargins) {
+            ReplayAndroidState("SetMargins", () => SetMargins(mMarginLeft, mMarginTop, mMarginRight, mMarginBottom, mMarginRelative));
+        }
+        if (mAndroidHasVisibility) {
+            ReplayAndroidState("SetVisibility", () => SetVisibility(mVisibility));
+        }
+        if (mAndroidDebuggingEnabled) {
+            ReplayAndroidState("EnableWebviewDebugging", () => EnableWebviewDebugging(true));
+        }
+        if (mAndroidHasScrollbarsVisibility) {
+            ReplayAndroidState("SetScrollbarsVisibility", () => SetScrollbarsVisibility(mAndroidScrollbarsVisibility));
+        }
+        ReplayAndroidState("SetInteractionEnabled", () => SetInteractionEnabled(mAndroidInteractionEnabled));
+        ReplayAndroidState("SetAlertDialogEnabled", () => SetAlertDialogEnabled(alertDialogEnabled));
+        if (mAndroidHasCameraAccess) {
+            ReplayAndroidState("SetCameraAccess", () => SetCameraAccess(mAndroidCameraAccess));
+        }
+        if (mAndroidHasMicrophoneAccess) {
+            ReplayAndroidState("SetMicrophoneAccess", () => SetMicrophoneAccess(mAndroidMicrophoneAccess));
+        }
+        if (mAndroidHasUrlPattern) {
+            ReplayAndroidState("SetURLPattern", () => SetURLPattern(mAndroidAllowPattern, mAndroidDenyPattern, mAndroidHookPattern));
+        }
+        // Snapshot the header map: AddCustomHeader writes back into it, so iterating
+        // the live dictionary would throw.
+        foreach (var header in new List<KeyValuePair<string, string>>(mAndroidCustomHeaders)) {
+            var entry = header;
+            ReplayAndroidState("AddCustomHeader", () => AddCustomHeader(entry.Key, entry.Value));
+        }
+        if (mAndroidHasBasicAuthInfo) {
+            ReplayAndroidState("SetBasicAuthInfo", () => SetBasicAuthInfo(mAndroidBasicAuthUserName, mAndroidBasicAuthPassword));
+        }
+        if (mAndroidHasTextZoom) {
+            ReplayAndroidState("SetTextZoom", () => SetTextZoom(mAndroidTextZoom));
+        }
+    }
+
+    private void ReplayAndroidState(string name, Action replay) {
+        try {
+            replay();
+        } catch (Exception ex) {
+            Debug.LogWarning($"WebView render process recovery could not replay {name}: {ex}");
+        }
+    }
+
+    private bool ShouldReloadAfterRenderProcessGone() {
+        if (string.IsNullOrEmpty(mLatestUrl)) {
+            return false;
+        }
+        // The attempt counter is reset on URL change (TrackLatestUrl) and on a
+        // successful load (CallOnLoaded), so it is always scoped to mLatestUrl here.
+        if (mAndroidRenderProcessGoneReloadAttempts >= mAndroidRenderProcessGoneMaxReloadAttempts) {
+            Debug.LogError($"WebView render process recovery stopped after {mAndroidRenderProcessGoneReloadAttempts} reload attempts for {mLatestUrl}.");
+            return false;
+        }
+        mAndroidRenderProcessGoneReloadAttempts++;
+        return true;
+    }
+
+    private void TrackLatestUrl(string url) {
+        if (!string.IsNullOrEmpty(url)) {
+            if (mLatestUrl != url) {
+                // NOTE: this makes the reload cap a per-*stable*-URL cap. A renderer
+                // that crashes right after an alternating redirect (A->B->A->...)
+                // changes the URL every cycle and so resets the budget each time,
+                // recovering indefinitely. Single-URL crash loops are still capped.
+                mAndroidRenderProcessGoneReloadAttempts = 0;
+            }
+            mLatestUrl = url;
+        }
+    }
 
     private void OnApplicationPause(bool paused) {
         // Temporarily disable pausing to ensure the event queue is processed
@@ -139,6 +291,7 @@ public class WebViewObject : MonoBehaviour
     /// Called when the component is disabled. Flushes any remaining events in the queue.
     /// </summary>
     private void OnDisable() {
+        mSuppressRenderProcessRecovery = true;
         // Flush remaining events before component destruction
         // Temporarily unpause to allow processing
         var wasPaused = paused;
@@ -147,10 +300,22 @@ public class WebViewObject : MonoBehaviour
         paused = wasPaused;
     }
 
+    private void OnEnable() {
+        if (!mDestroying) {
+            mSuppressRenderProcessRecovery = false;
+            if (mPendingRenderProcessGoneDidCrash != null) {
+                var didCrash = mPendingRenderProcessGoneDidCrash;
+                mPendingRenderProcessGoneDidCrash = null;
+                RecoverFromRenderProcessGone(didCrash);
+            }
+        }
+    }
+
     /// <summary>
     /// Called when the application is about to quit. Flushes any remaining events.
     /// </summary>
     void OnApplicationQuit() {
+        mSuppressRenderProcessRecovery = true;
         // Final flush before app closes
         var wasPaused = paused;
         paused = false;
@@ -181,6 +346,7 @@ public class WebViewObject : MonoBehaviour
         //
         if (paused)
             return;
+        ProcessEventQueue();
         if (webView == null)
             return;
 #if UNITYWEBVIEW_ANDROID_ENABLE_NAVIGATOR_ONLINE
@@ -203,7 +369,7 @@ public class WebViewObject : MonoBehaviour
             webView.Call("EvaluateJS", "(function() {var e = document.activeElement; if (e != null && e.tagName.toLowerCase() != 'body') {e.blur(); e.focus();}})()");
         }
 
-        // Process any events queued from background threads
+        // Process any events queued while native state was updated this frame.
         ProcessEventQueue();
     }
 
@@ -300,8 +466,6 @@ public class WebViewObject : MonoBehaviour
                 && (Screen.autorotateToPortrait || Screen.autorotateToPortraitUpsideDown));
 #endif
     }
-#else
-    IntPtr webView;
 #endif
 
     private void Awake() {
@@ -343,163 +507,13 @@ public class WebViewObject : MonoBehaviour
         {
 #if !UNITY_EDITOR && UNITY_ANDROID
             return mKeyboardVisibleHeight > 0;
-#elif !UNITY_EDITOR && UNITY_IPHONE
-            return TouchScreenKeyboard.visible;
 #else
             return false;
 #endif
         }
     }
 
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-    [DllImport("WebView")]
-    private static extern string _CWebViewPlugin_GetAppPath();
-    [DllImport("WebView")]
-    private static extern IntPtr _CWebViewPlugin_InitStatic(
-        bool inEditor, bool useMetal);
-    [DllImport("WebView")]
-    private static extern IntPtr _CWebViewPlugin_Init(
-        string gameObject, bool transparent, bool zoom, int width, int height, string ua, bool separated);
-    [DllImport("WebView")]
-    private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetRect(
-        IntPtr instance, int width, int height);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SetVisibility(
-        IntPtr instance, bool visibility);
-    [DllImport("WebView")]
-    private static extern bool _CWebViewPlugin_SetURLPattern(
-        IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_LoadURL(
-        IntPtr instance, string url);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_LoadHTML(
-        IntPtr instance, string html, string baseUrl);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_EvaluateJS(
-        IntPtr instance, string url);
-    [DllImport("WebView")]
-    private static extern int _CWebViewPlugin_Progress(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern bool _CWebViewPlugin_CanGoBack(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern bool _CWebViewPlugin_CanGoForward(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_GoBack(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_GoForward(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Reload(
-        IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SendMouseEvent(IntPtr instance, int x, int y, float deltaY, int mouseState);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SendKeyEvent(IntPtr instance, int x, int y, string keyChars, ushort keyCode, int keyState);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Update(IntPtr instance, bool refreshBitmap, int devicePixelRatio);
-    [DllImport("WebView")]
-    private static extern int _CWebViewPlugin_BitmapWidth(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern int _CWebViewPlugin_BitmapHeight(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_Render(IntPtr instance, IntPtr textureBuffer);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
-    [DllImport("WebView")]
-    private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_ClearCookies();
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_SaveCookies();
-    [DllImport("WebView")]
-    private static extern void _CWebViewPlugin_GetCookies(IntPtr instance, string url);
-    [DllImport("WebView")]
-    private static extern string _CWebViewPlugin_GetMessage(IntPtr instance);
-#elif UNITY_IPHONE
-    [DllImport("__Internal")]
-    private static extern IntPtr _CWebViewPlugin_Init(string gameObject, bool transparent, bool zoom, string ua, bool enableWKWebView, int wkContentMode, bool wkAllowsLinkPreview, bool wkAllowsBackForwardNavigationGestures, int radius);
-    [DllImport("__Internal")]
-    private static extern int _CWebViewPlugin_Destroy(IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetMargins(
-        IntPtr instance, float left, float top, float right, float bottom, bool relative);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetVisibility(
-        IntPtr instance, bool visibility);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetScrollbarsVisibility(
-        IntPtr instance, bool visibility);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetAlertDialogEnabled(
-        IntPtr instance, bool enabled);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetScrollBounceEnabled(
-        IntPtr instance, bool enabled);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetInteractionEnabled(
-        IntPtr instance, bool enabled);
-    [DllImport("__Internal")]
-    private static extern bool _CWebViewPlugin_SetURLPattern(
-        IntPtr instance, string allowPattern, string denyPattern, string hookPattern);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_LoadURL(
-        IntPtr instance, string url);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_LoadHTML(
-        IntPtr instance, string html, string baseUrl);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_EvaluateJS(
-        IntPtr instance, string url);
-    [DllImport("__Internal")]
-    private static extern int _CWebViewPlugin_Progress(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern bool _CWebViewPlugin_CanGoBack(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern bool _CWebViewPlugin_CanGoForward(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_GoBack(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_GoForward(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_Reload(
-        IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_AddCustomHeader(IntPtr instance, string headerKey, string headerValue);
-    [DllImport("__Internal")]
-    private static extern string _CWebViewPlugin_GetCustomHeaderValue(IntPtr instance, string headerKey);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_RemoveCustomHeader(IntPtr instance, string headerKey);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_ClearCustomHeader(IntPtr instance);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_ClearCookies();
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SaveCookies();
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_GetCookies(IntPtr instance, string url);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetBasicAuthInfo(IntPtr instance, string userName, string password);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_ClearCache(IntPtr instance, bool includeDiskFiles);
-    [DllImport("__Internal")]
-    private static extern void _CWebViewPlugin_SetSuspended(IntPtr instance, bool suspended);
-#elif UNITY_WEBGL
+#if UNITY_WEBGL
     [DllImport("__Internal")]
     private static extern void _gree_unity_webview_init(string name);
     [DllImport("__Internal")]
@@ -517,9 +531,14 @@ public class WebViewObject : MonoBehaviour
     /// <summary>
     /// Determines whether the current platform exposes a compatible WebView implementation.
     /// </summary>
-    /// <returns><c>true</c> when the underlying native plugin can be instantiated; otherwise <c>false</c>.</returns>
+    /// <returns><c>true</c> when the underlying native plugin can be instantiated; otherwise <c>false</c>.
+    /// Always <c>false</c> in the Unity Editor, where Init leaves the object headless.</returns>
     public static bool IsWebViewAvailable() {
-#if !UNITY_EDITOR && UNITY_ANDROID
+#if UNITY_EDITOR
+        // Init never creates a view in the editor, so reporting availability here would hand the
+        // caller a headless object that never fires onLoaded.
+        return false;
+#elif UNITY_ANDROID
         using (var plugin = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin")) {
             return plugin.CallStatic<bool>("IsWebViewAvailable");
         }
@@ -543,12 +562,6 @@ public class WebViewObject : MonoBehaviour
     /// <param name="ua">Optional custom user agent string.</param>
     /// <param name="radius">Rounded corner radius (Android only).</param>
     /// <param name="androidForceDarkMode">Android dark-mode override (0 = system, 1 = off, 2 = on).</param>
-    /// <param name="enableWKWebView">Switches between WKWebView and UIWebView on iOS.</param>
-    /// <param name="wkContentMode">iOS content mode (0 = recommended, 1 = mobile, 2 = desktop).</param>
-    /// <param name="wkAllowsLinkPreview">Enables iOS link preview gestures.</param>
-    /// <param name="wkAllowsBackForwardNavigationGestures">Enables iOS swipe navigation gestures.</param>
-    /// <param name="separated">Creates a separate native window in the Unity editor.</param>
-    /// <param name="audioFocusChanged">Receives Android audio focus transition events.</param>
     public void Init(
         Callback cb = null,
         Callback err = null,
@@ -562,19 +575,7 @@ public class WebViewObject : MonoBehaviour
         string ua = "",
         int radius = 0,
         // android
-        int androidForceDarkMode = 0,  // 0: follow system setting, 1: force dark off, 2: force dark on
-        // ios
-        bool enableWKWebView = true,
-        int  wkContentMode = 0,  // 0: recommended, 1: mobile, 2: desktop
-        bool wkAllowsLinkPreview = true,
-        bool wkAllowsBackForwardNavigationGestures = true,
-        // editor
-        bool separated = false) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        _CWebViewPlugin_InitStatic(
-            Application.platform == RuntimePlatform.OSXEditor,
-            SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal);
-#endif
+        int androidForceDarkMode = 0) {  // 0: follow system setting, 1: force dark off, 2: force dark on
         onJS = cb;
         onError = err;
         onHttpError = httpErr;
@@ -585,86 +586,75 @@ public class WebViewObject : MonoBehaviour
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_init(name);
-#endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.init", name);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        Debug.LogError("Webview is not supported on this platform.");
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        {
-            var uri = new Uri(_CWebViewPlugin_GetAppPath());
-            var info = File.ReadAllText(uri.LocalPath + "Contents/Info.plist");
-            if (Regex.IsMatch(info, @"<key>CFBundleGetInfoString</key>\s*<string>Unity version [5-9]\.[3-9]")
-                && !Regex.IsMatch(info, @"<key>NSAppTransportSecurity</key>\s*<dict>\s*<key>NSAllowsArbitraryLoads</key>\s*<true/>\s*</dict>")) {
-                Debug.LogWarning("<color=yellow>WebViewObject: NSAppTransportSecurity isn't configured to allow HTTP. If you need to allow any HTTP access, please shutdown Unity and invoke:</color>\n/usr/libexec/PlistBuddy -c \"Add NSAppTransportSecurity:NSAllowsArbitraryLoads bool true\" /Applications/Unity/Unity.app/Contents/Info.plist");
-            }
-        }
-#if UNITY_EDITOR_OSX
-        // if (string.IsNullOrEmpty(ua)) {
-        //     ua = @"Mozilla/5.0 (iPhone; CPU iPhone OS 7_1_2 like Mac OS X) AppleWebKit/537.51.2 (KHTML, like Gecko) Version/7.0 Mobile/11D257 Safari/9537.53";
-        // }
-#endif
-        webView = _CWebViewPlugin_Init(
-            name,
-            transparent,
-            zoom,
-            Screen.width,
-            Screen.height,
-            ua
-#if UNITY_EDITOR
-            , separated
 #else
-            , false
+        Debug.LogWarning(EditorHeadlessMessage());
 #endif
-            );
-        rect = new Rect(0, 0, Screen.width, Screen.height);
-#elif UNITY_IPHONE
-        webView = _CWebViewPlugin_Init(name, transparent, zoom, ua, enableWKWebView, wkContentMode, wkAllowsLinkPreview, wkAllowsBackForwardNavigationGestures, radius);
 #elif UNITY_ANDROID
-        webView = new AndroidJavaObject("net.gree.unitywebview.CWebViewPlugin");
-#if UNITY_2021_1_OR_NEWER
-        webView.SetStatic<bool>("forceBringToFront", true);
-#endif
-        webView.Call("Init", name, transparent, zoom, androidForceDarkMode, ua, radius);
-
-        // Set up direct callback for zero-delay event delivery
-        callback = new (this);
-        webView.Call("SetCallback", callback);
+        mDestroying = false;
+        mSuppressRenderProcessRecovery = false;
+        // Clear any recovery state carried over from a prior Init on a reused
+        // instance, so a queued (suppressed) renderer death can't later replay
+        // against the freshly created view and reload a stale URL.
+        mPendingRenderProcessGoneDidCrash = null;
+        mLatestUrl = null;
+        mAndroidRenderProcessGoneReloadAttempts = 0;
+        mAndroidTransparent = transparent;
+        mAndroidZoom = zoom;
+        mAndroidForceDarkMode = androidForceDarkMode;
+        mAndroidUserAgent = ua;
+        mAndroidRadius = radius;
+#if !UNITY_EDITOR
+        CreateAndroidWebView();
+        // Written after construction, not before it: should CreateAndroidWebView throw, the flag
+        // stays false and renderer recovery cannot run against the half-built view. The later write
+        // loses nothing: a dead renderer reaches C# either through the callback attached inside
+        // CreateAndroidWebView or through the native fallback queue drained there, and neither runs
+        // recovery inline, because the native side reports from the Android UI thread rather than
+        // Unity's, so both paths enqueue and ProcessEventQueue dispatches them from Update.
+        mAndroidInitialized = true;
 #else
-        Debug.LogError("Webview is not supported on this platform.");
+        Debug.LogWarning(EditorHeadlessMessage());
+#endif
+#else
+#if UNITY_EDITOR
+        Debug.LogWarning(EditorHeadlessMessage());
+#else
+        // Name the platform: "this platform" alone cannot be acted on from a log.
+        Debug.LogError($"Webview is not supported on this platform ({Application.platform}).");
+#endif
 #endif
     }
+
+#if UNITY_EDITOR
+    // The Editor has had no WebView since 1.1.8 removed the macOS bundle, and an Editor on an
+    // Android build target has no JVM for the Java plugin, so Init leaves the object headless:
+    // every native call is a no-op behind `webView == null`, and mAndroidInitialized stays false
+    // so renderer recovery never runs. Application.platform names the host (OSXEditor), not the
+    // build target that decides support, so the message reports the active build target instead.
+    // It is a warning, not an error, because an unexpected error log fails a Unity test run.
+    private static string EditorHeadlessMessage() {
+        return "No WebView is available in the Unity Editor (active build target: "
+            + $"{UnityEditor.EditorUserBuildSettings.activeBuildTarget}); "
+            + "WebViewObject stays headless and every native call is a no-op.";
+    }
+#endif
 
     private void OnDestroy() {
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_destroy(name);
 #endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.destroy", name);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        if (bg != null) {
-            Destroy(bg.gameObject);
-        }
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_Destroy(webView);
-        webView = IntPtr.Zero;
-        Destroy(texture);
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_Destroy(webView);
-        webView = IntPtr.Zero;
 #elif UNITY_ANDROID
+        mDestroying = true;
+        mSuppressRenderProcessRecovery = true;
         if (webView == null)
             return;
         webView.Call("Destroy");
         webView.Dispose();
         webView = null;
+        // AndroidJavaProxy has no Dispose() here; drop the reference so GC can
+        // finalize it and release its JNI global ref.
+        callback = null;
 #endif
     }
 
@@ -672,18 +662,7 @@ public class WebViewObject : MonoBehaviour
     /// Pauses WebView timers and rendering to match Unity's lifecycle.
     /// </summary>
     public void Pause() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        //TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        // NOTE: this suspends media playback only.
-        if (webView == null)
-            return;
-        _CWebViewPlugin_SetSuspended(webView, true);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("Pause");
@@ -694,16 +673,7 @@ public class WebViewObject : MonoBehaviour
     /// Resumes WebView timers previously paused via <see cref="Pause"/>.
     /// </summary>
     public void Resume() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        //TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        // NOTE: this resumes media playback only.
-        _CWebViewPlugin_SetSuspended(webView, false);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("Resume");
@@ -716,9 +686,7 @@ public class WebViewObject : MonoBehaviour
     /// <param name="center">Desired centre position in screen pixels (historically anchored to lower-left).</param>
     /// <param name="scale">Desired width and height of the WebView in pixels.</param>
     public void SetCenterPositionWithScale(Vector2 center, Vector2 scale) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
+#if UNITY_WEBGL
         //TODO: UNSUPPORTED
 #else
         float left = (Screen.width - scale.x) / 2.0f + center.x;
@@ -738,19 +706,14 @@ public class WebViewObject : MonoBehaviour
     /// <param name="bottom">Bottom margin in pixels or percentage.</param>
     /// <param name="relative">When <c>true</c>, margins are interpreted as percentages of the screen size.</param>
     public void SetMargins(int left, int top, int right, int bottom, bool relative = false) {
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return;
-#elif UNITY_WEBPLAYER || UNITY_WEBGL
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        if (webView == IntPtr.Zero)
-            return;
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
+#elif UNITY_WEBGL
+        // WebGL supports margins; fall through to the shared computation.
+#else
+        // Unsupported on this platform (Windows/Linux/macOS/editor).
+        return;
 #endif
 
         mMarginLeft = left;
@@ -758,35 +721,15 @@ public class WebViewObject : MonoBehaviour
         mMarginRight = right;
         mMarginBottom = bottom;
         mMarginRelative = relative;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        mAndroidHasMargins = true;
+#endif
         float ml, mt, mr, mb;
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_WEBPLAYER || UNITY_WEBGL
+#if UNITY_WEBGL
         ml = left;
         mt = top;
         mr = right;
         mb = bottom;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        ml = left;
-        mt = top;
-        mr = right;
-        mb = bottom;
-#elif UNITY_IPHONE
-        if (relative) {
-            float w = (float)Screen.width;
-            float h = (float)Screen.height;
-            ml = left / w;
-            mt = top / h;
-            mr = right / w;
-            mb = bottom / h;
-        }
-        else
-        {
-            ml = left;
-            mt = top;
-            mr = right;
-            mb = bottom;
-        }
 #elif UNITY_ANDROID
         if (relative) {
             float w = (float)Screen.width;
@@ -832,20 +775,8 @@ public class WebViewObject : MonoBehaviour
         mMarginBottomComputed = mb;
         mMarginRelativeComputed = r;
 
-#if UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.setMargins", name, (int)ml, (int)mt, (int)mr, (int)mb);
-#elif UNITY_WEBGL && !UNITY_EDITOR
+#if UNITY_WEBGL && !UNITY_EDITOR
         _gree_unity_webview_setMargins(name, (int)ml, (int)mt, (int)mr, (int)mb);
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        int width = (int)(Screen.width - (ml + mr));
-        int height = (int)(Screen.height - (mb + mt));
-        _CWebViewPlugin_SetRect(webView, width, height);
-        rect = new Rect(left, bottom, width, height);
-        UpdateBGTransform();
-#elif UNITY_IPHONE
-        _CWebViewPlugin_SetMargins(webView, ml, mt, mr, mb, r);
 #elif UNITY_ANDROID
         webView.Call("SetMargins", (int)ml, (int)mt, (int)mr, (int)mb);
 #endif
@@ -856,11 +787,6 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="v"><c>true</c> to make the WebView visible; otherwise <c>false</c>.</param>
     public void SetVisibility(bool v) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        if (bg != null) {
-            bg.gameObject.SetActive(v);
-        }
-#endif
         if (GetVisibility() && !v) {
             EvaluateJS("if (document && document.activeElement) document.activeElement.blur();");
         }
@@ -868,23 +794,11 @@ public class WebViewObject : MonoBehaviour
 #if !UNITY_EDITOR
         _gree_unity_webview_setVisibility(name, v);
 #endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.setVisibility", name, v);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetVisibility(webView, v);
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetVisibility(webView, v);
 #elif UNITY_ANDROID
-        if (webView == null)
-            return;
         mVisibility = v;
-        webView.Call("SetVisibility", v);
+        mAndroidHasVisibility = true;
+        if (webView != null)
+            webView.Call("SetVisibility", v);
 #endif
         visibility = v;
     }
@@ -901,13 +815,9 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="v"><c>true</c> to show scroll bars; otherwise <c>false</c>.</param>
     public void SetScrollbarsVisibility(bool v) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetScrollbarsVisibility(webView, v);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidHasScrollbarsVisibility = true;
+        mAndroidScrollbarsVisibility = v;
         if (webView == null)
             return;
         webView.Call("SetScrollbarsVisibility", v);
@@ -922,6 +832,7 @@ public class WebViewObject : MonoBehaviour
     /// <param name="enabled">Whether debugging should be enabled.</param>
     public void EnableWebviewDebugging(bool enabled) {
 #if UNITY_ANDROID && !UNITY_EDITOR
+        mAndroidDebuggingEnabled = enabled;
         if (webView == null) {
             return;
         }
@@ -937,13 +848,8 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="enabled">Whether touch input is forwarded to the WebView.</param>
     public void SetInteractionEnabled(bool enabled) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetInteractionEnabled(webView, enabled);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidInteractionEnabled = enabled;
         if (webView == null)
             return;
         webView.Call("SetInteractionEnabled", enabled);
@@ -957,20 +863,14 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="e"><c>true</c> to allow dialogs; otherwise <c>false</c>.</param>
     public void SetAlertDialogEnabled(bool e) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetAlertDialogEnabled(webView, e);
-#elif UNITY_ANDROID
+        alertDialogEnabled = e;
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("SetAlertDialogEnabled", e);
 #else
         // TODO: UNSUPPORTED
 #endif
-        alertDialogEnabled = e;
     }
 
     /// <summary>
@@ -985,17 +885,7 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="e"><c>true</c> to enable bouncing, otherwise <c>false</c>.</param>
     public void SetScrollBounceEnabled(bool e) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetScrollBounceEnabled(webView, e);
-#elif UNITY_ANDROID
-        // TODO: UNSUPPORTED
-#else
-        // TODO: UNSUPPORTED
-#endif
+        // TODO: UNSUPPORTED on all platforms
         scrollBounceEnabled = e;
     }
 
@@ -1011,11 +901,9 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="allowed">Whether the WebView should expose camera capture to web content.</param>
     public void SetCameraAccess(bool allowed) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        // TODO: UNSUPPORTED
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidHasCameraAccess = true;
+        mAndroidCameraAccess = allowed;
         if (webView == null)
             return;
         webView.Call("SetCameraAccess", allowed);
@@ -1029,11 +917,9 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="allowed">Whether the WebView should expose microphone capture to web content.</param>
     public void SetMicrophoneAccess(bool allowed) {
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        // TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        // TODO: UNSUPPORTED
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidHasMicrophoneAccess = true;
+        mAndroidMicrophoneAccess = allowed;
         if (webView == null)
             return;
         webView.Call("SetMicrophoneAccess", allowed);
@@ -1072,20 +958,17 @@ public class WebViewObject : MonoBehaviour
     /// <param name="hookPattern">Regex pattern that triggers hook callbacks.</param>
     /// <returns><c>true</c> if the operation is supported on the current platform.</returns>
     public bool SetURLPattern(string allowPattern, string denyPattern, string hookPattern) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return false;
-        return _CWebViewPlugin_SetURLPattern(webView, allowPattern, denyPattern, hookPattern);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidHasUrlPattern = true;
+        mAndroidAllowPattern = allowPattern;
+        mAndroidDenyPattern = denyPattern;
+        mAndroidHookPattern = hookPattern;
         if (webView == null)
             return false;
         return webView.Call<bool>("SetURLPattern", allowPattern, denyPattern, hookPattern);
+#else
+        // Unsupported on this platform (WebGL/Windows/Linux/macOS/editor).
+        return false;
 #endif
     }
 
@@ -1096,47 +979,17 @@ public class WebViewObject : MonoBehaviour
     public void LoadURL(string url) {
         if (string.IsNullOrEmpty(url))
             return;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        TrackLatestUrl(url);
+#endif
 #if UNITY_WEBGL
 #if !UNITY_EDITOR
         _gree_unity_webview_loadURL(name, url);
 #endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.loadURL", name, url);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_LoadURL(webView, url);
 #elif UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("LoadURL", url);
-#endif
-    }
-
-    /// <summary>
-    /// Loads raw HTML content into the WebView.
-    /// </summary>
-    /// <param name="html">HTML markup to display.</param>
-    /// <param name="baseUrl">Base URL used for resolving relative paths.</param>
-    public void LoadHTML(string html, string baseUrl) {
-        if (string.IsNullOrEmpty(html))
-            return;
-        if (string.IsNullOrEmpty(baseUrl))
-            baseUrl = "";
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_LoadHTML(webView, html, baseUrl);
-#elif UNITY_ANDROID
-        if (webView == null)
-            return;
-        webView.Call("LoadHTML", html, baseUrl);
 #endif
     }
 
@@ -1149,14 +1002,6 @@ public class WebViewObject : MonoBehaviour
 #if !UNITY_EDITOR
         _gree_unity_webview_evaluateJS(name, js);
 #endif
-#elif UNITY_WEBPLAYER
-        Application.ExternalCall("unityWebView.evaluateJS", name, js);
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_EvaluateJS(webView, js);
 #elif UNITY_ANDROID
         if (webView == null)
             return;
@@ -1168,20 +1013,13 @@ public class WebViewObject : MonoBehaviour
     /// Returns the current navigation progress percentage where supported.
     /// </summary>
     public int Progress() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-        return 0;
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return 0;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return 0;
-        return _CWebViewPlugin_Progress(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return 0;
         return webView.Get<int>("progress");
+#else
+        // Unsupported on this platform (WebGL/Windows/Linux/macOS/editor).
+        return 0;
 #endif
     }
 
@@ -1189,20 +1027,13 @@ public class WebViewObject : MonoBehaviour
     /// Returns whether the WebView has a previous page in its navigation history.
     /// </summary>
     public bool CanGoBack() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return false;
-        return _CWebViewPlugin_CanGoBack(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return false;
         return webView.Get<bool>("canGoBack");
+#else
+        // Unsupported on this platform (WebGL/Windows/Linux/macOS/editor).
+        return false;
 #endif
     }
 
@@ -1210,20 +1041,13 @@ public class WebViewObject : MonoBehaviour
     /// Returns whether the WebView can navigate forward in its history stack.
     /// </summary>
     public bool CanGoForward() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return false;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return false;
-        return _CWebViewPlugin_CanGoForward(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return false;
         return webView.Get<bool>("canGoForward");
+#else
+        // Unsupported on this platform (WebGL/Windows/Linux/macOS/editor).
+        return false;
 #endif
     }
 
@@ -1231,15 +1055,7 @@ public class WebViewObject : MonoBehaviour
     /// Navigates to the previous entry in the WebView history if available.
     /// </summary>
     public void GoBack() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_GoBack(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("GoBack");
@@ -1250,15 +1066,7 @@ public class WebViewObject : MonoBehaviour
     /// Navigates to the next entry in the WebView history if available.
     /// </summary>
     public void GoForward() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_GoForward(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("GoForward");
@@ -1269,15 +1077,7 @@ public class WebViewObject : MonoBehaviour
     /// Reloads the current WebView page.
     /// </summary>
     public void Reload() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_Reload(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return;
         webView.Call("Reload");
@@ -1318,6 +1118,32 @@ public class WebViewObject : MonoBehaviour
         }
     }
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+    // One-time catch-up drain of the native fallback queue, called right after the
+    // callback is attached (see CreateAndroidWebView). Not called per frame: the
+    // callback delivers events directly, so steady-state polling would just marshal
+    // null every frame.
+    private void DrainAndroidMessageQueue() {
+        if (webView == null) {
+            return;
+        }
+
+        for (;;) {
+            string message;
+            try {
+                message = webView.Call<string>("GetMessage");
+            } catch (Exception ex) {
+                Debug.LogWarning($"WebView message queue drain failed: {ex}");
+                break;
+            }
+            if (message == null) {
+                break;
+            }
+            EnqueueEvent(message);
+        }
+    }
+#endif
+
     /// <summary>
     /// Dispatches a single event to the appropriate callback.
     /// </summary>
@@ -1354,6 +1180,11 @@ public class WebViewObject : MonoBehaviour
             case WebViewEvent.EventType.FileChooserPermissions:
                 RequestFileChooserPermissions();
                 break;
+#if UNITY_ANDROID
+            case WebViewEvent.EventType.RenderProcessGone:
+                CallOnRenderProcessGone(evt.Payload);
+                break;
+#endif
             case WebViewEvent.EventType.Unknown:
                 Debug.LogWarning($"Unknown WebView event received: {evt.Payload}");
                 break;
@@ -1431,6 +1262,9 @@ public class WebViewObject : MonoBehaviour
             EnqueueEvent(WebViewEvent.Started(url));
             return;
         }
+#if UNITY_ANDROID && !UNITY_EDITOR
+        TrackLatestUrl(url);
+#endif
         if (onStarted != null) {
             onStarted(url);
         }
@@ -1446,9 +1280,31 @@ public class WebViewObject : MonoBehaviour
             EnqueueEvent(WebViewEvent.Loaded(url));
             return;
         }
+#if UNITY_ANDROID && !UNITY_EDITOR
+        TrackLatestUrl(url);
+        // A completed load proves the current URL is viable again, so refresh the
+        // renderer-recovery reload budget. Without this the per-URL attempt cap is
+        // never reset on success, and transient renderer deaths spread across a long
+        // session permanently stop recovering the same URL.
+        mAndroidRenderProcessGoneReloadAttempts = 0;
+#endif
         if (onLoaded != null) {
             onLoaded(url);
         }
+    }
+
+    /// <summary>
+    /// Handles Android WebView renderer death and recreates the native WebView on the Unity main thread.
+    /// </summary>
+    /// <param name="didCrash">String boolean from Android RenderProcessGoneDetail.didCrash().</param>
+    public void CallOnRenderProcessGone(string didCrash) {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (!IsMainThread()) {
+            EnqueueEvent(WebViewEvent.RenderProcessGone(didCrash));
+            return;
+        }
+        RecoverFromRenderProcessGone(didCrash);
+#endif
     }
 
     /// <summary>
@@ -1638,15 +1494,10 @@ public class WebViewObject : MonoBehaviour
     /// <param name="headerKey">HTTP header key.</param>
     /// <param name="headerValue">Header value.</param>
     public void AddCustomHeader(string headerKey, string headerValue) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_AddCustomHeader(webView, headerKey, headerValue);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        if (!string.IsNullOrEmpty(headerKey)) {
+            mAndroidCustomHeaders[headerKey] = headerValue;
+        }
         if (webView == null)
             return;
         webView.Call("AddCustomHeader", headerKey, headerValue);
@@ -1659,20 +1510,13 @@ public class WebViewObject : MonoBehaviour
     /// <param name="headerKey">HTTP header key to query.</param>
     /// <returns>The stored header value or <c>null</c> if none is found.</returns>
     public string GetCustomHeaderValue(string headerKey) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-        return null;
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-        return null;
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return null;
-        return _CWebViewPlugin_GetCustomHeaderValue(webView, headerKey);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
         if (webView == null)
             return null;
         return webView.Call<string>("GetCustomHeaderValue", headerKey);
+#else
+        // Unsupported on this platform (WebGL/Windows/Linux/macOS/editor).
+        return null;
 #endif
     }
 
@@ -1681,13 +1525,10 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="headerKey">HTTP header key to remove.</param>
     public void RemoveCustomHeader(string headerKey) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_RemoveCustomHeader(webView, headerKey);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        if (!string.IsNullOrEmpty(headerKey)) {
+            mAndroidCustomHeaders.Remove(headerKey);
+        }
         if (webView == null)
             return;
         webView.Call("RemoveCustomHeader", headerKey);
@@ -1698,15 +1539,8 @@ public class WebViewObject : MonoBehaviour
     /// Clears all previously added custom headers.
     /// </summary>
     public void ClearCustomHeader() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_ClearCustomHeader(webView);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidCustomHeaders.Clear();
         if (webView == null)
             return;
         webView.Call("ClearCustomHeader");
@@ -1717,61 +1551,33 @@ public class WebViewObject : MonoBehaviour
     /// Deletes persistent WebView cookies where supported.
     /// </summary>
     public void ClearCookies() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_ClearCookies();
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("ClearCookies");
 #endif
     }
 
-
     /// <summary>
     /// Flushes the in-memory cookie store to disk.
     /// </summary>
     public void SaveCookies() {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SaveCookies();
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("SaveCookies");
 #endif
     }
 
-
     /// <summary>
     /// Requests the cookie string for a given URL. Result is returned via <see cref="CallOnCookies"/>.
     /// </summary>
     /// <param name="url">URL whose cookies should be retrieved.</param>
     public void GetCookies(string url) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_GetCookies(webView, url);
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("GetCookies", url);
-#else
-        //TODO: UNSUPPORTED
 #endif
     }
 
@@ -1781,17 +1587,10 @@ public class WebViewObject : MonoBehaviour
     /// <param name="userName">HTTP basic auth user name.</param>
     /// <param name="password">HTTP basic auth password.</param>
     public void SetBasicAuthInfo(string userName, string password) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-        //TODO: UNSUPPORTED
-#elif UNITY_IPHONE
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_SetBasicAuthInfo(webView, userName, password);
-#elif UNITY_ANDROID
+#if UNITY_ANDROID
+        mAndroidHasBasicAuthInfo = true;
+        mAndroidBasicAuthUserName = userName;
+        mAndroidBasicAuthPassword = password;
         if (webView == null)
             return;
         webView.Call("SetBasicAuthInfo", userName, password);
@@ -1803,204 +1602,25 @@ public class WebViewObject : MonoBehaviour
     /// </summary>
     /// <param name="includeDiskFiles">When <c>true</c>, disk cache entries are also removed.</param>
     public void ClearCache(bool includeDiskFiles) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_IPHONE && !UNITY_EDITOR
-        if (webView == IntPtr.Zero)
-            return;
-        _CWebViewPlugin_ClearCache(webView, includeDiskFiles);
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
         if (webView == null)
             return;
         webView.Call("ClearCache", includeDiskFiles);
 #endif
     }
 
-
     /// <summary>
     /// Adjusts the Android text zoom scaling factor (100 is default size).
     /// </summary>
     /// <param name="textZoom">Text zoom percentage.</param>
     public void SetTextZoom(int textZoom) {
-#if UNITY_WEBPLAYER || UNITY_WEBGL
-        //TODO: UNSUPPORTED
-#elif UNITY_EDITOR_WIN || UNITY_STANDALONE_WIN || UNITY_EDITOR_LINUX
-        //TODO: UNSUPPORTED
-#elif UNITY_IPHONE && !UNITY_EDITOR
-        //TODO: UNSUPPORTED
-#elif UNITY_ANDROID && !UNITY_EDITOR
+#if UNITY_ANDROID && !UNITY_EDITOR
+        mAndroidHasTextZoom = true;
+        mAndroidTextZoom = textZoom;
         if (webView == null)
             return;
         webView.Call("SetTextZoom", textZoom);
 #endif
     }
 
-#if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
-    void OnApplicationFocus(bool focus) {
-        if (!focus) {
-            hasFocus = false;
-        }
-    }
-
-    void Start() {
-        if (canvas != null) {
-            var g = new GameObject(gameObject.name + "BG");
-            g.transform.parent = canvas.transform;
-            bg = g.AddComponent<Image>();
-            UpdateBGTransform();
-        }
-    }
-
-    void Update() {
-        if (bg != null) {
-            bg.transform.SetAsLastSibling();
-        }
-        if (hasFocus) {
-            inputString += Input.inputString;
-        }
-        for (;;) {
-            if (webView == IntPtr.Zero)
-                break;
-            string s = _CWebViewPlugin_GetMessage(webView);
-            if (s == null)
-                break;
-            var i = s.IndexOf(':', 0);
-            if (i == -1)
-                continue;
-            switch (s.Substring(0, i)) {
-            case "CallFromJS":
-                CallFromJS(s.Substring(i + 1));
-                break;
-            case "CallOnError":
-                CallOnError(s.Substring(i + 1));
-                break;
-            case "CallOnHttpError":
-                CallOnHttpError(s.Substring(i + 1));
-                break;
-            case "CallOnLoaded":
-                CallOnLoaded(s.Substring(i + 1));
-                break;
-            case "CallOnStarted":
-                CallOnStarted(s.Substring(i + 1));
-                break;
-            case "CallOnHooked":
-                CallOnHooked(s.Substring(i + 1));
-                break;
-            case "CallOnCookies":
-                CallOnCookies(s.Substring(i + 1));
-                break;
-            }
-        }
-
-        // Process any events queued from background threads
-        ProcessEventQueue();
-
-        if (webView == IntPtr.Zero || !visibility)
-            return;
-        bool refreshBitmap = (Time.frameCount % bitmapRefreshCycle == 0);
-        _CWebViewPlugin_Update(webView, refreshBitmap, devicePixelRatio);
-        if (refreshBitmap) {
-            {
-                var w = _CWebViewPlugin_BitmapWidth(webView);
-                var h = _CWebViewPlugin_BitmapHeight(webView);
-                if (texture == null || texture.width != w || texture.height != h) {
-                    bool isLinearSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
-                    texture = new Texture2D(w, h, TextureFormat.RGBA32, false, !isLinearSpace);
-                    texture.filterMode = FilterMode.Bilinear;
-                    texture.wrapMode = TextureWrapMode.Clamp;
-                    textureDataBuffer = new byte[w * h * 4];
-                }
-            }
-            if (textureDataBuffer.Length > 0) {
-                var gch = GCHandle.Alloc(textureDataBuffer, GCHandleType.Pinned);
-                _CWebViewPlugin_Render(webView, gch.AddrOfPinnedObject());
-                gch.Free();
-                texture.LoadRawTextureData(textureDataBuffer);
-                texture.Apply();
-            }
-        }
-    }
-
-    void UpdateBGTransform() {
-        if (bg != null) {
-            bg.rectTransform.anchorMin = Vector2.zero;
-            bg.rectTransform.anchorMax = Vector2.zero;
-            bg.rectTransform.pivot = Vector2.zero;
-            bg.rectTransform.position = rect.min;
-            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, rect.size.x);
-            bg.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, rect.size.y);
-        }
-    }
-
-    /// <summary>
-    /// Frame interval between offscreen bitmap refreshes for the macOS implementation.
-    /// </summary>
-    public int bitmapRefreshCycle = 1;
-
-    /// <summary>
-    /// Device pixel ratio passed to the native renderer when updating the texture.
-    /// </summary>
-    public int devicePixelRatio = 1;
-
-    void OnGUI() {
-        if (webView == IntPtr.Zero || !visibility)
-            return;
-        switch (Event.current.type) {
-        case EventType.MouseDown:
-        case EventType.MouseUp:
-            hasFocus = rect.Contains(Input.mousePosition);
-            break;
-        }
-        switch (Event.current.type) {
-        case EventType.MouseMove:
-        case EventType.MouseDown:
-        case EventType.MouseDrag:
-        case EventType.MouseUp:
-        case EventType.ScrollWheel:
-            if (hasFocus) {
-                Vector3 p;
-                p.x = Input.mousePosition.x - rect.x;
-                p.y = Input.mousePosition.y - rect.y;
-                {
-                    int mouseState = 0;
-                    if (Input.GetButtonDown("Fire1")) {
-                        mouseState = 1;
-                    } else if (Input.GetButton("Fire1")) {
-                        mouseState = 2;
-                    } else if (Input.GetButtonUp("Fire1")) {
-                        mouseState = 3;
-                    }
-                    //_CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.GetAxis("Mouse ScrollWheel"), mouseState);
-                    _CWebViewPlugin_SendMouseEvent(webView, (int)p.x, (int)p.y, Input.mouseScrollDelta.y, mouseState);
-                }
-            }
-            break;
-        case EventType.Repaint:
-            while (!string.IsNullOrEmpty(inputString)) {
-                var keyChars = inputString.Substring(0, 1);
-                var keyCode = (ushort)inputString[0];
-                inputString = inputString.Substring(1);
-                if (!string.IsNullOrEmpty(keyChars) || keyCode != 0) {
-                    Vector3 p;
-                    p.x = Input.mousePosition.x - rect.x;
-                    p.y = Input.mousePosition.y - rect.y;
-                    _CWebViewPlugin_SendKeyEvent(webView, (int)p.x, (int)p.y, keyChars, keyCode, 1);
-                }
-            }
-            if (texture != null) {
-                Matrix4x4 m = GUI.matrix;
-                GUI.matrix
-                    = Matrix4x4.TRS(
-                        new Vector3(0, Screen.height, 0),
-                        Quaternion.identity,
-                        new Vector3(1, -1, 1));
-                Graphics.DrawTexture(rect, texture);
-                GUI.matrix = m;
-            }
-            break;
-        }
-    }
-#endif
 }

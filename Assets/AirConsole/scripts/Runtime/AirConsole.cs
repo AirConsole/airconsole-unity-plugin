@@ -1374,8 +1374,10 @@ namespace NDream.AirConsole {
         public static T ACFindObjectOfType<T>() where T : UnityEngine.Object {
 #if !UNITY_6000_0_OR_NEWER
             return FindObjectOfType<T>();
-#else
+#elif !UNITY_6000_6_OR_NEWER
             return FindFirstObjectByType<T>();
+#else
+            return FindAnyObjectByType<T>();
 #endif
         }
         #endregion
@@ -2527,7 +2529,14 @@ namespace NDream.AirConsole {
                 return;
             }
 
+#if UNITY_6000_6_OR_NEWER
+            UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsByType<UnityEngine.UI.CanvasScaler>();
+#elif UNITY_6000_0_OR_NEWER
+            UnityEngine.UI.CanvasScaler[] allCanvasScalers
+                = FindObjectsByType<UnityEngine.UI.CanvasScaler>(FindObjectsSortMode.None);
+#else
             UnityEngine.UI.CanvasScaler[] allCanvasScalers = FindObjectsOfType<UnityEngine.UI.CanvasScaler>();
+#endif
 
             for (int i = 0; i < allCanvasScalers.Length; ++i) {
                 if (fixedCanvasScalers.Contains(allCanvasScalers[i])) {

@@ -1,36 +1,70 @@
 name: Create Release
+
+# Manual release of v{Settings.VERSION}:
+# 1. Run this workflow (workflow_dispatch). It test-builds WebGL, exports the .unitypackage,
+#    dates the CHANGELOG section and opens the "Release v{VERSION}" PR from release/v{VERSION}.
+#    With dry_run (default) it uploads the package as an artifact and only previews the PR in the run summary.
+# 2. Merging that PR creates the tag and the GitHub release.
+# Local preview of step 1 without Unity: scripts/release.py --open-pr --dry-run
 on:
   workflow_dispatch:
-    branches:
-      - master
+    inputs:
+      dry_run:
+        description: Build and validate only. No branch, commit, PR, tag or release.
+        type: boolean
+        default: true
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+env:
+  # The editor version that exports the release .unitypackage.
+  PACKAGE_UNITY_VERSION: 2022.3.62f3
 
 jobs:
   build:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    # Per job, so the pull_request runs of other PRs, whose jobs are skipped, never cancel a pending publish.
+    concurrency:
+      group: create-release-build
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
     strategy:
       fail-fast: false
       max-parallel: 1
       matrix:
         unityVersion:
-          - 2022.3.62f1
+          - 2022.3.62f3
           # - 6000.0.50f1
         platform:
           - WebGL
           # - Android
 
     steps:
+    - name: Only master can be released
+      if: ${{ !inputs.dry_run && github.ref != 'refs/heads/master' }}
+      run: |
+        echo "A release must run on master. Use dry_run to check another branch."
+        exit 1
+
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        lfs: true
+
+    - uses: actions/setup-python@v7
+      with:
+        python-version-file: .tool-versions
 
     - name: Extract Version from C# File
       id: extract_version
       run: |
-        version=$(grep -oP 'public const string VERSION = "\K[^"]+' Assets/AirConsole/scripts/Runtime/Settings.cs)
+        version=$(grep -oP 'public const string VERSION = "\K[0-9]+\.[0-9]+\.[0-9]+(?=")' Assets/AirConsole/scripts/Runtime/Settings.cs | head -1)
         echo "Extracted version: $version"
-        echo "version=$version" >> $GITHUB_ENV
+        echo "version=$version" >> "$GITHUB_ENV"
 
     - name: Validate Version
       run: |
@@ -39,108 +73,140 @@ jobs:
           exit 1
         fi
 
-    - name: Check GitHub Releases
-      id: check_release
+    - name: Check the version is not released
+      run: python3 scripts/release.py --check
+
+    - uses: actions/cache@v4
+      with:
+        path: Library
+        key: Library-AUP-${{ matrix.platform }}-${{ matrix.unityVersion }}
+        restore-keys: |
+          Library-AUP-${{ matrix.platform }}-
+          Library-AUP-
+          Library-
+
+    - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
+      uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4.8.2
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      with:
+        unityVersion: ${{ matrix.unityVersion }}
+        targetPlatform: ${{ matrix.platform }}
+        buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
+        customParameters: -buildName release-${{ matrix.unityVersion }}-v${{ env.version }}
+        versioning: None
+        allowDirtyBuild: true
+
+    - name: Validate Build
       run: |
-        # Fetch releases from GitHub API
-        releases=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/airconsole/airconsole-unity-plugin/releases")
-
-        # Check if a release with the extracted version exists
-        exists=$(echo "$releases" | jq -r --arg version "v${{ env.version }}" '.[] | select(.tag_name == $version) | .tag_name')
-
-        if [[ -n "$exists" ]]; then
-          echo "Release with version v${{ env.version }} already exists."
+        filepath="TestBuilds/${{ matrix.platform == 'WebGL' && 'Web' || 'Android' }}/release-${{ matrix.unityVersion }}-v${{ env.version }}"
+        if [ "${{ matrix.platform }}" == "Android" ]; then
+          filepath+=".apk"
+        elif [ "${{ matrix.platform }}" == "WebGL" ]; then
+          filepath+="/index.html"
+        fi
+        if [ ! -f "$filepath" ]; then
+          echo "Build validation failed for ${{ matrix.platform }}: $filepath is missing"
           exit 1
-        else
-          echo "No release with version v${{ env.version }} found."
         fi
 
-    # - uses: actions/cache@v3
-    #   with:
-    #     path: Library
-    #     key: Library-AUP-${{ matrix.platform }}
-    #     restore-keys: |
-    #       Library-AUP-
-    #       Library-
-    #
-    # - name: Test ${{ matrix.platform }} in ${{ matrix.unityVersion }}
-    #   uses: game-ci/unity-builder@v4
-    #   env:
-    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-    #   with:
-    #     unityVersion: ${{ matrix.unityVersion }}
-    #     targetPlatform: ${{ matrix.platform }}
-    #     buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
-    #     allowDirtyBuild: true
+    # master tracks this version's package; a failed export must not pass validation on that older file.
+    - name: Remove the committed package
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
+      run: rm -f "Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
 
-    # - name: Validate Build
-    #   run: |
-    #     filepath="Builds/${{ matrix.platform }}/release-${{ matrix.unityVersion }}-v${{ env.version }}"
-    #     if [ "${{ matrix.platform }}" == "Android" ]; then
-    #       filepath+=".apk"
-    #     elif [ "${{ matrix.platform }}" == "WebGL" ]; then
-    #       filepath+=".zip"
-    #     fi
-    #     if [ ! -f "$filepath" ]; then
-    #       echo "Build validation failed for ${{ matrix.platform }}"
-    #       exit 1
-    #     fi
-
-    - name: Extract release notes
-      id: extract-release-notes
-      uses: ffurrer2/extract-release-notes@v2
+    - name: Generate Release unity package
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
+      uses: game-ci/unity-builder@4423ee75828dff56037d1d1cfdac6b68e3a6ba00 # v4.8.2
+      env:
+        UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+        UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       with:
-        # prerelease: true
-        changelog_file: CHANGELOG.md
+        unityVersion: ${{ matrix.unityVersion }}
+        targetPlatform: ${{ matrix.platform }}
+        buildMethod: NDream.Unity.Packager.Export
+        versioning: None
+        allowDirtyBuild: true
 
-    - name: Log Release Notes
-      run: echo "Release Notes are ${{ steps.extract-release-notes.outputs.release_notes }}"
+    - name: Validate release package
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
+      run: |
+        filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
+        if [ ! -f "$filepath" ]; then
+          echo "Build validation of airconsole-unity-plugin-v${{ env.version }} unitypackage failed"
+          exit 1
+        fi
 
-    # - name: Generate unitypackage release
-    #   uses: game-ci/unity-builder@v4
-    #   env:
-    #     UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-    #     UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-    #     UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-    #   if: matrix.platform == 'WebGL' && matrix.unityVersion == '2022.3.61f1'
-    #   with:
-    #     unityVersion: ${{ matrix.unityVersion }}
-    #     targetPlatform: ${{ matrix.platform }}
-    #     buildMethod: NDream.Unity.Builder.Build${{ matrix.platform }}
-    #     allowDirtyBuild: true
-    #
-    # - name: Generate Release unity package
-    #   run: |
-    #     unity -quit -batchmode -executeMethod NDream.Unity.Packager.Export -projectPath . # -outputPath Builds/release-${{ github.event.inputs.version }}.unitypackage
-    #
-    # Return License
-    # - name: Return license
-    #   uses: game-ci/unity-return-license@v2
-    #   if: always()
-    #
-    # - name: Validate release package
-    #   if: matrix.platform == 'WebGL' && matrix.unityVersion == '2022.3.61f1'
-    #   run: |
-    #     filepath="Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
-    #     if [ ! -f "$filepath" ]; then
-    #       echo "Build validation of airconsole-unity-plugin-v${{ env.version }} unitypackage failed"
-    #       exit 1
-    #     fi
+    - name: Upload release package
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
+      uses: actions/upload-artifact@v4
+      with:
+        name: airconsole-unity-plugin-v${{ env.version }}
+        path: Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage
 
-    # - name: Commit and Push
-    #   run: |
-    #     git config user.name "GitHub Actions"
-    #     git config user.email "github-actions@github.com"
-    #     git commit -m "e: Update Release package to v${{ env.version }}"
-    #     git push
+    # Dates the CHANGELOG section and opens the release PR. With dry_run it only prints them.
+    # The notes and the PR go to the run summary.
+    - name: Open release PR
+      if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
+      env:
+        GH_TOKEN: ${{ github.token }}
+        DRY_RUN: ${{ inputs.dry_run }}
+      run: |
+        set -o pipefail
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        args=(--open-pr)
+        if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+        { echo '```'; python3 -u scripts/release.py "${args[@]}"; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
 
-    # - name: Create GitHub Release
-    #   uses: softprops/action-gh-release@v1
-    #   if: startsWith(github.ref, 'refs/tags/')
-    #   with:
-    #     files: Builds/airconsole-unity-plugin-v${{ github.event.inputs.version }}.unitypackage
-    #     body: ${{ steps.extract-release-notes.outputs.release_notes }}
-    #   env:
-    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  publish:
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.merged
+      && github.event.pull_request.head.repo.full_name == github.repository
+      && startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: create-release-publish
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    env:
+      RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .tool-versions
+
+      # Also checks that the head branch is release/v{VERSION}.
+      - name: Validate release (dry run)
+        run: python3 scripts/release.py --dry-run
+
+      # The single release commit records the master commit the package was exported from. If master moved
+      # after that (an update by merge or by rebase), the tag would point at code the package does not contain.
+      - name: Check the package matches the merged code
+        env:
+          COMMITS: ${{ github.event.pull_request.commits }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          git fetch --depth=1 origin "refs/pull/$PR/head"
+          base=$(git log -1 --format=%B FETCH_HEAD | sed -n 's/^Exported from //p')
+          other=$(git diff --no-renames --name-only HEAD^1 HEAD | grep -v -e '^Builds/' -e '^CHANGELOG\.md$' || true)
+          if [ "$COMMITS" != 1 ] || [ "$base" != "$(git rev-parse HEAD^1)" ] || [ -n "$other" ]; then
+            echo "master changed after the package was exported. Nothing is released."
+            echo "Revert this merge on master, then run Create Release again."
+            exit 1
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/release.py

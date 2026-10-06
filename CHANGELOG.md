@@ -6,40 +6,52 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
-With version 2.6.2, we are targeting Android TV and Android Automotive related issues impacting or blocking game releases.
-This includes security related updates like requiring fixed Unity versions and increasing Android Target SDK version.
+### Added
+
+- **Unity API:** `RequestExitGamesAuth` and the `onExitGamesAuth` event provide a ticket for Photon (ExitGames) Custom Authentication. Requires airconsole-api 1.12.0.
+
+## [2.6.3] - 2026-10-03
 
 ### Fixed
 
-- **Android Automotive:** Steering wheel media buttons (skip, play/pause, etc.) now control the active media source (Bluetooth, radio) instead of being swallowed by the game while a native game is running.
-- **Android:** Platform overlay resizes correctly on Android TV
-- **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
-- **Editor:** The Android flow no longer initializes a native WebView inside the Editor. There is no Editor WebView implementation since unity-webview dropped macOS support, and on an Android build target the attempt failed with a JNI exception in `Start()`.
-- **Editor:** Project configuration checks no update index.html directly when validating API version usage. This prevents the index.html from becoming empty.
+- **Unity 6.6:** The plugin compiles in Unity 6000.6. On Unity 6 and newer, the plugin uses the replacement for each deprecated Unity API.
 
-### Changed
+## [2.6.2] - 2026-09-29
 
-- **Android Support**: Better dependency handling through Gradle processor integration. Removal of included files where possible.
-- **Android Target SDK:** Increased to 35 to meet Google Play requirements per Nov 1, 2025.
-- **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
-- **Code Style**: Examples and scripts have been aligned on style.
+With version 2.6.2, we are targeting Android TV and Android Automotive related issues impacting or blocking game releases.
+This includes security related updates like requiring fixed Unity versions and increasing Android Target SDK version.
 
 ### Added
 
 - **Editor:** `NDream.Unity.Builder` provides a zero-argument headless build entry point for CI, without the git auto-commit and player launch that make `BuildHelper` unsuitable for build agents.
-- **Unity API:** `RequestExitGamesAuth` and the `onExitGamesAuth` event provide a ticket for Photon (ExitGames) Custom Authentication. Requires airconsole-api 1.12.0.
 - **Unity API:** `GetGameConfiguration` function to request the runtime configuration information for this game and platform.
 - **Unity API:** `OnMaximumVolumeChanged` event to notify when the games maximum volume must be changed.
-- **Android:** After the last device disconnects, the webview is reset along the game state.
-- **Android:** Add support to override the game version used in a previously built android game through intent extras with adb.
+- **Android:** After the last device disconnects, the webview is reset, meeting the expected game behavior.
 - **Android:** The Android application version is now reported to the platform through the webview URL.
-- **Android:** The support for native game sizing is communicated
-- **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive.
-- **Android Audio Focus:** Drive maximum volume based on Android system requirements to avoid pausing when losing audio focus.
+- **Android:** Support for native game sizing, enabling web overlays with cutouts for the game camera.
+- **Android Audio Focus:** Improvements to match the expected behavior on Android Automotive. audio focus.
+- **Editor:** `NDream.Unity.Builder` provides a zero-argument headless build entry point for CI.
+
+### Changed
+
+- **Android Support**: Better dependency handling through Gradle processor integration. Removal of included files and dependency to AndroidManifest and Gradle Templates by AirConsole.
+- **Android Target SDK:** Increased to Android API 37 to meet Google Play requirements per Nov 1, 2025.
+- **Unity Minimum Versions:** The Unity minimum versions have been updated to match `CVE-2025-59489` fix versions.
+- **Code Style**: Examples and scripts have been aligned on code style.
+
+### Fixed
+
+- **Android:** WebView renderer process recovery: when the Android WebView render process is killed or crashes, the plugin automatically recreates the WebView, replays all configured state, and reloads the last URL.
+- **Android Automotive:** Steering wheel media buttons (skip, play/pause, etc.) now control the active media source (Bluetooth, radio) instead of being swallowed by the game while a native game is running.
+- **Android:** Platform overlay resizes correctly on Android TV
+- **Android:** Native game sizing is communicated to the AirConsole platform earlier for consistent initial layout (PRO-1747)
+- **Editor:** The Android flow no longer initializes a native WebView inside the Editor. There is no Editor WebView implementation since unity-webview dropped macOS support, and on an Android build target the attempt failed with a JNI exception in `Start()`.
+- **Editor:** Project configuration checks index.html directly when validating API version usage. This prevents the index.html from becoming empty.
+-
 
 ### Removed
 
-- **Android**: The android library no longer manages Audio Focus or overriding the usage from USAGE_GAME.
+- **unity-webview:** The unsupported iOS (`Plugins/iOS/*.mm`) and macOS (`Plugins/WebView.bundle`) native files were removed to focus energy on improved webview performance and resilience.
 
 ## [2.6.1] - 2025-09-02
 
