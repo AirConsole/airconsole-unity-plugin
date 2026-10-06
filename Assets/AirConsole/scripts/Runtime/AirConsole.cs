@@ -57,7 +57,7 @@ namespace NDream.AirConsole {
 
     public delegate void OnPersistentDataLoaded(JToken data);
 
-    public delegate void OnExitGamesAuth(string ticket);
+    public delegate void OnPhotonEngineAuth(string ticket);
 
     public delegate void OnPremium(int deviceId);
 
@@ -253,10 +253,10 @@ namespace NDream.AirConsole {
         public event OnPersistentDataLoaded onPersistentDataLoaded;
 
         /// <summary>
-        /// Gets called when RequestExitGamesAuth() finished.
+        /// Gets called when RequestPhotonEngineAuth() finished.
         /// </summary>
         /// <param name="ticket">The Photon auth ticket, or null if the request failed.</param>
-        public event OnExitGamesAuth onExitGamesAuth;
+        public event OnPhotonEngineAuth onPhotonEngineAuth;
 
         /// <summary>
         /// Gets called when a device becomes premium or when a premium device connects.
@@ -1031,18 +1031,18 @@ namespace NDream.AirConsole {
         }
 
         /// <summary>
-        /// Requests a short-lived ticket for Photon (ExitGames) Custom Authentication.
+        /// Requests a short-lived ticket for Photon Custom Authentication.
         /// Pass it to Photon with <c>AuthenticationValues.AddAuthParameter("ticket", ticket)</c>.
         /// Request a new ticket for every connection attempt: tickets expire after 15 minutes.
-        /// Requires airconsole-api 1.12.0 or newer. Will call onExitGamesAuth when done.
+        /// Requires airconsole-api 1.12.0 or newer. Will call onPhotonEngineAuth when done.
         /// </summary>
         /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
-        public void RequestExitGamesAuth() {
+        public void RequestPhotonEngineAuth() {
             if (!IsAirConsoleUnityPluginReady()) {
                 throw new NotReadyException();
             }
 
-            wsListener.Message(new JObject { { "action", "requestExitGamesAuth" } });
+            wsListener.Message(new JObject { { "action", "requestPhotonEngineAuth" } });
         }
 
         /// <summary>
@@ -1254,7 +1254,7 @@ namespace NDream.AirConsole {
             wsListener.onHighScoreStored += OnHighScoreStored;
             wsListener.onPersistentDataStored += OnPersistentDataStored;
             wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
-            wsListener.onExitGamesAuth += OnExitGamesAuth;
+            wsListener.onPhotonEngineAuth += OnPhotonEngineAuth;
             wsListener.onPremium += OnPremium;
             wsListener.onPause += OnPause;
             wsListener.onResume += OnResume;
@@ -1740,7 +1740,7 @@ namespace NDream.AirConsole {
             wsListener.onHighScoreStored -= OnHighScoreStored;
             wsListener.onPersistentDataStored -= OnPersistentDataStored;
             wsListener.onPersistentDataLoaded -= OnPersistentDataLoaded;
-            wsListener.onExitGamesAuth -= OnExitGamesAuth;
+            wsListener.onPhotonEngineAuth -= OnPhotonEngineAuth;
             wsListener.onPremium -= OnPremium;
             wsListener.onPause -= OnPause;
             wsListener.onResume -= OnResume;
@@ -1899,9 +1899,9 @@ namespace NDream.AirConsole {
             }
         }
 
-        private void OnExitGamesAuth(JObject msg) {
+        private void OnPhotonEngineAuth(JObject msg) {
             string ticket = (string)msg["ticket"];
-            eventQueue.Enqueue(delegate() { onExitGamesAuth?.Invoke(ticket); });
+            eventQueue.Enqueue(delegate() { onPhotonEngineAuth?.Invoke(ticket); });
         }
 
         private void OnPersistentDataLoaded(JObject msg) {
