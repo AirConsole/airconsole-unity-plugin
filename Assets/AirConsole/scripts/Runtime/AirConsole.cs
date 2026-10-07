@@ -256,7 +256,7 @@ namespace NDream.AirConsole {
         /// Gets called when RequestPhotonEngineAuth() finished.
         /// </summary>
         /// <param name="ticket">The Photon auth ticket, or null if the request failed.</param>
-        public event OnPhotonEngineAuth onPhotonEngineAuth;
+        public event OnPhotonEngineAuth OnPhotonEngineAuth;
 
         /// <summary>
         /// Gets called when a device becomes premium or when a premium device connects.
@@ -1034,7 +1034,7 @@ namespace NDream.AirConsole {
         /// Requests a short-lived ticket for Photon Custom Authentication.
         /// Pass it to Photon with <c>AuthenticationValues.AddAuthParameter("ticket", ticket)</c>.
         /// Request a new ticket for every connection attempt: tickets expire after 15 minutes.
-        /// Requires airconsole-api 1.12.0 or newer. Will call onPhotonEngineAuth when done.
+        /// Requires airconsole-api 1.12.0 or newer. Will call OnPhotonEngineAuth when done.
         /// </summary>
         /// <exception cref="NotReadyException">Thrown if the AirConsole Unity Plugin is not ready.</exception>
         public void RequestPhotonEngineAuth() {
@@ -1254,7 +1254,7 @@ namespace NDream.AirConsole {
             wsListener.onHighScoreStored += OnHighScoreStored;
             wsListener.onPersistentDataStored += OnPersistentDataStored;
             wsListener.onPersistentDataLoaded += OnPersistentDataLoaded;
-            wsListener.onPhotonEngineAuth += OnPhotonEngineAuth;
+            wsListener.OnPhotonEngineAuth += HandlePhotonEngineAuth;
             wsListener.onPremium += OnPremium;
             wsListener.onPause += OnPause;
             wsListener.onResume += OnResume;
@@ -1740,7 +1740,7 @@ namespace NDream.AirConsole {
             wsListener.onHighScoreStored -= OnHighScoreStored;
             wsListener.onPersistentDataStored -= OnPersistentDataStored;
             wsListener.onPersistentDataLoaded -= OnPersistentDataLoaded;
-            wsListener.onPhotonEngineAuth -= OnPhotonEngineAuth;
+            wsListener.OnPhotonEngineAuth -= HandlePhotonEngineAuth;
             wsListener.onPremium -= OnPremium;
             wsListener.onPause -= OnPause;
             wsListener.onResume -= OnResume;
@@ -1899,9 +1899,9 @@ namespace NDream.AirConsole {
             }
         }
 
-        private void OnPhotonEngineAuth(JObject msg) {
+        private void HandlePhotonEngineAuth(JObject msg) {
             string ticket = (string)msg["ticket"];
-            eventQueue.Enqueue(delegate() { onPhotonEngineAuth?.Invoke(ticket); });
+            eventQueue.Enqueue(delegate() { OnPhotonEngineAuth?.Invoke(ticket); });
         }
 
         private void OnPersistentDataLoaded(JObject msg) {

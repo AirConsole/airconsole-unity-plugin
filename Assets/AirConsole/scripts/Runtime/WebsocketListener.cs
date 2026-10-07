@@ -24,7 +24,7 @@ namespace NDream.AirConsole {
         public event Action<JObject> onHighScoreStored;
         public event Action<JObject> onPersistentDataStored;
         public event Action<JObject> onPersistentDataLoaded;
-        public event Action<JObject> onPhotonEngineAuth;
+        public event Action<JObject> OnPhotonEngineAuth;
         public event Action<JObject> onPremium;
         public event Action<JObject> onPause;
         public event Action<JObject> onResume;
@@ -149,7 +149,7 @@ namespace NDream.AirConsole {
                         onPersistentDataLoaded?.Invoke(msg);
                         break;
                     case "onPhotonEngineAuth":
-                        onPhotonEngineAuth?.Invoke(msg);
+                        OnPhotonEngineAuth?.Invoke(msg);
                         break;
                     case "onPremium":
                         onPremium?.Invoke(msg);
