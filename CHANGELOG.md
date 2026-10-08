@@ -8,6 +8,8 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+- **Unity API:** `RequestPhotonEngineAuth` and the `OnPhotonEngineAuth` event provide a ticket for Photon Custom Authentication. Requires airconsole-api 1.12.0.
+
 ## [2.6.3] - 2026-10-03
 
 ### Fixed

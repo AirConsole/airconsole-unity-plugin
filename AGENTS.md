@@ -62,6 +62,10 @@ Change the generator or C# source instead of hand editing generated JS.
 `Assets/AirConsole/scripts/Editor/BuildAutomation/` is the build generation area.
 Sample scenes live under the AirConsole assets tree.
 `.compound-engineering/solutions/` contains documented solutions to past problems, organized by category with YAML frontmatter (module, tags, problem_type).
+## NAMING
+New public C# events use PascalCase: `OnSafeAreaChanged`, `OnPhotonEngineAuth`.
+Older camelCase events such as `onReady` and `onMessage` stay as they are. Rename one only with a deprecation plan.
+When a private handler would share the event name, name it `Handle<Event>`: `HandlePhotonEngineAuth`.
 ## WHERE TO LOOK
 Main SDK: `Assets/AirConsole/scripts/Runtime/AirConsole.cs`.
 Android bridge: `Assets/AirConsole/plugins/Android/`.
