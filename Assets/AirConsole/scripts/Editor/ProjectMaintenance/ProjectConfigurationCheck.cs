@@ -329,47 +329,16 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.chromeosInputEmulation = false;
 #endif
 
+            PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
 
-            if (EditorPrefs.GetBool("customBuild", false) == true) {
-                PlayerSettings.Android.renderOutsideSafeArea = EditorPrefs.GetBool("renderOutsideSafeArea", false);
-#if UNITY_6000_0_OR_NEWER
-                PlayerSettings.Android.resizeableActivity = EditorPrefs.GetBool("resizableWindow", true);
-#else
-                PlayerSettings.Android.resizableWindow = EditorPrefs.GetBool("resizableWindow", true);
-#endif
-                PlayerSettings.Android.fullscreenMode = (FullScreenMode)EditorPrefs.GetInt("fullscreenMode", 1);
+            // If we don't do this, the margin calculations for the webview will be wrong. The initial size when the webview is negatively
+            // impacted by the bottom bar that impacts the layout but is not visible.
+            // When the layout corrects, the webview does not resize.
 #if UNITY_6000_6_OR_NEWER
-                if (EditorPrefs.GetBool("startInFullscreen", true)) {
-                    PlayerSettings.Android.requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
-                } else {
-                    PlayerSettings.Android.requestedVisibleInsets |= AndroidWindowInsetsType.NavigationBars;
-                }
+            PlayerSettings.Android.requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
 #else
-                PlayerSettings.Android.startInFullscreen = EditorPrefs.GetBool("startInFullscreen", true);
+            PlayerSettings.Android.startInFullscreen = true;
 #endif
-            } else {
-                // This setting must be false. Otherwise the game will go full screen beyond the boundaries of the 3rd party safe area manager of BMW.
-                PlayerSettings.Android.renderOutsideSafeArea = false;
-
-                // Automotive first settings. Fullscreen will be overriden based on it being a car or not at launch.
-#if UNITY_6000_0_OR_NEWER
-                PlayerSettings.Android.resizeableActivity = true;
-#else
-                PlayerSettings.Android.resizableWindow = true;
-#endif
-
-                // Set fullscreenMode to FullScreenMode.FullScreenWindow
-                PlayerSettings.Android.fullscreenMode = FullScreenMode.FullScreenWindow;
-
-                // If we don't do this, the margin calculations for the webview will be wrong. The initial size when the webview is negatively
-                // impacted by the bottom bar that impacts the layout but is not visible.
-                // When the layout corrects, the webview does not resize.
-#if UNITY_6000_6_OR_NEWER
-                PlayerSettings.Android.requestedVisibleInsets &= ~AndroidWindowInsetsType.NavigationBars;
-#else
-                PlayerSettings.Android.startInFullscreen = true;
-#endif
-            }
         }
 
         private static void UpdateAndroidPlayerSettingsInProperties() {
@@ -418,17 +387,6 @@ namespace NDream.AirConsole.Editor {
                 AirConsoleLogger.LogWarning(() =>
                     "Enabling optimized frame pacing for improved frame consistency and performance on Android.");
                 PlayerSettings.Android.optimizedFramePacing = true;
-            }
-
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android)) {
-                return;
-            }
-
-            GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-
-            if (graphicsAPIs.First() != GraphicsDeviceType.Vulkan) {
-                AirConsoleLogger.LogWarning(() =>
-                    "AirConsole requires either 'Auto Graphics API' or Vulkan to be the first API.");
             }
         }
 

@@ -10,6 +10,10 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 - **Unity API:** `RequestPhotonEngineAuth` and the `OnPhotonEngineAuth` event provide a ticket for Photon Custom Authentication. Requires airconsole-api 1.12.0.
 
+### Changed
+
+- **Android:** The plugin no longer enforces the Android Automotive settings 'Render outside safe area' (off) and 'Resizable Window' (on), and no longer warns when Vulkan is not the first graphics API. The game developer now sets these in the Player Settings. 'Fullscreen Mode' (Fullscreen Window) and 'Start in fullscreen mode' stay enforced because the AirConsole webview keeps its initial size, and at runtime the plugin still switches the game to fullscreen. Projects keep the values that earlier versions set.
+
 ## [2.6.3] - 2026-10-03
 
 ### Fixed
