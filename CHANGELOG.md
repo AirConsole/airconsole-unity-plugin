@@ -12,6 +12,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- **Package:** The plugin package no longer contains the plugin tests (`Assets/AirConsole/scripts/Tests`), so they do not run in game projects. The upgrade deletes `Assets/AirConsole/scripts/Tests` that an earlier version installed.
 - **Android:** The plugin no longer enforces the Android Automotive settings 'Render outside safe area' (off) and 'Resizable Window' (on), and no longer warns when Vulkan is not the first graphics API. The game developer now sets these in the Player Settings. 'Fullscreen Mode' (Fullscreen Window) and 'Start in fullscreen mode' stay enforced because the AirConsole webview keeps its initial size, and at runtime the plugin still switches the game to fullscreen. Projects keep the values that earlier versions set.
 
 ## [2.6.3] - 2026-10-03
