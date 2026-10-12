@@ -148,17 +148,23 @@ namespace NDream.Unity {
         private static string PackageCode() {
             string unityPackagePath = ProjectCodeUpdater.CodePackagePath;
 
+            // The plugin tests stay in this repository. They change PlayerSettings, so they must not run in game projects.
+            string[] codePaths = Directory.GetDirectories(Path.Combine(Application.dataPath, "AirConsole", "scripts"))
+                .Select(Path.GetFileName)
+                .Where(it => it != "Tests")
+                .Select(it => $"Assets/AirConsole/scripts/{it}")
+                .Append("Assets/AirConsole/unity-webview")
+                .Append("Assets/AirConsole/examples")
+                .ToArray();
+
 #if UNITY_6000_6_OR_NEWER
             UnityEditor.AssetPackage.Package.Export(new UnityEditor.AssetPackage.ExportPackageParameters(
-                new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
+                codePaths,
                 unityPackagePath,
                 "",
                 ExportPackageOptions.Recurse));
 #else
-            AssetDatabase.ExportPackage(
-                new[] { "Assets/AirConsole/scripts", "Assets/AirConsole/unity-webview", "Assets/AirConsole/examples" },
-                unityPackagePath,
-                ExportPackageOptions.Recurse);
+            AssetDatabase.ExportPackage(codePaths, unityPackagePath, ExportPackageOptions.Recurse);
 #endif
             return unityPackagePath.Replace(Application.dataPath, "Assets");
         }

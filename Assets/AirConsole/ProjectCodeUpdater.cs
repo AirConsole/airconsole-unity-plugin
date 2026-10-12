@@ -79,6 +79,13 @@ namespace NDream.Unity {
                 AssetDatabase.DeleteAsset("Assets/AirConsole/unity-webview");
             }
 
+            // Up to 2.6.3, the code package also installed the plugin tests. They compile against internal plugin members, and
+            // ImportPackage never deletes files, so a stale copy would break compilation after a later release changes those members.
+            if (File.Exists(Path.Combine(Application.dataPath, "AirConsole", "scripts", "Tests", "EditMode",
+                    "AirConsole.EditMode.Tests.asmdef"))) {
+                AssetDatabase.DeleteAsset("Assets/AirConsole/scripts/Tests");
+            }
+
             ClearConsole();
             SessionState.SetBool(IMPORT_PENDING_KEY, true);
 #if UNITY_6000_6_OR_NEWER
