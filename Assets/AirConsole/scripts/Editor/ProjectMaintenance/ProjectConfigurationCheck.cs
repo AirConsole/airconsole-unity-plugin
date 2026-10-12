@@ -102,7 +102,6 @@ namespace NDream.AirConsole.Editor {
 
                 case BuildTarget.WebGL:
                     EnsureWebGLPlayerSettings();
-                    EnsureWebRenderSettings();
                     break;
 
                 default:
@@ -354,40 +353,8 @@ namespace NDream.AirConsole.Editor {
             playerSettings.ApplyModifiedProperties();
         }
 
-        private static void EnsureWebRenderSettings() {
-            if (PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.WebGL)) {
-                return;
-            }
-
-            GraphicsDeviceType[] graphicsAPIs = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
-            if (!graphicsAPIs.Contains(GraphicsDeviceType.OpenGLES3)) {
-                AirConsoleLogger.LogError(() =>
-                    "AirConsole WebGL requires either 'Auto Graphics API' or WebGL2 to be present\nUpdating the settings now.");
-
-                graphicsAPIs = graphicsAPIs.ToList().Prepend(GraphicsDeviceType.OpenGLES3).ToArray();
-                PlayerSettings.SetGraphicsAPIs(BuildTarget.WebGL, graphicsAPIs);
-            }
-        }
-
         private static void EnsureAndroidRenderSettings() {
             PlayerSettings.use32BitDisplayBuffer = true;
-
-            // if (!PlayerSettings.vulkanEnableLateAcquireNextImage) {
-            //     // AirConsoleLogger.LogWarning("Late Acquire has been disabled for Vulkan as this has negative side effects and performance impact.");
-            //     PlayerSettings.vulkanEnableLateAcquireNextImage = true;
-            // }
-
-            if (PlayerSettings.vulkanNumSwapchainBuffers < 3) {
-                AirConsoleLogger.LogWarning(() => "The Vulkan Swapchain must contain at least 3 buffers");
-                PlayerSettings.vulkanNumSwapchainBuffers = 3;
-            }
-
-            // if the profiler shows significant 'semaphore WaitForSignal' blocks, we need to invert this!
-            if (!PlayerSettings.Android.optimizedFramePacing) {
-                AirConsoleLogger.LogWarning(() =>
-                    "Enabling optimized frame pacing for improved frame consistency and performance on Android.");
-                PlayerSettings.Android.optimizedFramePacing = true;
-            }
         }
 
         private static int SecondsSinceStartOf2025() {
