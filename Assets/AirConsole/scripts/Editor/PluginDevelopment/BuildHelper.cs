@@ -59,7 +59,7 @@ namespace NDream.AirConsole.Editor {
             EditorPrefs.DeleteKey(KEY_INTERNAL_BUILD);
         }
 
-        public static void BuildAndroid(string forceBuildName = "") {
+        public static void BuildAndroid() {
             ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
             AssetDatabase.SaveAssets();
             if (CommitPendingChanges(out string timestamp, out string commitHash)) {
@@ -67,9 +67,7 @@ namespace NDream.AirConsole.Editor {
             }
 
             string bundleId = PlayerSettings.applicationIdentifier;
-            string buildName = !string.IsNullOrEmpty(forceBuildName)
-                ? forceBuildName
-                : $"{timestamp}-{bundleId}-{commitHash}-{(IsInternalBuild ? "internal" : "prod")}";
+            string buildName = $"{timestamp}-{bundleId}-{commitHash}-{(IsInternalBuild ? "internal" : "prod")}";
             string outputDirectory = Path.Combine(BasePath, "Android");
             if (!Directory.Exists(outputDirectory)) {
                 Directory.CreateDirectory(outputDirectory);
