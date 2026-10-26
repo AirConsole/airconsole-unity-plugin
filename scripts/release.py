@@ -17,7 +17,7 @@ Usage:
   scripts/release.py --open-pr             # CI runs this after the Unity export
   scripts/release.py --dry-run             # on release/v{VERSION}: preview the tag, release and notes, change nothing
   scripts/release.py                       # needs `gh` auth (CI runs this when the release PR merges)
-  scripts/release.py --check               # fail when the tag or the release branch is already on origin
+  scripts/release.py --check               # fail when this version cannot be released (see check_unreleased)
 """
 import argparse
 import os
@@ -113,7 +113,7 @@ def next_release(bump: str) -> str:
 
 
 def check_unreleased(version: str) -> None:
-    """Exit before the Unity build when a release or an open release PR already uses this version."""
+    """Exit before the Unity build when the version is tagged, any release branch is open, or Unreleased is empty."""
     # --open-pr must not date a second [VERSION] section, and entries added since then under Unreleased would
     # miss the notes.
     changelog = CHANGELOG.read_text()
