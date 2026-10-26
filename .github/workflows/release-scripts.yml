@@ -1,0 +1,26 @@
+name: Release scripts
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - .github/workflows/release-scripts.yml
+      - .tool-versions
+      - Assets/AirConsole/scripts/Runtime/Settings.cs
+      - scripts/release.py
+      - scripts/test_release.py
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version-file: .tool-versions
+
+      - name: Test the release scripts
+        run: python3 scripts/test_release.py
