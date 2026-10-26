@@ -43,9 +43,15 @@ assert next_version("2.6.3", "minor") == "2.7.0"
 assert next_version("2.6.3", "major") == "3.0.0"
 assert next_version("2.9.9", "patch") == "2.9.10"
 
-# write_version changes only the VERSION value in Settings.cs.
-settings = release.SETTINGS.read_text()
+# The version tests change a copy of Settings.cs, so a failed or killed run leaves the real file as it is.
+settings_path = release.SETTINGS
+settings_directory = tempfile.TemporaryDirectory()
+release.SETTINGS = Path(settings_directory.name) / "Settings.cs"
+settings = settings_path.read_text()
+release.SETTINGS.write_text(settings)
 version = read_version()
+
+# write_version changes only the VERSION value in Settings.cs.
 try:
     write_version("98.76.54")
     assert read_version() == "98.76.54"
@@ -86,8 +92,9 @@ try:
     release.main()
     assert read_version() == next_version(version, "patch")
 finally:
-    release.SETTINGS.write_text(settings)
-    release.tag_on_origin, release.publish = tag_on_origin, publish_release
+    release.SETTINGS, release.tag_on_origin, release.publish = settings_path, tag_on_origin, publish_release
+    settings_directory.cleanup()
+assert settings_path.read_text() == settings, "the version tests must not change the real Settings.cs"
 
 # check_unreleased rejects an Unreleased section without notes and any open release branch.
 changelog_path = release.CHANGELOG
