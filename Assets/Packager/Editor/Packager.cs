@@ -35,17 +35,20 @@ namespace NDream.Unity {
 
         [MenuItem("Tools/AirConsole/Package Plugin Release Candidate")]
         public static void ExportReleaseCandidate() {
-            if (VerifyReleaseVersionExists(Settings.VERSION)) {
+            // Settings.VERSION is the last release until the release workflow bumps it, so a release candidate
+            // is named after the next patch version. The package itself still reports Settings.VERSION.
+            string version = NextPatchVersion(Settings.VERSION);
+            if (VerifyReleaseVersionExists(version)) {
                 EditorUtility.DisplayDialog("Package Error",
-                    $"Version {Settings.VERSION} already exists.\nYou can not create a release candidate for it",
+                    $"Version {version} already exists.\nYou can not create a release candidate for it",
                     "OK");
-                AirConsoleLogger.LogError(() => $"Exporting unitypackage for release version {Settings.VERSION} not allowed.");
+                AirConsoleLogger.LogError(() => $"Exporting unitypackage for release version {version} not allowed.");
                 return;
             }
 
-            int rcVersion = GetNextReleaseCandidateVersion(Settings.VERSION);
+            int rcVersion = GetNextReleaseCandidateVersion(version);
             string outputPath =
-                Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}-rc{rcVersion}.unitypackage"));
+                Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{version}-rc{rcVersion}.unitypackage"));
             ExportPackage(outputPath);
             AddPackageToGit();
             OpenPath(outputPath);
@@ -58,6 +61,11 @@ namespace NDream.Unity {
 
         private static void RemoveAirConsolePreferences() =>
             File.Delete(Path.Combine(Application.dataPath, "AirConsole", "airconsole.prefs"));
+
+        private static string NextPatchVersion(string version) {
+            System.Version released = new(version);
+            return $"{released.Major}.{released.Minor}.{released.Build + 1}";
+        }
 
         private static bool VerifyReleaseVersionExists(string version) =>
             File.Exists(Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{version}.unitypackage")));

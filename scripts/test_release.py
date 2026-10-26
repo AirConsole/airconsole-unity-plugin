@@ -1,8 +1,11 @@
-"""Self-check for release.py changelog parsing. Run: python3 scripts/test_release.py"""
+"""Self-check for release.py version bump and changelog parsing. Run: python3 scripts/test_release.py"""
 import os
+import sys
+import tempfile
+from pathlib import Path
 
 import release
-from release import publish, read_version, release_notes, stamp_changelog
+from release import next_version, publish, read_version, release_notes, stamp_changelog, write_version
 
 CHANGELOG = """# Releases
 
@@ -35,6 +38,82 @@ except SystemExit:
     pass
 assert read_version()
 
+assert next_version("2.6.3", "patch") == "2.6.4"
+assert next_version("2.6.3", "minor") == "2.7.0"
+assert next_version("2.6.3", "major") == "3.0.0"
+assert next_version("2.9.9", "patch") == "2.9.10"
+
+# write_version changes only the VERSION value in Settings.cs.
+settings = release.SETTINGS.read_text()
+version = read_version()
+try:
+    write_version("98.76.54")
+    assert read_version() == "98.76.54"
+    expected = settings.replace(f'VERSION = "{version}"', 'VERSION = "98.76.54"')
+    assert release.SETTINGS.read_text() == expected
+finally:
+    release.SETTINGS.write_text(settings)
+
+# A bump starts only from a released version, so no release is skipped.
+tag_on_origin, publish_release, git = release.tag_on_origin, release.publish, release.git
+
+
+def unexpected_publish(dry_run):
+    raise AssertionError("--bump alone must not publish")
+
+
+release.publish = unexpected_publish
+try:
+    release.tag_on_origin = lambda tag: False
+    try:
+        release.next_release("patch")
+        raise AssertionError("a bump from an untagged version must be rejected")
+    except SystemExit as error:
+        assert "is not tagged on origin" in str(error.code), error.code
+    release.tag_on_origin = lambda tag: tag == f"v{version}"
+    assert release.next_release("minor") == next_version(version, "minor")
+
+    sys.argv = ["release.py", "--bump", "patch", "--dry-run"]
+    release.main()
+    assert release.SETTINGS.read_text() == settings, "--bump --dry-run must not write Settings.cs"
+    sys.argv = ["release.py", "--bump", "patch", "--open-pr"]
+    try:
+        release.main()
+        raise AssertionError("--bump --open-pr without --dry-run must be rejected before the write")
+    except SystemExit:
+        assert release.SETTINGS.read_text() == settings
+    sys.argv = ["release.py", "--bump", "patch"]
+    release.main()
+    assert read_version() == next_version(version, "patch")
+finally:
+    release.SETTINGS.write_text(settings)
+    release.tag_on_origin, release.publish = tag_on_origin, publish_release
+
+# check_unreleased rejects an Unreleased section without notes and any open release branch.
+changelog_path = release.CHANGELOG
+release.tag_on_origin = lambda tag: False
+try:
+    with tempfile.TemporaryDirectory() as directory:
+        release.CHANGELOG = Path(directory) / "CHANGELOG.md"
+        for unreleased in ("", "### Added\n\n"):
+            release.CHANGELOG.write_text(f"# Releases\n\n## [Unreleased]\n\n{unreleased}"
+                                         "## [0.0.1] - 2026-10-03\n\n- A fix\n")
+            try:
+                release.check_unreleased("0.0.2")
+                raise AssertionError(f"an Unreleased section of {unreleased!r} must be rejected")
+            except SystemExit as error:
+                assert "has no notes" in str(error.code), error.code
+
+        release.CHANGELOG.write_text("# Releases\n\n## [Unreleased]  \n\n- A fix")
+        release.git = lambda *args: "abc\trefs/heads/release/v0.1.0"
+        try:
+            release.check_unreleased("0.0.2")
+            raise AssertionError("an open release branch of another version must block the release")
+        except SystemExit as error:
+            assert "release/v0.1.0 is already on origin" in str(error.code), error.code
+finally:
+    release.CHANGELOG, release.tag_on_origin, release.git = changelog_path, tag_on_origin, git
+
 # --open-pr dates the Unreleased section and opens a new, empty one above it.
 stamped = stamp_changelog(CHANGELOG.replace("## [Unreleased]\n\n## [2.7.0] - 2026-10-01\n\n", "## [Unreleased]\n\n"),
                           "2.7.0", "2026-10-02")
@@ -51,14 +130,14 @@ except SystemExit as error:
     assert "is not release/v" in str(error.code), error.code
 
 # --open-pr must not commit a release without the exported package; this check runs before any git or network call.
-def unexpected_origin_check():
+def unexpected_origin_check(version):
     raise AssertionError("the package check must run before the origin check")
 
 
 release.check_unreleased = unexpected_origin_check
 release.package_path = lambda tag: release.ROOT / "Builds" / "missing.unitypackage"
 try:
-    release.open_release_pr(dry_run=False)
+    release.open_release_pr(dry_run=False, version="9.9.9")
     raise AssertionError("a release PR without the package must be rejected")
 except SystemExit as error:
     assert "missing.unitypackage is missing" in str(error.code), error.code

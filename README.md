@@ -13,15 +13,15 @@ Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
 ## Releasing (maintainers)
 
-`VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs` already holds the next version (it is updated during development) and `CHANGELOG.md` has its `## [Unreleased]` section.
+On `master`, `VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs` is the last released version. Feature PRs add their notes to the `## [Unreleased]` section of `CHANGELOG.md`. Do not change `VERSION` by hand: the release sets it.
 
-1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. It test-builds WebGL, exports the `.unitypackage`, and uploads the package as a workflow artifact. The run summary shows the release notes (`## [Unreleased]` dated as `## [{VERSION}] - yyyy-MM-dd`) and the release PR commands and body. It creates nothing.
-2. Run it again with `dry_run` off. It dates the CHANGELOG and opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
+1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. Select the `bump`: `patch` for a fix release (2.6.3 → 2.6.4), `minor` for new features (2.6.3 → 2.7.0), `major` for changes that break games (2.6.3 → 3.0.0). The workflow sets `VERSION` to the next version, test-builds WebGL, exports the `.unitypackage`, and uploads the package as a workflow artifact. The run summary shows the release notes (`## [Unreleased]` dated as `## [{VERSION}] - yyyy-MM-dd`) and the release PR commands and body. It creates nothing.
+2. Run it again with `dry_run` off and the same `bump`. It dates the CHANGELOG and opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the new `VERSION`, the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
 3. Merge the PR. The workflow then creates the `v{VERSION}` tag and the GitHub release with the package.
 
-To preview the release without Unity, on `master`: `scripts/release.py --dry-run` prints the tag, the GitHub release command and the notes, and `scripts/release.py --open-pr --dry-run` prints the release PR. Neither changes anything.
+To preview the release without Unity, on `master`: `scripts/release.py --bump patch --open-pr --dry-run` prints the next version, the notes and the release PR. It changes nothing.
 
-To run the same steps locally with your Unity editor (close the project in the Editor first, and run `mise install` once for the Python 3.12 that CI uses): `scripts/release_local.py --dry-run` builds and validates, prints the branch, commit, push, PR, tag and release commands without running them, and resets the files the build and the export changed. Without `--dry-run`, on `master`, it opens the release PR.
+To run the same steps locally with your Unity editor (close the project in the Editor first, and run `mise install` once for the Python 3.12 that CI uses): `scripts/release_local.py --bump patch --dry-run` builds and validates, prints the branch, commit, push and PR commands without running them, and resets the files the build and the export changed. Without `--dry-run`, on `master`, it opens the release PR.
 4. Manual steps:
    - Unity Asset Store: make a draft of the current package, add the release notes and version, and upload the `.unitypackage` with the Asset Store Tools. In the additional information, write: "We include unity webgl templates because webgl games deployed to our platform require a specific setup."
    - AppEngine: accept the new plugin version.

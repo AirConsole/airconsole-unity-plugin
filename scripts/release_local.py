@@ -4,12 +4,13 @@
 Same steps as .github/workflows/create-release.yaml: WebGL test build, package
 export, validation, and the release PR (dates the CHANGELOG section) with a
 preview of the notes that merging it publishes.
-For that preview alone, without Unity: scripts/release.py --open-pr --dry-run
+For that preview alone, without Unity: scripts/release.py --bump patch --open-pr --dry-run
 
 Usage:
-  scripts/release_local.py --dry-run   # build and validate; only print the branch, commit, push and PR
-                                       # commands; then reset the files the build and export changed
-  scripts/release_local.py             # on master: also create release/v{VERSION}, commit, push and open the PR
+  scripts/release_local.py --bump patch --dry-run   # build and validate; only print the branch, commit, push and PR
+                                                    # commands; then reset the files the build and export changed
+  scripts/release_local.py --bump patch             # on master: also create release/v{VERSION}, commit, push and
+                                                    # open the PR
 
 Close the project in the Unity Editor first. Set UNITY or AC_UNITY_BIN to use another editor binary.
 """
@@ -19,10 +20,20 @@ import re
 import subprocess
 import sys
 
-from release import ROOT, check_unreleased, git, open_release_pr, package_path, read_version
+from release import (
+    BUMPS,
+    ROOT,
+    SETTINGS,
+    check_unreleased,
+    git,
+    next_release,
+    open_release_pr,
+    package_path,
+    write_version,
+)
 
 # The files the WebGL build, the package export and the release PR change. The final reset touches only these.
-EXPORT_PATHS = ["Builds", "CHANGELOG.md", "ProjectSettings", "Assets/WebGLTemplates"]
+EXPORT_PATHS = ["Builds", "CHANGELOG.md", "ProjectSettings", "Assets/WebGLTemplates", str(SETTINGS.relative_to(ROOT))]
 
 
 def unity_editor() -> str:
@@ -42,7 +53,7 @@ def unity(method: str, *args: str) -> None:
         sys.exit(f"{method} failed with exit code {result.returncode}. See {log}.")
 
 
-def release(dry_run: bool) -> None:
+def release(dry_run: bool, bump: str) -> None:
     branch = git("rev-parse", "--abbrev-ref", "HEAD")
     if not dry_run:
         if branch != "master":
@@ -50,9 +61,11 @@ def release(dry_run: bool) -> None:
         git("fetch", "origin", "master")
         if git("rev-parse", "HEAD") != git("rev-parse", "origin/master"):
             sys.exit("Local master is not origin/master. Pull or push first.")
-    check_unreleased()
-
-    tag = f"v{read_version()}"
+    version = next_release(bump)
+    check_unreleased(version)
+    # The package contains Settings.VERSION, so the export must see the next version.
+    write_version(version)
+    tag = f"v{version}"
 
     build = f"release-local-{tag}"
     unity("NDream.Unity.Builder.BuildWebGL", "-buildName", build)
@@ -65,21 +78,23 @@ def release(dry_run: bool) -> None:
         sys.exit(f"Build validation of airconsole-unity-plugin-{tag} unitypackage failed")
 
     print("\n== Release PR")
-    open_release_pr(dry_run)
+    open_release_pr(dry_run, version)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true",
                         help="build and validate; print the branch, commit, push and PR commands")
-    dry_run = parser.parse_args().dry_run
+    parser.add_argument("--bump", choices=BUMPS, required=True, help="the part of Settings.VERSION to raise")
+    args = parser.parse_args()
 
-    # Clean start: the release commits only Builds/ and CHANGELOG.md, and the reset below may only undo this run.
+    # Clean start: the release commits only Builds/, CHANGELOG.md and Settings.cs, and the reset below may only undo
+    # this run.
     if git("status", "--porcelain", "--untracked-files=no"):
         sys.exit("Commit or stash your changes to tracked files first.")
     start = git("rev-parse", "--abbrev-ref", "HEAD")
     try:
-        release(dry_run)
+        release(args.dry_run, args.bump)
     finally:
         # A real run leaves its changes committed on release/v{VERSION}; a dry run or a failure drops them.
         git("restore", "--staged", "--worktree", "--", *EXPORT_PATHS)

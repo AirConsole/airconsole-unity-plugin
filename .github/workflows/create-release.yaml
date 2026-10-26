@@ -1,14 +1,20 @@
 name: Create Release
 
-# Manual release of v{Settings.VERSION}:
-# 1. Run this workflow (workflow_dispatch). It test-builds WebGL, exports the .unitypackage,
-#    dates the CHANGELOG section and opens the "Release v{VERSION}" PR from release/v{VERSION}.
+# Manual release. On master, Settings.VERSION is the last released version.
+# 1. Run this workflow (workflow_dispatch). It raises Settings.VERSION by the selected bump, test-builds WebGL,
+#    exports the .unitypackage, dates the CHANGELOG section and opens the "Release v{VERSION}" PR from
+#    release/v{VERSION} with the three changes.
 #    With dry_run (default) it uploads the package as an artifact and only previews the PR in the run summary.
 # 2. Merging that PR creates the tag and the GitHub release.
-# Local preview of step 1 without Unity: scripts/release.py --open-pr --dry-run
+# Local preview of step 1 without Unity: scripts/release.py --bump patch --open-pr --dry-run
 on:
   workflow_dispatch:
     inputs:
+      bump:
+        description: The part of Settings.VERSION to raise. patch is a fix release, minor adds features, major breaks games.
+        type: choice
+        options: [patch, minor, major]
+        default: patch
       dry_run:
         description: Build and validate only. No branch, commit, PR, tag or release.
         type: boolean
@@ -58,6 +64,11 @@ jobs:
     - uses: actions/setup-python@v7
       with:
         python-version-file: .tool-versions
+
+    - name: Bump Settings.VERSION
+      env:
+        BUMP: ${{ inputs.bump }}
+      run: python3 scripts/release.py --bump "$BUMP"
 
     - name: Extract Version from C# File
       id: extract_version
@@ -112,7 +123,7 @@ jobs:
           exit 1
         fi
 
-    # master tracks this version's package; a failed export must not pass validation on that older file.
+    # A failed export must not pass validation on an older package of this version.
     - name: Remove the committed package
       if: matrix.platform == 'WebGL' && matrix.unityVersion == env.PACKAGE_UNITY_VERSION
       run: rm -f "Builds/airconsole-unity-plugin-v${{ env.version }}.unitypackage"
@@ -192,14 +203,21 @@ jobs:
 
       # The single release commit records the master commit the package was exported from. If master moved
       # after that (an update by merge or by rebase), the tag would point at code the package does not contain.
+      # Of Settings.cs, the release commit may change only the VERSION value.
       - name: Check the package matches the merged code
         env:
           COMMITS: ${{ github.event.pull_request.commits }}
           PR: ${{ github.event.pull_request.number }}
+          SETTINGS: Assets/AirConsole/scripts/Runtime/Settings.cs
         run: |
           git fetch --depth=1 origin "refs/pull/$PR/head"
           base=$(git log -1 --format=%B FETCH_HEAD | sed -n 's/^Exported from //p')
-          other=$(git diff --no-renames --name-only HEAD^1 HEAD | grep -v -e '^Builds/' -e '^CHANGELOG\.md$' || true)
+          other=$(git diff --no-renames --name-only HEAD^1 HEAD \
+            | grep -v -e '^Builds/' -e '^CHANGELOG\.md$' -e "^$SETTINGS\$" || true)
+          without_version() { git show "$1:$SETTINGS" | sed -E 's/(public const string VERSION = ")[0-9.]+"/\1"/'; }
+          if [ "$(without_version HEAD^1)" != "$(without_version HEAD)" ]; then
+            other+=" $SETTINGS"
+          fi
           if [ "$COMMITS" != 1 ] || [ "$base" != "$(git rev-parse HEAD^1)" ] || [ -n "$other" ]; then
             echo "master changed after the package was exported. Nothing is released."
             echo "Revert this merge on master, then run Create Release again."
