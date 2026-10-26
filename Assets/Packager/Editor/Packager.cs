@@ -21,6 +21,15 @@ namespace NDream.Unity {
 
         [MenuItem("Tools/AirConsole/Package Plugin")]
         public static void Export() {
+            // On master, Settings.VERSION is the last release: an export would overwrite its committed package.
+            if (!Application.isBatchMode && VerifyReleaseVersionExists(Settings.VERSION)) {
+                EditorUtility.DisplayDialog("Package Error",
+                    $"Version {Settings.VERSION} is released.\nUse 'Package Plugin Release Candidate' to test a package.",
+                    "OK");
+                AirConsoleLogger.LogError(() => $"Exporting unitypackage for released version {Settings.VERSION} not allowed.");
+                return;
+            }
+
             string outputPath = Path.GetFullPath(Path.Combine("Builds", $"airconsole-unity-plugin-v{Settings.VERSION}.unitypackage"));
             ExportPackage(outputPath);
             DeleteOldUnityPackages(outputPath, Settings.VERSION);
