@@ -332,8 +332,6 @@ namespace NDream.AirConsole.Editor {
             AirConsoleLogger.Log(() => $"Validating API Usage in {webGLTemplateDirectory}");
             if (!VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "index.html"),
                     Settings.RequiredMinimumVersion)
-
-                // || !VerifyAPIUsage(pathToBuiltProject + "/screen.html", Settings.RequiredMinimumVersion)
                 || !VerifyReferencedAirConsoleApiVersion(Path.Combine(webGLTemplateDirectory, "controller.html"),
                     Settings.RequiredMinimumVersion)) {
                 AirConsoleLogger.LogError(() =>
@@ -369,8 +367,6 @@ namespace NDream.AirConsole.Editor {
             Regex regexAirconsoleApiVersion = new(
                 @"(?<!<!--\s*)<script[^>]*src\s*=\s*[""'].*airconsole-(\d+)\.(\d+)\.(\d+)\.js[""'][^>]*>",
                 RegexOptions.IgnoreCase);
-
-            // Regex regexAirconsoleApiVersion = new(@"(?<!<!--\s*)airconsole-(\d+)\.(\d+)\.(\d+)\.js", RegexOptions.IgnoreCase);
             MatchCollection matches = regexAirconsoleApiVersion.Matches(fileContent);
 
             switch (matches.Count) {
