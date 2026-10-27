@@ -439,11 +439,7 @@ namespace NDream.AirConsole.Editor {
 
             try {
                 File.WriteAllText(tempFileName, updatedContent);
-                if (File.Exists(indexPath)) {
-                    File.Delete(indexPath);
-                }
-
-                File.Move(tempFileName, indexPath);
+                File.Replace(tempFileName, indexPath, null);
             } catch (Exception exception) {
                 AirConsoleLogger.LogError(() => $"Failed updating {indexPath}: {exception.Message}");
                 throw;
