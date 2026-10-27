@@ -135,11 +135,7 @@ namespace NDream.AirConsole.Editor {
         private static void EnsureWebGLPlayerSettings() {
             VerifyWebGLTemplate();
 
-#if UNITY_6000_0_OR_NEWER
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.WebGL, ScriptingImplementation.IL2CPP);
-#else
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.WebGL, ScriptingImplementation.IL2CPP);
-#endif
             PlayerSettings.WebGL.linkerTarget = WebGLLinkerTarget.Wasm;
             PlayerSettings.WebGL.nameFilesAsHashes
                 = false; // We upload into timestamp based folders. This is not necessary.
@@ -208,30 +204,18 @@ namespace NDream.AirConsole.Editor {
         [InitializeOnLoadMethod]
         private static void EnsureAndroidPlayerSettings() {
             PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
-#if UNITY_6000_0_OR_NEWER
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Android, ScriptingImplementation.IL2CPP);
-#else
-            PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-#endif
             if (PlayerSettings.muteOtherAudioSources) {
                 AirConsoleLogger.Log(() =>
                     "AirConsole requires 'mute other audio sources' to be disabled for automotive compatibility");
                 PlayerSettings.muteOtherAudioSources = false;
             }
 
-#if UNITY_6000_0_OR_NEWER
             if (!PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android)) {
-#else
-            if (!PlayerSettings.GetMobileMTRendering(BuildTargetGroup.Android)) {
-#endif
                 AirConsoleLogger.LogWarning(() =>
                     "To ensure optimal performance and thermal load, 'Multithreaded rendering' is enabled now.\n"
                     + "We are updating the Android settings now.");
-#if UNITY_6000_0_OR_NEWER
                 PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, true);
-#else
-                PlayerSettings.SetMobileMTRendering(BuildTargetGroup.Android, true);
-#endif
             }
 
             if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
