@@ -34,20 +34,6 @@ namespace NDream.AirConsole.Editor {
         }
     }
 
-    public abstract class UnityVersionCheck {
-        [InitializeOnLoadMethod]
-        private static void CheckUnityVersions() {
-            if (IsSupportedUnityVersion()) {
-                return;
-            }
-
-            EditorNotificationService.InvokeError($"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer!",
-                true);
-        }
-
-        public static bool IsSupportedUnityVersion() => Settings.IsUnity2022OrHigher();
-    }
-
     public abstract class UnityPlatform {
         [InitializeOnLoadMethod]
         private static void CheckPlatform() {
@@ -127,13 +113,6 @@ namespace NDream.AirConsole.Editor {
                         "AirConsole does not allow HTTP web requests. Please create a development build if you want to develop with insecure endpoints.");
                     PlayerSettings.insecureHttpOption = InsecureHttpOption.DevelopmentOnly;
                 }
-            }
-
-            if (!UnityVersionCheck.IsSupportedUnityVersion()) {
-                string message
-                    = $"AirConsole {Settings.VERSION} requires Unity 2022.3 or newer. You are using {Application.unityVersion}.";
-                AirConsoleLogger.LogError(() => message);
-                throw new BuildFailedException(message);
             }
 
             bool shouldRunInBackground = EditorUserBuildSettings.activeBuildTarget == BuildTarget.WebGL;
