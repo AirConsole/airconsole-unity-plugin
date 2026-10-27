@@ -10,7 +10,6 @@ namespace NDream.AirConsole.Editor {
     using UnityEditor.Build;
     using UnityEditor.Build.Reporting;
     using UnityEngine;
-    using UnityEngine.Rendering;
 
     internal abstract class EditorNotificationService {
         /// <summary>
@@ -546,28 +545,6 @@ namespace NDream.AirConsole.Editor {
             }
 
             return TextureCompressionFormat.Unknown;
-        }
-
-        private static void SetPlayerSettingsTextureFormat(BuildTargetGroup buildTargetGroup,
-            TextureCompressionFormat format) {
-            Type playerSettingsType = typeof(PlayerSettings);
-
-            MethodInfo methodInfo = playerSettingsType.GetMethod(
-                "SetDefaultTextureCompressionFormat",
-                BindingFlags.NonPublic | BindingFlags.Static);
-
-            if (methodInfo != null) {
-#if UNITY_6000_0_OR_NEWER
-                bool isUnity6 = true;
-#else
-                bool isUnity6 = false;
-#endif
-                if (isUnity6) {
-                    methodInfo.Invoke(null, new object[] { GetBuildTargetFromGroup(buildTargetGroup), format });
-                } else {
-                    methodInfo.Invoke(null, new object[] { buildTargetGroup, (int)format });
-                }
-            }
         }
 
         private static BuildTarget GetBuildTargetFromGroup(BuildTargetGroup group) {
