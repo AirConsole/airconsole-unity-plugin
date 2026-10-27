@@ -340,8 +340,7 @@ namespace NDream.AirConsole.Editor {
             // Check if the reference to airconsole-Major.Minor.Patch.js is at least as big as requiredMinimumVersion.
             //  Ensure that the reference is not 'airconsole-latest.js'.
             string fileContent = File.ReadAllText(pathToHtml);
-            string apiVersion
-                = $"airconsole-{requiredApiVersion.Major}.{requiredApiVersion.Minor}.{requiredApiVersion.Build}.js";
+            string apiVersion = ApiScriptName(requiredApiVersion);
 
             // If airconsole-latest usage is detected, we need to inform the game developer to use the specified version.
             //  We do not want Unity games to use latest due to prior implicit assumptions and requirements that might not be met anymore.
@@ -349,7 +348,7 @@ namespace NDream.AirConsole.Editor {
             bool foundAirconsoleLatest = regexAirconsoleLatest.IsMatch(fileContent);
             if (foundAirconsoleLatest) {
                 AirConsoleLogger.LogError(() =>
-                    $"{pathToHtml} uses airconsole-latest.js. Please fix it to use airconsole-{apiVersion}.js");
+                    $"{pathToHtml} uses airconsole-latest.js. Please fix it to use {apiVersion}");
 
                 return false;
             }
@@ -393,6 +392,9 @@ namespace NDream.AirConsole.Editor {
             return true;
         }
 
+        private static string ApiScriptName(Version version) =>
+            $"airconsole-{version.Major}.{version.Minor}.{version.Build}.js";
+
         private static void EnsureRequiredDependenciesInHtml() {
             string webGLTemplateDirectory = PreBuildProcessing.GetWebGLTemplateDirectory();
             string indexPath = Path.Combine(webGLTemplateDirectory, "index.html");
@@ -423,10 +425,8 @@ namespace NDream.AirConsole.Editor {
 
                     AirConsoleLogger.Log(() => $"Automatically added {dependency} to index.html.");
                 } else {
-                    string apiVersion
-                        = $"airconsole-{Settings.RequiredMinimumVersion.Major}.{Settings.RequiredMinimumVersion.Minor}.{Settings.RequiredMinimumVersion.Build}.js";
                     AirConsoleLogger.LogWarning(() =>
-                        $"Could not find {apiVersion} script tag in index.html to inject {dependency}.");
+                        $"Could not find {ApiScriptName(Settings.RequiredMinimumVersion)} script tag in index.html to inject {dependency}.");
                 }
             }
 
