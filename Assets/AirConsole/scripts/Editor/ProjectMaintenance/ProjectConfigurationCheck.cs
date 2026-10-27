@@ -130,7 +130,7 @@ namespace NDream.AirConsole.Editor {
             if (PlayerSettings.allowUnsafeCode) {
                 AirConsoleLogger.LogError(() =>
                     "AirConsole does not allow for unsafe code to ensure games can be made available on Automotive platforms.\n"
-                    + "We are updating the Android settings now.");
+                    + "We are updating the player settings now.");
                 PlayerSettings.allowUnsafeCode = false;
             }
         }
