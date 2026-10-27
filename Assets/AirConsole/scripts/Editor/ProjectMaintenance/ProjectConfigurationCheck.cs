@@ -171,12 +171,7 @@ namespace NDream.AirConsole.Editor {
                     $"Reducing WebGL initialMemorySize to the reliably supported maximum of {maximumInitialMemorySize}.\nPlease ensure the game doesn't need more RAM.");
             }
 
-            if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.WebGL)) {
-                AirConsoleLogger.LogError(() =>
-                    "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException(
-                    "Please update the WebGL build or player settings to build for AirConsole WebGL.");
-            }
+            EnsureDesirableTextureCompressionFormat(BuildTarget.WebGL);
         }
 
         private static void VerifyWebGLTemplate() {
@@ -218,12 +213,7 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, true);
             }
 
-            if (!IsDesirableTextureCompressionFormat(BuildTargetGroup.Android)) {
-                AirConsoleLogger.LogError(() =>
-                    "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-                throw new BuildFailedException(
-                    "Please update the Android Build or Player settings to build for AirConsole WebGL");
-            }
+            EnsureDesirableTextureCompressionFormat(BuildTarget.Android);
 
             UpdateAndroidPlayerSettingsInProperties();
             EnsureAndroidPlatformSettings();
@@ -467,54 +457,45 @@ namespace NDream.AirConsole.Editor {
 
         #region Check Texture format usage
         /// <summary>
-        /// Checks if WebGL | Android use a texture format suitable for mobile SoC usage.
+        /// Stops the build when WebGL | Android do not use a texture format suitable for mobile SoC usage.
         /// </summary>
-        /// <param name="buildTargetGroup">Build target group to check the texture compression for. Supported: WebGL, Android</param>
-        /// <returns>True, if the texture compression format is desirable (hardware supported). False otherwise.</returns>
-        private static bool IsDesirableTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
-            TextureCompressionFormat format = GetDefaultTextureCompressionFormat(buildTargetGroup);
+        /// <param name="target">Build target to check the texture compression for. Supported: WebGL, Android</param>
+        private static void EnsureDesirableTextureCompressionFormat(BuildTarget target) {
+            if (IsDesirableTextureCompressionFormat(target)) {
+                return;
+            }
+
+            AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
+            throw new BuildFailedException(
+                $"Please update the {target} build or player settings to build for AirConsole {target}.");
+        }
+
+        private static bool IsDesirableTextureCompressionFormat(BuildTarget target) {
+            TextureCompressionFormat format = GetDefaultTextureCompressionFormat(target);
 
             // Either the Texture Default settings in Player Settings are ETC2 | ASTC or the platforms build settings Texture Compression must be.
-            // We do at this point only support WebGL and Android and only check for these two build targets.
             return format is TextureCompressionFormat.ASTC or TextureCompressionFormat.ETC2
-                   || (buildTargetGroup == BuildTargetGroup.Android
+                   || (target == BuildTarget.Android
                        ? EditorUserBuildSettings.androidBuildSubtarget is MobileTextureSubtarget.ASTC
                            or MobileTextureSubtarget.ETC2
                        : EditorUserBuildSettings.webGLBuildSubtarget is WebGLTextureSubtarget.ASTC
                            or WebGLTextureSubtarget.ETC2);
         }
 
-        private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTargetGroup buildTargetGroup) {
-            Type playerSettingsType = typeof(PlayerSettings);
-
-            MethodInfo methodInfo = playerSettingsType.GetMethod(
+        private static TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTarget target) {
+            MethodInfo methodInfo = typeof(PlayerSettings).GetMethod(
                 "GetDefaultTextureCompressionFormat",
                 BindingFlags.NonPublic | BindingFlags.Static);
+            if (methodInfo == null) {
+                return TextureCompressionFormat.Unknown;
+            }
 
-            if (methodInfo != null) {
 #if UNITY_6000_0_OR_NEWER
-                bool isUnity6 = true;
+            object platform = target;
 #else
-                bool isUnity6 = false;
+            object platform = BuildPipeline.GetBuildTargetGroup(target);
 #endif
-                return isUnity6
-                    ? (TextureCompressionFormat)methodInfo.Invoke(null,
-                        new object[] { GetBuildTargetFromGroup(buildTargetGroup) })
-                    : (TextureCompressionFormat)methodInfo.Invoke(null, new object[] { buildTargetGroup });
-            }
-
-            return TextureCompressionFormat.Unknown;
-        }
-
-        private static BuildTarget GetBuildTargetFromGroup(BuildTargetGroup group) {
-            switch (group) {
-                case BuildTargetGroup.Android:
-                    return BuildTarget.Android;
-                case BuildTargetGroup.WebGL:
-                    return BuildTarget.WebGL;
-                default:
-                    throw new BuildFailedException($"Unsupported BuildTargetGroup {group}");
-            }
+            return (TextureCompressionFormat)methodInfo.Invoke(null, new[] { platform });
         }
 
         // Extracted from UnityEditor.TextureCompressionFormat
