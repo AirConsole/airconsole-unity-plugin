@@ -29,6 +29,14 @@ Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
 
 On `master`, `VERSION` in `Assets/AirConsole/scripts/Runtime/Settings.cs` is the last released version. Feature PRs add their notes to the `## [Unreleased]` section of `CHANGELOG.md`. Do not change `VERSION` by hand: the release sets it.
 
+Before a release, run the release test with your installed Unity editors (macOS, Python 3.12 from `mise install`, about 8 GB free disk, about 1 hour). It uses the newest installed patch of each supported Unity line (2022.3, 6000.0, 6000.3, 6000.6) and fails when one is missing. Step 1 runs the EditMode and PlayMode suites and the WebGL and Android player builds in a copy of this project. Step 2 exports the `.unitypackage` in the Unity version of the release workflow, imports it into a new project per Unity version, builds both players and runs both suites with the plugin tests. The output lists one line per check, and the exit code is 1 when a check fails. `report.md` and `report.json` record the commit, the plugin version, the Unity versions, the package and every check; the start of the output names their folder, `Logs/ReleaseTest/<timestamp>`, next to the Unity logs and test results. The test needs a clean working tree; `--allow-dirty` tests uncommitted changes.
+
+```sh
+scripts/release_test.py                                           # the full release test
+scripts/release_test.py --unity 2022.3.62f3 --targets Android --no-build   # a quick check in one Unity version
+scripts/release_test.py --help                                    # all options and the output files
+```
+
 1. Run the **Create Release** workflow (Actions tab) on `master` with `dry_run` on. Select the `bump`: `patch` for a fix release (2.6.3 → 2.6.4), `minor` for new features (2.6.3 → 2.7.0), `major` for changes that break games (2.6.3 → 3.0.0). The workflow sets `VERSION` to the next version, test-builds WebGL, exports the `.unitypackage`, and uploads the package as a workflow artifact. The run summary shows the release notes (`## [Unreleased]` dated as `## [{VERSION}] - yyyy-MM-dd`) and the release PR commands and body. It creates nothing.
 2. Run it again with `dry_run` off and the same `bump`. It dates the CHANGELOG and opens the `Release v{VERSION}` PR from `release/v{VERSION}` with the new `VERSION`, the package and the dated CHANGELOG. Close and reopen the PR to start the required checks (a PR opened by the workflow token does not start them).
 3. Merge the PR. The workflow then creates the `v{VERSION}` tag and the GitHub release with the package.
