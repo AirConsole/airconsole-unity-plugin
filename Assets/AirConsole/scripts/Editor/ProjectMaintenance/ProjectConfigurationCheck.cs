@@ -174,7 +174,7 @@ namespace NDream.AirConsole.Editor {
                     $"Reducing WebGL initialMemorySize to the reliably supported maximum of {maximumInitialMemorySize}.\nPlease ensure the game doesn't need more RAM.");
             }
 
-            EnsureDesirableTextureCompressionFormat(BuildTarget.WebGL);
+            WarnUnlessDesirableTextureCompressionFormat(BuildTarget.WebGL);
         }
 
         private static void VerifyWebGLTemplate() {
@@ -216,7 +216,7 @@ namespace NDream.AirConsole.Editor {
                 PlayerSettings.SetMobileMTRendering(NamedBuildTarget.Android, true);
             }
 
-            EnsureDesirableTextureCompressionFormat(BuildTarget.Android);
+            WarnUnlessDesirableTextureCompressionFormat(BuildTarget.Android);
 
             UpdateAndroidPlayerSettingsInProperties();
             EnsureAndroidPlatformSettings();
@@ -432,17 +432,17 @@ namespace NDream.AirConsole.Editor {
 
         #region Check Texture format usage
         /// <summary>
-        /// Stops the build when WebGL | Android do not use a texture format suitable for mobile SoC usage.
+        /// Warns when WebGL | Android do not use a texture format suitable for mobile SoC usage.
         /// </summary>
         /// <param name="target">Build target to check the texture compression for. Supported: WebGL, Android</param>
-        private static void EnsureDesirableTextureCompressionFormat(BuildTarget target) {
+        private static void WarnUnlessDesirableTextureCompressionFormat(BuildTarget target) {
             if (IsDesirableTextureCompressionFormat(target)) {
                 return;
             }
 
-            AirConsoleLogger.LogError(() => "AirConsole requires 'ASTC' or 'ETC2' as the texture compression format.");
-            throw new BuildFailedException(
-                $"Please update the {target} build or player settings to build for AirConsole {target}.");
+            AirConsoleLogger.LogWarning(() =>
+                $"AirConsole recommends 'ASTC' or 'ETC2' as the {target} texture compression format. "
+                + $"Set it in the {target} build settings (Texture Compression) or in the Player Settings.");
         }
 
         private static bool IsDesirableTextureCompressionFormat(BuildTarget target) {
