@@ -222,25 +222,6 @@ namespace NDream.AirConsole.Editor {
             UpdateAndroidPlayerSettingsInProperties();
             EnsureAndroidPlatformSettings();
             MaintainChallengingAndroidFeatures();
-
-#if !AIRCONSOLE_DEVELOPMENT
-            return;
-#endif
-
-            // We don't want to create a warning for this but we also don't want it to be in use under normal circumstances
-#pragma warning disable 0162 // Unreachable code detected
-            PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
-            Version version = Version.Parse(PlayerSettings.bundleVersion);
-
-            // Undefined values can come back as -1 which breaks when creating the new version, so we ensure valid value ranges. 
-            version = new Version(
-                Mathf.Clamp(version.Major, 0, version.Major),
-                Mathf.Clamp(version.Minor, 0, version.Minor),
-                Mathf.Clamp(version.Build, 0, version.Build));
-            PlayerSettings.bundleVersion
-                = new Version(version.Major, version.Minor, version.Build, PlayerSettings.Android.bundleVersionCode)
-                    .ToString();
-#pragma warning restore 0162 //  Unreachable code detected
         }
 
         private static void EnsureAndroidPlatformSettings() {
@@ -313,13 +294,6 @@ namespace NDream.AirConsole.Editor {
 
         private static void EnsureAndroidRenderSettings() {
             PlayerSettings.use32BitDisplayBuffer = true;
-        }
-
-        private static int SecondsSinceStartOf2025() {
-            DateTime startOfYear = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-            DateTime now = DateTime.UtcNow;
-
-            return (int)(now - startOfYear).TotalSeconds;
         }
 
         #region Controller Screen Consistency Checks
