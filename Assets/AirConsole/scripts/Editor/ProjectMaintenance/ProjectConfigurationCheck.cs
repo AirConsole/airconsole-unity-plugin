@@ -67,10 +67,9 @@ namespace NDream.AirConsole.Editor {
         }
     }
 
-    public abstract class ProjectConfigurationCheck : IPreprocessBuildWithReport {
-        public int callbackOrder {
-            get => 999;
-        }
+    // Not abstract: Unity skips abstract IPreprocessBuildWithReport types and never calls OnPreprocessBuild.
+    public class ProjectConfigurationCheck : IPreprocessBuildWithReport {
+        public int callbackOrder => 999;
 
         public void OnPreprocessBuild(BuildReport report) {
             CheckSettings(report.summary.platform);

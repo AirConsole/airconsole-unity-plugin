@@ -1,9 +1,11 @@
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor.Tests {
+    using System;
     using System.Collections.Generic;
     using System.Text.RegularExpressions;
     using NUnit.Framework;
     using UnityEditor;
+    using UnityEditor.Build;
     using UnityEngine;
     using UnityEngine.Rendering;
     using UnityEngine.TestTools;
@@ -56,6 +58,22 @@ namespace NDream.AirConsole.Editor.Tests {
             PlayerSettings.Android.targetSdkVersion = _targetSdkVersion;
             PlayerSettings.Android.minSdkVersion = _minSdkVersion;
             PlayerSettings.use32BitDisplayBuffer = _use32BitDisplayBuffer;
+        }
+
+        [Test]
+        public void ProjectConfigurationCheck_IsABuildPreprocessorThatUnityCanCreate() {
+            Assert.That(TypeCache.GetTypesDerivedFrom<IPreprocessBuildWithReport>(),
+                Has.Member(typeof(ProjectConfigurationCheck)));
+            Assert.That(Activator.CreateInstance(typeof(ProjectConfigurationCheck)),
+                Is.InstanceOf<IPreprocessBuildWithReport>());
+        }
+
+        [Test]
+        public void CheckSettings_UnsupportedPlatform_StopsTheBuild() {
+            BuildFailedException exception = Assert.Throws<BuildFailedException>(() =>
+                ProjectConfigurationCheck.CheckSettings(BuildTarget.StandaloneOSX));
+
+            Assert.That(exception.Message, Does.Contain(nameof(BuildTarget.StandaloneOSX)));
         }
 
         [Test]
