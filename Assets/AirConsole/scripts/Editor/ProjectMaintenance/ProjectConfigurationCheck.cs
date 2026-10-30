@@ -247,14 +247,16 @@ namespace NDream.AirConsole.Editor {
             PlayerSettings.Android.forceInternetPermission = true;
 
             // To ensure Google Play compatibility, we require a target SDK of 35 or higher.
+            // AndroidApiLevelAuto builds against the highest installed SDK. The SDKs that Unity installs have 35 or higher.
             const int requiredAndroidTargetSdk = 35;
-            if ((int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
+            if (PlayerSettings.Android.targetSdkVersion != AndroidSdkVersions.AndroidApiLevelAuto
+                && (int)PlayerSettings.Android.targetSdkVersion < requiredAndroidTargetSdk) {
                 AirConsoleLogger.LogError(() =>
                     $"AirConsole requires 'Target SDK Version' of {requiredAndroidTargetSdk} or higher.\n"
                     + "We are updating the Android settings now.");
+                PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
             }
 
-            PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)requiredAndroidTargetSdk;
             if (PlayerSettings.Android.minSdkVersion < AndroidSdkVersions.AndroidApiLevel26) {
                 PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26;
             }

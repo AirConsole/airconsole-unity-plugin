@@ -1,10 +1,12 @@
 #if !DISABLE_AIRCONSOLE
 namespace NDream.AirConsole.Editor.Tests {
     using System.Collections.Generic;
+    using System.Text.RegularExpressions;
     using NUnit.Framework;
     using UnityEditor;
     using UnityEngine;
     using UnityEngine.Rendering;
+    using UnityEngine.TestTools;
 
     public class ProjectConfigurationCheckTests {
         private bool _renderOutsideSafeArea;
@@ -13,6 +15,8 @@ namespace NDream.AirConsole.Editor.Tests {
         private bool _startInFullscreen;
         private bool _useDefaultGraphicsApis;
         private GraphicsDeviceType[] _graphicsApis;
+        private AndroidSdkVersions _targetSdkVersion;
+        private AndroidSdkVersions _minSdkVersion;
 
         // CheckSettings also writes the setting below. The [InitializeOnLoadMethod] checks do not, so restore it.
         private bool _use32BitDisplayBuffer;
@@ -28,6 +32,8 @@ namespace NDream.AirConsole.Editor.Tests {
             _startInFullscreen = StartInFullscreen;
             _useDefaultGraphicsApis = PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android);
             _graphicsApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+            _targetSdkVersion = PlayerSettings.Android.targetSdkVersion;
+            _minSdkVersion = PlayerSettings.Android.minSdkVersion;
             _use32BitDisplayBuffer = PlayerSettings.use32BitDisplayBuffer;
 
             // AirConsoleLogger drops warnings that the logger filters out, which would hide the warning under test.
@@ -47,6 +53,8 @@ namespace NDream.AirConsole.Editor.Tests {
             StartInFullscreen = _startInFullscreen;
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, _graphicsApis);
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, _useDefaultGraphicsApis);
+            PlayerSettings.Android.targetSdkVersion = _targetSdkVersion;
+            PlayerSettings.Android.minSdkVersion = _minSdkVersion;
             PlayerSettings.use32BitDisplayBuffer = _use32BitDisplayBuffer;
         }
 
@@ -82,6 +90,41 @@ namespace NDream.AirConsole.Editor.Tests {
 
             Assert.That(PlayerSettings.GetGraphicsAPIs(BuildTarget.Android), Is.EqualTo(openGlFirst));
             Assert.That(_warnings, Has.None.Contains("first API"));
+        }
+
+        [TestCase(34)]
+        public void CheckSettings_Android_RaisesTargetSdkToMinimum(int configured) {
+            PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)configured;
+            LogAssert.Expect(LogType.Error, new Regex("'Target SDK Version' of 35 or higher"));
+
+            ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
+
+            Assert.That((int)PlayerSettings.Android.targetSdkVersion, Is.EqualTo(35));
+        }
+
+        [TestCase(0)]
+        [TestCase(35)]
+        [TestCase(36)]
+        public void CheckSettings_Android_KeepsTargetSdkAtOrAboveMinimum(int configured) {
+            PlayerSettings.Android.targetSdkVersion = (AndroidSdkVersions)configured;
+
+            ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
+
+            Assert.That((int)PlayerSettings.Android.targetSdkVersion, Is.EqualTo(configured));
+        }
+
+        // Unity 6000.6 and newer reject API level 25 in the setter with an error log, so the case cannot be set up there.
+#if !UNITY_6000_6_OR_NEWER
+        [TestCase(25, 26)]
+#endif
+        [TestCase(26, 26)]
+        [TestCase(30, 30)]
+        public void CheckSettings_Android_RaisesMinSdkToMinimum(int configured, int expected) {
+            PlayerSettings.Android.minSdkVersion = (AndroidSdkVersions)configured;
+
+            ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
+
+            Assert.That((int)PlayerSettings.Android.minSdkVersion, Is.EqualTo(expected));
         }
 
         private void CollectWarning(string message, string stackTrace, LogType type) {
