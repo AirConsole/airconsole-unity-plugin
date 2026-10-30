@@ -7,6 +7,20 @@ You can find the Javascript API documentation here: <https://airconsole.github.i
 IMPORTANT: The plugin comes with an embedded webserver / websocket-server for the communication between the AirConsole backend and the Unity-Editor.
 You don't need to install any other webserver or services.
 
+## Requirements
+
+The plugin requires Unity 2022.3 or newer. In an older Unity version, the plugin shows an error when scripts load and stops every build, unless the scripting define symbol `DISABLE_AIRCONSOLE` is set.
+
+For security (CVE-2025-59489), the plugin shows an error (Android target) or a warning (WebGL target) when the Unity release is older than:
+
+| Unity | Minimum release |
+| --- | --- |
+| 2022.3 | 2022.3.62f2 |
+| 6000.0 | 6000.0.58f2 |
+| 6000.1 | 6000.1.17f1 |
+| 6000.2 | 6000.2.6f2 |
+| 6000.3 and newer | 6000.3.0f1 |
+
 ## Changelog
 
 Please see [CHANGELOG.md](CHANGELOG.md) for the full changelog.
