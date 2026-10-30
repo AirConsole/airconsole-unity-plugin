@@ -19,10 +19,16 @@ namespace NDream.AirConsole.Editor {
             }
         }
 
-        private static void CheckWebGLSetup() {
+        internal static void CheckWebGLSetup() {
             if (string.IsNullOrEmpty(PlayerSettings.WebGL.template)) {
                 EditorUtility.DisplayDialog("Error", "No WebGL Template configured", "Cancel");
                 throw new BuildFailedException("WebGL template not configured");
+            }
+
+            // ProjectConfigurationCheck runs after this check. Without this, a wrong template fails on its missing controller.html.
+            ProjectConfigurationCheck.SelectWebGLTemplateIfUnityBuiltIn();
+            if (!ProjectConfigurationCheck.IsCompatibleWebGLTemplate(PlayerSettings.WebGL.template)) {
+                throw new BuildFailedException(ProjectConfigurationCheck.IncompatibleWebGLTemplateMessage);
             }
 
             if (Directory.Exists(GetWebGLTemplateDirectory())) {

@@ -19,6 +19,8 @@ namespace NDream.AirConsole.Editor.Tests {
         private GraphicsDeviceType[] _graphicsApis;
         private AndroidSdkVersions _targetSdkVersion;
         private AndroidSdkVersions _minSdkVersion;
+        private string _webGLTemplate;
+        private Dictionary<string, string> _templateCustomValues;
 
         // CheckSettings also writes the setting below. The [InitializeOnLoadMethod] checks do not, so restore it.
         private bool _use32BitDisplayBuffer;
@@ -37,6 +39,11 @@ namespace NDream.AirConsole.Editor.Tests {
             _targetSdkVersion = PlayerSettings.Android.targetSdkVersion;
             _minSdkVersion = PlayerSettings.Android.minSdkVersion;
             _use32BitDisplayBuffer = PlayerSettings.use32BitDisplayBuffer;
+            _webGLTemplate = PlayerSettings.WebGL.template;
+            _templateCustomValues = new Dictionary<string, string>();
+            foreach (string key in TemplateCustomKeys) {
+                _templateCustomValues[key] = PlayerSettings.GetTemplateCustomValue(key);
+            }
 
             // AirConsoleLogger drops warnings that the logger filters out, which would hide the warning under test.
             _filterLogType = Debug.unityLogger.filterLogType;
@@ -58,6 +65,31 @@ namespace NDream.AirConsole.Editor.Tests {
             PlayerSettings.Android.targetSdkVersion = _targetSdkVersion;
             PlayerSettings.Android.minSdkVersion = _minSdkVersion;
             PlayerSettings.use32BitDisplayBuffer = _use32BitDisplayBuffer;
+            PlayerSettings.WebGL.template = _webGLTemplate;
+            RemoveTemplateCustomKeysExcept(_templateCustomValues.Keys);
+            foreach (KeyValuePair<string, string> keyValue in _templateCustomValues) {
+                PlayerSettings.SetTemplateCustomValue(keyValue.Key, keyValue.Value);
+            }
+        }
+
+        private static string[] TemplateCustomKeys {
+            get => (string[])ProjectConfigurationCheck.TemplateCustomKeysProperty.GetValue(null) ?? Array.Empty<string>();
+            set => ProjectConfigurationCheck.TemplateCustomKeysProperty.SetValue(null, value);
+        }
+
+        // The templateCustomKeys setter only adds keys, so the test keys are removed from the serialized settings.
+        private static void RemoveTemplateCustomKeysExcept(ICollection<string> keysToKeep) {
+            SerializedObject playerSettings =
+                new SerializedObject(Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings"));
+            SerializedProperty templateCustomTags = playerSettings.FindProperty("m_TemplateCustomTags");
+            for (int i = templateCustomTags.arraySize - 1; i >= 0; i--) {
+                string key = templateCustomTags.GetArrayElementAtIndex(i).FindPropertyRelative("first").stringValue;
+                if (!keysToKeep.Contains(key)) {
+                    templateCustomTags.DeleteArrayElementAtIndex(i);
+                }
+            }
+
+            playerSettings.ApplyModifiedPropertiesWithoutUndo();
         }
 
         [Test]
@@ -144,6 +176,61 @@ namespace NDream.AirConsole.Editor.Tests {
 
             Assert.That((int)PlayerSettings.Android.minSdkVersion, Is.EqualTo(expected));
         }
+
+        [TestCase("APPLICATION:Default")]
+        [TestCase("APPLICATION:Minimal")]
+        public void SelectWebGLTemplateIfUnityBuiltIn_SelectsTheAirConsoleTemplate(string template) {
+            PlayerSettings.WebGL.template = template;
+
+            ProjectConfigurationCheck.SelectWebGLTemplateIfUnityBuiltIn();
+
+            Assert.That(PlayerSettings.WebGL.template,
+                Is.EqualTo($"PROJECT:{ProjectConfigurationCheck.ExpectedWebGLTemplateName}"));
+        }
+
+        [Test]
+        public void SelectWebGLTemplateIfUnityBuiltIn_AddsTheTemplateVariablesAndKeepsTheOthers() {
+            TemplateCustomKeys = new[] { "GAME_VARIABLE" };
+            PlayerSettings.SetTemplateCustomValue("GAME_VARIABLE", "4");
+            PlayerSettings.WebGL.template = "APPLICATION:Default";
+
+            ProjectConfigurationCheck.SelectWebGLTemplateIfUnityBuiltIn();
+
+            Assert.That(TemplateCustomKeys, Is.SupersetOf(ProjectConfigurationCheck.AirConsoleWebGLTemplateVariables));
+            Assert.That(TemplateCustomKeys, Has.Member("GAME_VARIABLE"));
+            Assert.That(PlayerSettings.GetTemplateCustomValue("GAME_VARIABLE"), Is.EqualTo("4"));
+        }
+
+        [Test]
+        public void SelectWebGLTemplateIfUnityBuiltIn_KeepsAProjectTemplate() {
+            PlayerSettings.WebGL.template = "PROJECT:GameTemplate";
+
+            ProjectConfigurationCheck.SelectWebGLTemplateIfUnityBuiltIn();
+
+            Assert.That(PlayerSettings.WebGL.template, Is.EqualTo("PROJECT:GameTemplate"));
+        }
+
+        [Test]
+        public void SelectWebGLTemplateIfUnityBuiltIn_KeepsTheAirConsoleTemplateOfTheOtherUnityVersion() {
+            string template = $"PROJECT:{OtherAirConsoleTemplateName}";
+            PlayerSettings.WebGL.template = template;
+
+            ProjectConfigurationCheck.SelectWebGLTemplateIfUnityBuiltIn();
+
+            Assert.That(PlayerSettings.WebGL.template, Is.EqualTo(template));
+        }
+
+        [Test]
+        public void CheckWebGLSetup_AirConsoleTemplateOfTheOtherUnityVersion_FailsWithTheTemplateMessage() {
+            PlayerSettings.WebGL.template = $"PROJECT:{OtherAirConsoleTemplateName}";
+
+            BuildFailedException exception = Assert.Throws<BuildFailedException>(PreBuildProcessing.CheckWebGLSetup);
+
+            Assert.That(exception.Message, Is.EqualTo(ProjectConfigurationCheck.IncompatibleWebGLTemplateMessage));
+        }
+
+        private static string OtherAirConsoleTemplateName =>
+            Array.Find(Settings.TEMPLATE_NAMES, name => name != ProjectConfigurationCheck.ExpectedWebGLTemplateName);
 
         private void CollectWarning(string message, string stackTrace, LogType type) {
             if (type == LogType.Warning) {

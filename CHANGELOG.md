@@ -21,6 +21,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 ### Fixed
 
 - **Android:** 'Target API Level' 35 and 'Minimum API Level' 26 are minimums. The plugin keeps a higher value, for example Target API Level 36, and 'Automatic (highest installed)', and raises only a lower value. Earlier versions set the Target API Level to 35 on every check.
+- **WebGL:** A project that uses a WebGL template that Unity ships ('Default', 'Minimal') now gets the AirConsole template for its Unity version, with its progress bar settings (`PROGRESS_BAR_*`) in the Player Settings. Project templates stay as the game developer set them. A build with the AirConsole template of the other Unity version now fails with the message that names the correct template. Earlier versions failed with 'Controller missing in WebGL template location'.
 - **General:** The project configuration check runs before every build, also when the build starts from File > Build Settings or from a build script. Earlier versions ran it only when the Unity editor reloaded scripts and from the AirConsole menu items, because Unity did not register the build hook. Because of this, a build for a platform other than Android and WebGL, for example Standalone or iOS, now fails. To build for such a platform, add the scripting define symbol `DISABLE_AIRCONSOLE`.
 
 ## [2.6.3] - 2026-10-03

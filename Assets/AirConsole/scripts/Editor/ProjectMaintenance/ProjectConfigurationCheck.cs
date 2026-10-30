@@ -177,26 +177,74 @@ namespace NDream.AirConsole.Editor {
             WarnUnlessDesirableTextureCompressionFormat(BuildTarget.WebGL);
         }
 
+        private const string UnityBuiltInWebGLTemplatePrefix = "APPLICATION:";
+
+        internal static string ExpectedWebGLTemplateName => Settings.WEBTEMPLATE_PATH.Split('/').Last();
+
+        internal static string IncompatibleWebGLTemplateMessage =>
+            $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{ExpectedWebGLTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
+
         private static void VerifyWebGLTemplate() {
+            SelectWebGLTemplateIfUnityBuiltIn();
             ValidateApiUsage();
             EnsureRequiredDependenciesInHtml();
 
-            string expectedTemplateName = Settings.WEBTEMPLATE_PATH.Split('/').Last();
-            string[] templateUri = PlayerSettings.WebGL.template.Split(':');
-            if (templateUri.Length != 2
-                || templateUri[0].ToUpper() == "APPLICATION"
-                || (templateUri[1] != expectedTemplateName && Settings.TEMPLATE_NAMES.Contains(templateUri[1]))) {
-                string incompatibleTemplateMessage =
-                    $"Unity version \"{Application.unityVersion}\" needs the AirConsole WebGL template \"{expectedTemplateName}\" to work.\nPlease change the WebGL template in your Project Settings under Player (WebGL platform tab) > Resolution and Presentation > WebGL Template.";
-                AirConsoleLogger.LogError(() => incompatibleTemplateMessage);
+            if (!IsCompatibleWebGLTemplate(PlayerSettings.WebGL.template)) {
+                AirConsoleLogger.LogError(() => IncompatibleWebGLTemplateMessage);
 
-                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", incompatibleTemplateMessage,
+                if (EditorUtility.DisplayDialog("Incompatible WebGL Template", IncompatibleWebGLTemplateMessage,
                         "Open Player Settings",
                         "Cancel")) {
                     // In Unity 6 this needs to be done with a delay call, otherwise it breaks the window layout when Project Settings are docked already.
                     EditorApplication.delayCall = () => SettingsService.OpenProjectSettings("Project/Player");
                 }
             }
+        }
+
+        // Only the templates that Unity ships are replaced. A PROJECT template is a choice of the game developer.
+        internal static void SelectWebGLTemplateIfUnityBuiltIn() {
+            string template = PlayerSettings.WebGL.template;
+            if (!template.StartsWith(UnityBuiltInWebGLTemplatePrefix, StringComparison.OrdinalIgnoreCase)) {
+                return;
+            }
+
+            PlayerSettings.WebGL.template = $"PROJECT:{ExpectedWebGLTemplateName}";
+            RegisterAirConsoleWebGLTemplateVariables();
+            AirConsoleLogger.LogWarning(() =>
+                $"AirConsole replaced the Unity WebGL template \"{template}\" with the AirConsole template \"{ExpectedWebGLTemplateName}\".");
+        }
+
+        // The custom variables of the AirConsole templates. Unity registers them only when the template is selected in the Player Settings
+        // window. For a template set from code, the Unity 2022.3 WebGL build otherwise fails with "PROGRESS_BAR_HEIGHT is not defined".
+        internal static readonly string[] AirConsoleWebGLTemplateVariables = {
+            "PROGRESS_BAR_BACKGROUND_COLOR", "PROGRESS_BAR_COLOR", "PROGRESS_BAR_HEIGHT",
+            "PROGRESS_BAR_OFFSET_LEFT", "PROGRESS_BAR_OFFSET_TOP", "PROGRESS_BAR_WIDTH"
+        };
+
+        // PlayerSettings.SetTemplateCustomValue ignores keys that are not registered, and only this internal property registers them.
+        internal static readonly PropertyInfo TemplateCustomKeysProperty =
+            typeof(PlayerSettings).GetProperty("templateCustomKeys", BindingFlags.NonPublic | BindingFlags.Static);
+
+        private static void RegisterAirConsoleWebGLTemplateVariables() {
+            if (TemplateCustomKeysProperty == null) {
+                AirConsoleLogger.LogWarning(() =>
+                    $"AirConsole could not register the WebGL template variables. Select the WebGL template \"{ExpectedWebGLTemplateName}\" "
+                    + "once in the Player Settings, so that Unity creates them.");
+                return;
+            }
+
+            string[] keys = (string[])TemplateCustomKeysProperty.GetValue(null) ?? Array.Empty<string>();
+            string[] missingKeys = AirConsoleWebGLTemplateVariables.Except(keys).ToArray();
+            if (missingKeys.Length > 0) {
+                TemplateCustomKeysProperty.SetValue(null, keys.Concat(missingKeys).ToArray());
+            }
+        }
+
+        internal static bool IsCompatibleWebGLTemplate(string template) {
+            string[] templateUri = template.Split(':');
+            return templateUri.Length == 2
+                   && templateUri[0].ToUpper() != "APPLICATION"
+                   && (templateUri[1] == ExpectedWebGLTemplateName || !Settings.TEMPLATE_NAMES.Contains(templateUri[1]));
         }
 
         [InitializeOnLoadMethod]
