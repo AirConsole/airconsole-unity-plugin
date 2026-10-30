@@ -14,10 +14,8 @@ namespace NDream.AirConsole.Editor.Tests {
         private bool _useDefaultGraphicsApis;
         private GraphicsDeviceType[] _graphicsApis;
 
-        // CheckSettings also writes the settings below. The [InitializeOnLoadMethod] checks do not, so restore them.
+        // CheckSettings also writes the setting below. The [InitializeOnLoadMethod] checks do not, so restore it.
         private bool _use32BitDisplayBuffer;
-        private uint _vulkanNumSwapchainBuffers;
-        private bool _optimizedFramePacing;
 
         private LogType _filterLogType;
         private readonly List<string> _warnings = new();
@@ -31,8 +29,6 @@ namespace NDream.AirConsole.Editor.Tests {
             _useDefaultGraphicsApis = PlayerSettings.GetUseDefaultGraphicsAPIs(BuildTarget.Android);
             _graphicsApis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
             _use32BitDisplayBuffer = PlayerSettings.use32BitDisplayBuffer;
-            _vulkanNumSwapchainBuffers = PlayerSettings.vulkanNumSwapchainBuffers;
-            _optimizedFramePacing = PlayerSettings.Android.optimizedFramePacing;
 
             // AirConsoleLogger drops warnings that the logger filters out, which would hide the warning under test.
             _filterLogType = Debug.unityLogger.filterLogType;
@@ -52,8 +48,6 @@ namespace NDream.AirConsole.Editor.Tests {
             PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, _graphicsApis);
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, _useDefaultGraphicsApis);
             PlayerSettings.use32BitDisplayBuffer = _use32BitDisplayBuffer;
-            PlayerSettings.vulkanNumSwapchainBuffers = _vulkanNumSwapchainBuffers;
-            PlayerSettings.Android.optimizedFramePacing = _optimizedFramePacing;
         }
 
         [Test]
