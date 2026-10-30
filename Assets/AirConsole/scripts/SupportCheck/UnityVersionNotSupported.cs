@@ -7,11 +7,15 @@ namespace NDream.AirConsole.Support {
 
 #if !UNITY_2022_3_OR_NEWER
     internal class UnityVersionNotSupported : MonoBehaviour, IPreprocessBuildWithReport {
+        private static string Message =>
+            $"AirConsole requires Unity 2022.3 or newer. This project uses Unity {Application.unityVersion}.\n"
+            + "Upgrade the project to Unity 2022.3 or newer, or add the scripting define symbol 'DISABLE_AIRCONSOLE' "
+            + "in the Player Settings to turn off this check.";
+
         [InitializeOnLoadMethod]
         private static void TriggerNotSupportedVersion() {
-            string message = $"AirConsole requires Unity 2022.3 or newer. Please upgrade the project.";
-            EditorUtility.DisplayDialog("Not supported", message, "Ok");
-            Debug.LogError(message);
+            EditorUtility.DisplayDialog("Unity version not supported", Message, "Ok");
+            Debug.LogError(Message);
         }
 
         private void Awake() {
@@ -26,7 +30,7 @@ namespace NDream.AirConsole.Support {
         }
 
         public void OnPreprocessBuild(BuildReport report) {
-            throw new BuildFailedException($"AirConsole requires Unity 2022.3 or newer but found {Application.unityVersion}.");
+            throw new BuildFailedException(Message);
         }
     }
 #endif
