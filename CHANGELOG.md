@@ -15,6 +15,7 @@ Release notes follow the [keep a changelog](https://keepachangelog.com/en/1.1.0/
 - **Package:** The plugin package no longer contains the plugin tests (`Assets/AirConsole/scripts/Tests`), so they do not run in game projects. The upgrade deletes `Assets/AirConsole/scripts/Tests` that an earlier version installed.
 - **General:** The plugin no longer enforces the graphics APIs: WebGL2 or 'Auto Graphics API' on WebGL, and Vulkan first with at least 3 swapchain buffers on Android. The game developer now sets these in the Player Settings.
 - **Android:** The plugin no longer enforces the Android Automotive settings 'Render outside safe area' (off) and 'Resizable Window' (on). The game developer now sets these in the Player Settings. 'Fullscreen Mode' (Fullscreen Window) and 'Start in fullscreen mode' stay enforced because the AirConsole webview keeps its initial size, and at runtime the plugin still switches the game to fullscreen. Projects keep the values that earlier versions set.
+- **General:** In a Unity version before 2022.3, the error now names the Unity version of the project and that the scripting define symbol `DISABLE_AIRCONSOLE` turns off the check.
 
 ### Fixed
 
