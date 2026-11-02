@@ -5,7 +5,7 @@ using System;
 namespace NDream.AirConsole {
     public static class Settings {
         public static readonly Version RequiredMinimumVersion = new(1, 12, 0);
-        public const string VERSION = "2.6.3";
+        public const string VERSION = "2.6.4";
 
         // ReSharper disable once UnusedMember.Global // Used by AirConsole on Android only
         public const string AIRCONSOLE_BASE_URL = "https://www.airconsole.com/";
