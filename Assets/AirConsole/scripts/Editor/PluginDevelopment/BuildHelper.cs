@@ -60,6 +60,10 @@ namespace NDream.AirConsole.Editor {
         }
 
         public static void BuildAndroid() {
+#if AIRCONSOLE_DEVELOPMENT
+            // Only here, before the commit: the build hook runs CheckSettings again, and the APK must keep the committed version code.
+            UpdateBundleVersionCode();
+#endif
             ProjectConfigurationCheck.CheckSettings(BuildTarget.Android);
             AssetDatabase.SaveAssets();
             if (CommitPendingChanges(out string timestamp, out string commitHash)) {
@@ -87,6 +91,22 @@ namespace NDream.AirConsole.Editor {
             }
 
             BuildForPlatform(scenes, outputPath, BuildTarget.Android);
+        }
+
+        private static void UpdateBundleVersionCode() {
+            PlayerSettings.Android.bundleVersionCode = SecondsSinceStartOf2025();
+            Version version = Version.Parse(PlayerSettings.bundleVersion);
+
+            // Undefined values can come back as -1 which breaks when creating the new version, so we ensure valid value ranges.
+            PlayerSettings.bundleVersion = new Version(Math.Max(version.Major, 0), Math.Max(version.Minor, 0),
+                Math.Max(version.Build, 0), PlayerSettings.Android.bundleVersionCode).ToString();
+        }
+
+        private static int SecondsSinceStartOf2025() {
+            DateTime startOfYear = new(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime now = DateTime.UtcNow;
+
+            return (int)(now - startOfYear).TotalSeconds;
         }
 
         /// <summary>
